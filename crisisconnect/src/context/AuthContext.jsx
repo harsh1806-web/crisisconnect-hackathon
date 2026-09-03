@@ -6,51 +6,61 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(() => {
-    const saved = localStorage.getItem('crisisconnect_session');
+    const saved = localStorage.getItem('crisisconnect_session_v3');
     if (saved) {
       try {
         return JSON.parse(saved);
       } catch {
-        return { type: 'user', ...DEMO_PROFILES.user };
+        return { type: 'citizen', ...DEMO_PROFILES.citizen };
       }
     }
-    // Default to user demo so testing works out of the box
-    return { type: 'user', ...DEMO_PROFILES.user };
+    return { type: 'citizen', ...DEMO_PROFILES.citizen };
   });
 
   useEffect(() => {
     if (session) {
-      localStorage.setItem('crisisconnect_session', JSON.stringify(session));
+      localStorage.setItem('crisisconnect_session_v3', JSON.stringify(session));
     } else {
-      localStorage.removeItem('crisisconnect_session');
+      localStorage.removeItem('crisisconnect_session_v3');
     }
   }, [session]);
 
-  const loginAsUser = (userData = {}) => {
-    const userSession = {
-      type: 'user',
-      ...DEMO_PROFILES.user,
+  const loginAsCitizen = (userData = {}) => {
+    const s = {
+      type: 'citizen',
+      ...DEMO_PROFILES.citizen,
       ...userData,
     };
-    setSession(userSession);
-    toast.success(`Welcome, ${userSession.name}!`);
-    return userSession;
+    setSession(s);
+    toast.success(`Welcome Citizen: ${s.name}!`);
+    return s;
+  };
+
+  const loginAsNGO = (ngoData = {}) => {
+    const s = {
+      type: 'ngo',
+      ...DEMO_PROFILES.ngo,
+      ...ngoData,
+    };
+    setSession(s);
+    toast.success(`NGO Portal: Signed in with ${s.ngoName}`);
+    return s;
   };
 
   const loginAsAuthority = (authData = {}) => {
-    const authSession = {
+    const s = {
       type: 'authority',
       ...DEMO_PROFILES.authority,
       ...authData,
     };
-    setSession(authSession);
-    toast.success(`Authority Portal: Signed in as ${authSession.rank}`);
-    return authSession;
+    setSession(s);
+    toast.success(`Authority Command: Signed in as ${s.rank}`);
+    return s;
   };
 
   const logout = () => {
     setSession(null);
-    toast('Logged out of CrisisConnect', { icon: '🚪' });
+    toast('Signed out from CrisisConnect', { icon: '🚪' });
   };
 
   return (
@@ -58,9 +68,13 @@ export function AuthProvider({ children }) {
       value={{
         session,
         currentUser: session,
-        isUser: session?.type === 'user',
+        isCitizen: session?.type === 'citizen',
+        isUser: session?.type === 'citizen', // alias for citizen
+        isNGO: session?.type === 'ngo',
         isAuthority: session?.type === 'authority',
-        loginAsUser,
+        loginAsCitizen,
+        loginAsUser: loginAsCitizen, // alias
+        loginAsNGO,
         loginAsAuthority,
         logout,
       }}
