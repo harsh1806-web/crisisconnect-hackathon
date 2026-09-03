@@ -7,8 +7,9 @@ export default function VolunteerPassModal({ task, user, onClose }) {
   const passId = 'PASS-VOL-' + String(Math.abs(task.id.split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0))).slice(0, 6);
   const volunteerName = user?.name || 'Registered Volunteer';
   const bloodGroup = user?.bloodGroup || user?.blood_group || 'O+';
-  const phone = user?.phone || '+91 99999 00000';
-  const icePhone = user?.emergencyContact?.phone || user?.ice_phone || '+91 98765 43210';
+  const phone = user?.phone || '9999900000';
+  const rawIce = String(user?.emergencyContact?.phone || user?.ice_phone || user?.emergencyContactPhone || user?.icePhone || '9876543210').replace(/\D/g, '').slice(-10);
+  const icePhone = rawIce.length === 10 ? rawIce : '9876543210';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">

@@ -46,6 +46,12 @@ export default function Register() {
       return;
     }
 
+    const cleanIcePhone = icePhone.replace(/\D/g, '');
+    if (cleanIcePhone.length !== 10) {
+      toast.error('ICE emergency phone number must be exactly 10 digits (no more, no less).');
+      return;
+    }
+
     if (!password || !password.trim()) {
       toast.error('Password is required. Please set a password for your account.');
       return;
@@ -56,13 +62,13 @@ export default function Register() {
     // 1. Save citizen into local/offline Database
     citizenDB.register({
       name,
-      phone,
+      phone: cleanPhone,
       email,
       address,
       bloodGroup,
       allergies,
-      emergencyContactName: iceName,
-      emergencyContactPhone: icePhone,
+      emergencyContactName: iceName || 'Emergency Contact',
+      emergencyContactPhone: cleanIcePhone,
     });
 
     // 2. Persist to Firestore & Register Device Token
@@ -311,15 +317,24 @@ export default function Register() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  ICE Phone
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    ICE Phone <span className="text-red-500">*</span>
+                  </label>
+                  <span className={`text-[10px] font-mono font-bold ${
+                    icePhone.length === 10 ? 'text-emerald-600' : 'text-slate-400'
+                  }`}>
+                    {icePhone.length}/10 digits
+                  </span>
+                </div>
                 <input
                   type="tel"
+                  required
+                  maxLength={10}
                   value={icePhone}
-                  onChange={(e) => setIcePhone(e.target.value)}
-                  placeholder="+1-555-0188"
-                  className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  onChange={(e) => setIcePhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  placeholder="10-digit emergency number"
+                  className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 font-mono"
                 />
               </div>
             </div>

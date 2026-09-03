@@ -172,10 +172,10 @@ export default function Profile() {
               {currentUser?.emergencyContact?.name || 'Claire Taylor (Sister)'}
             </p>
             <a
-              href={`tel:${currentUser?.emergencyContact?.phone || '112'}`}
-              className="text-xs text-emerald-600 font-bold hover:underline flex items-center gap-1 mt-0.5"
+              href={`tel:${(currentUser?.emergencyContact?.phone || currentUser?.ice_phone || '112').replace(/\D/g, '').slice(-10)}`}
+              className="text-xs text-emerald-600 font-bold hover:underline flex items-center gap-1 mt-0.5 font-mono"
             >
-              <Phone className="w-3 h-3" /> {currentUser?.emergencyContact?.phone || '+1-555-0199'}
+              <Phone className="w-3 h-3" /> {(currentUser?.emergencyContact?.phone || currentUser?.ice_phone || '9876543210').replace(/\D/g, '').slice(-10)}
             </a>
           </div>
         </div>
