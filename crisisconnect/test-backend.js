@@ -34,6 +34,12 @@ assert(constants.REQUEST_STATUS.PENDING === 'PENDING', 'REQUEST_STATUS contains 
 assert(constants.COLLECTIONS.USERS === 'users', 'COLLECTIONS has users');
 assert(constants.COLLECTIONS.REQUESTS === 'requests', 'COLLECTIONS has requests');
 assert(constants.COLLECTIONS.DEVICE_TOKENS === 'device_tokens', 'COLLECTIONS has device_tokens');
+assert(constants.REQUEST_CATEGORIES.BLOOD === 'BLOOD', 'REQUEST_CATEGORIES contains BLOOD');
+assert(constants.REQUEST_CATEGORIES.OXYGEN === 'OXYGEN', 'REQUEST_CATEGORIES contains OXYGEN');
+assert(constants.REQUEST_CATEGORIES.MEDICINES === 'MEDICINES', 'REQUEST_CATEGORIES contains MEDICINES');
+assert(constants.REQUEST_CATEGORIES.TRANSPORTATION === 'TRANSPORTATION', 'REQUEST_CATEGORIES contains TRANSPORTATION');
+assert(constants.REQUEST_STATUS.VERIFIED === 'VERIFIED', 'REQUEST_STATUS contains VERIFIED');
+assert(constants.REQUEST_STATUS.OUTDATED === 'OUTDATED', 'REQUEST_STATUS contains OUTDATED');
 
 // 2. Helper & Math Tests
 console.log('\n📐 2. Testing Utilities & Geolocation Math:');
@@ -87,6 +93,10 @@ async function testServiceExports() {
     assert(typeof reqService.updateRequestStatus === 'function', 'requestService exports updateRequestStatus');
     assert(typeof reqService.assignVolunteerToRequest === 'function', 'requestService exports assignVolunteerToRequest');
     assert(typeof reqService.getNearbyRequests === 'function', 'requestService exports getNearbyRequests');
+    assert(typeof reqService.verifyCrisisRequest === 'function', 'requestService exports verifyCrisisRequest (Verification Mechanism)');
+    assert(typeof reqService.checkForPotentialDuplicates === 'function', 'requestService exports checkForPotentialDuplicates (Duplicate Prevention)');
+    assert(typeof reqService.matchNearbyVolunteers === 'function', 'requestService exports matchNearbyVolunteers (Location-Based Matching)');
+    assert(typeof reqService.isRequestOutdated === 'function', 'requestService exports isRequestOutdated (Outdated Detection)');
 
     const notifService = await import('./src/services/notificationService.js');
     assert(typeof notifService.getOrCreateDeviceToken === 'function', 'notificationService exports getOrCreateDeviceToken');

@@ -10,6 +10,7 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
+  arrayUnion,
 } from 'firebase/firestore';
 import { db } from './firebase.js';
 import {
@@ -262,3 +263,144 @@ export async function getNearbyRequests(userLat, userLng, maxDistanceKm = 50) {
     return (urgencyWeight[b.urgency] || 0) - (urgencyWeight[a.urgency] || 0);
   });
 }
+
+/**
+ * Verification Mechanism: Validates a crisis request to prevent fake/outdated emergencies.
+ * Allows volunteers, authorized responders, or NGOs to verify an emergency as genuine.
+ *
+ * @param {string} requestId
+ * @param {Object} verifierUser - { uid, name, role }
+ */
+export async function verifyCrisisRequest(requestId, verifierUser) {
+  const reqRef = doc(db, COLLECTIONS.REQUESTS, requestId);
+
+  return await updateDoc(reqRef, {
+    isVerified: true,
+    status: REQUEST_STATUS.VERIFIED,
+    verifiedAt: serverTimestamp(),
+    verifiedBy: arrayUnion({
+      uid: verifierUser?.uid || 'anonymous',
+      name: verifierUser?.displayName || verifierUser?.name || 'Authorized Responder',
+      role: verifierUser?.role || 'VOLUNTEER',
+      timestamp: new Date().toISOString(),
+    }),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Duplicate Prevention: Scans for active emergencies of the same category within
+ * a close geographical radius (e.g. 500m) reported within the last 2 hours.
+ *
+ * @param {number} lat
+ * @param {number} lng
+ * @param {string} category
+ * @param {number} maxDistanceKm - Default 0.5km (500 meters)
+ * @returns {Promise<Array>} List of potential duplicate requests
+ */
+export async function checkForPotentialDuplicates(lat, lng, category, maxDistanceKm = 0.5) {
+  if (!lat || !lng) return [];
+
+  const q = query(
+    collection(db, COLLECTIONS.REQUESTS),
+    where('category', '==', category),
+    where('status', 'in', [REQUEST_STATUS.PENDING, REQUEST_STATUS.VERIFIED, REQUEST_STATUS.IN_PROGRESS])
+  );
+
+  const snapshot = await getDocs(q);
+  const duplicates = [];
+
+  snapshot.forEach((doc) => {
+    const data = doc.data();
+    if (data.location?.lat && data.location?.lng) {
+      const dist = calculateDistance(lat, lng, data.location.lat, data.location.lng);
+      if (dist !== null && dist <= maxDistanceKm) {
+        duplicates.push({
+          id: doc.id,
+          ...data,
+          distance: dist,
+        });
+      }
+    }
+  });
+
+  return duplicates;
+}
+
+/**
+ * Outdated Check: Flags requests older than maxHours (default 24h) without resolution.
+ *
+ * @param {Object|Date} createdAt
+ * @param {number} maxHours - default 24
+ * @returns {boolean}
+ */
+export function isRequestOutdated(createdAt, maxHours = 24) {
+  if (!createdAt) return false;
+  let createdDate;
+  if (createdAt.toDate && typeof createdAt.toDate === 'function') {
+    createdDate = createdAt.toDate();
+  } else if (createdAt instanceof Date) {
+    createdDate = createdAt;
+  } else if (createdAt.seconds) {
+    createdDate = new Date(createdAt.seconds * 1000);
+  } else {
+    createdDate = new Date(createdAt);
+  }
+
+  const hoursDiff = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60);
+  return hoursDiff >= maxHours;
+}
+
+/**
+ * Marks a request as OUTDATED to prevent volunteers from wasting time on dead calls
+ *
+ * @param {string} requestId
+ */
+export async function markRequestOutdated(requestId) {
+  const reqRef = doc(db, COLLECTIONS.REQUESTS, requestId);
+  return await updateDoc(reqRef, {
+    status: REQUEST_STATUS.OUTDATED,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Location-Based Matching: Finds and ranks available volunteers within a given radius.
+ *
+ * @param {number} requestLat
+ * @param {number} requestLng
+ * @param {number} maxDistanceKm - Default 15km
+ * @returns {Promise<Array>} Ranked nearby volunteers
+ */
+export async function matchNearbyVolunteers(requestLat, requestLng, maxDistanceKm = 15) {
+  if (!requestLat || !requestLng) return [];
+
+  const q = query(
+    collection(db, COLLECTIONS.USERS),
+    where('role', 'in', ['VOLUNTEER', 'ORGANIZATION']),
+    where('isAvailable', '==', true)
+  );
+
+  const snapshot = await getDocs(q);
+  const matchedVolunteers = [];
+
+  snapshot.forEach((doc) => {
+    const user = doc.data();
+    if (user.location?.lat && user.location?.lng) {
+      const distance = calculateDistance(requestLat, requestLng, user.location.lat, user.location.lng);
+      if (distance !== null && distance <= maxDistanceKm) {
+        matchedVolunteers.push({
+          uid: doc.id,
+          name: user.name || user.displayName,
+          phone: user.mobileNo || user.phone,
+          bloodGroup: user.bloodGroup,
+          role: user.role,
+          distance,
+        });
+      }
+    }
+  });
+
+  return matchedVolunteers.sort((a, b) => a.distance - b.distance);
+}
+

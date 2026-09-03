@@ -11,13 +11,16 @@ export const USER_ROLES = {
   ADMIN: 'ADMIN',
 };
 
-// Emergency Request Categories
+// Emergency Request Categories (aligned with Hackathon Problem Statement)
 export const REQUEST_CATEGORIES = {
-  MEDICAL: 'MEDICAL',
-  RESCUE: 'RESCUE',
-  FOOD_WATER: 'FOOD_WATER',
+  BLOOD: 'BLOOD',
+  FOOD: 'FOOD',
+  MEDICINES: 'MEDICINES',
+  OXYGEN: 'OXYGEN',
   SHELTER: 'SHELTER',
-  CLOTHING: 'CLOTHING',
+  TRANSPORTATION: 'TRANSPORTATION',
+  RESCUE: 'RESCUE',
+  MEDICAL: 'MEDICAL',
   OTHER: 'OTHER',
 };
 
@@ -29,11 +32,13 @@ export const URGENCY_LEVELS = {
   LOW: 'LOW',           // General assistance needed
 };
 
-// Request Lifecycle Statuses
+// Request Lifecycle Statuses (with Verification & Outdated tracking)
 export const REQUEST_STATUS = {
   PENDING: 'PENDING',
+  VERIFIED: 'VERIFIED',
   IN_PROGRESS: 'IN_PROGRESS',
   RESOLVED: 'RESOLVED',
+  OUTDATED: 'OUTDATED',
   CANCELLED: 'CANCELLED',
 };
 
@@ -46,6 +51,8 @@ export const RESOURCE_TYPES = {
   BLANKETS: 'BLANKETS',
   TEMPORARY_SHELTER: 'TEMPORARY_SHELTER',
   OXYGEN_CYLINDER: 'OXYGEN_CYLINDER',
+  MEDICINES: 'MEDICINES',
+  BLOOD_UNITS: 'BLOOD_UNITS',
   OTHER: 'OTHER',
 };
 
@@ -70,10 +77,13 @@ export const COLLECTIONS = {
 
 // Category Display Labels & Icons for UI
 export const CATEGORY_LABELS = {
-  [REQUEST_CATEGORIES.MEDICAL]: 'Medical & First Aid',
-  [REQUEST_CATEGORIES.RESCUE]: 'Emergency Rescue',
-  [REQUEST_CATEGORIES.FOOD_WATER]: 'Food & Drinking Water',
-  [REQUEST_CATEGORIES.SHELTER]: 'Shelter & Evacuation',
-  [REQUEST_CATEGORIES.CLOTHING]: 'Clothing & Blankets',
-  [REQUEST_CATEGORIES.OTHER]: 'Other Assistance',
+  [REQUEST_CATEGORIES.BLOOD]: '🩸 Blood Assistance',
+  [REQUEST_CATEGORIES.FOOD]: '🍲 Food & Drinking Water',
+  [REQUEST_CATEGORIES.MEDICINES]: '💊 Essential Medicines',
+  [REQUEST_CATEGORIES.OXYGEN]: '🫧 Oxygen Cylinders',
+  [REQUEST_CATEGORIES.SHELTER]: '⛺ Emergency Shelter',
+  [REQUEST_CATEGORIES.TRANSPORTATION]: '🚑 Ambulance & Transportation',
+  [REQUEST_CATEGORIES.RESCUE]: '🚨 Emergency Rescue',
+  [REQUEST_CATEGORIES.MEDICAL]: '🩺 General Medical',
+  [REQUEST_CATEGORIES.OTHER]: '📦 Other Assistance',
 };
