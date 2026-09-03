@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
+import { useAuth } from './AuthContext.jsx';
 import {
   INITIAL_CRISIS_INFO,
   INITIAL_BROADCASTS,
@@ -24,6 +25,12 @@ import { classifyDisaster } from '../services/aiDisasterClassifier.js';
 const CrisisContext = createContext(null);
 
 export function CrisisProvider({ children }) {
+  const { session } = useAuth();
+  const sessionRef = useRef(session);
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
+
   const [baseCrisisInfo] = useState(INITIAL_CRISIS_INFO);
   const [shelters] = useState(INITIAL_SHELTERS);
   const [ngos] = useState(REGISTERED_NGOS);
@@ -160,8 +167,77 @@ export function CrisisProvider({ children }) {
             };
             setRequests((prev) => [newReq, ...prev.filter((item) => item.id !== newReq.id)]);
             
-            // Real-Time Notification: Notify Authority & Proximity Broadcast
-            notifyAuthorityEOC(newReq, aiResult);
+            // Targeted Notification Routing based on Active Device Session
+            const activeUser = sessionRef.current;
+            if (activeUser) {
+              if (activeUser.type === 'authority') {
+                // Determine if this authority matches the AI target authority
+                const targetAgency = aiResult.targetAuthority?.agencyType;
+                const myAgency =
+                  activeUser.agencyType ||
+                  (activeUser.badgeId?.toLowerCase().startsWith('police')
+                    ? 'police'
+                    : activeUser.badgeId?.toLowerCase().startsWith('fire')
+                    ? 'fire'
+                    : activeUser.badgeId?.toLowerCase().startsWith('hosp')
+                    ? 'hospital'
+                    : activeUser.badgeId?.toLowerCase().startsWith('ndrf')
+                    ? 'ndrf'
+                    : activeUser.badgeId?.toLowerCase().startsWith('usar')
+                    ? 'usar'
+                    : 'all');
+
+                const isGeneralCoordinator =
+                  activeUser.badgeId === 'ADMIN-1' || activeUser.badgeId === 'USAR-112';
+
+                // ONLY the designated department gets notified!
+                if (myAgency === targetAgency || myAgency === 'all' || isGeneralCoordinator) {
+                  triggerDeviceNotification(
+                    `🚨 [${(aiResult.targetAuthority?.shortName || 'AUTHORITY').toUpperCase()} DISPATCH]`,
+                    {
+                      body: `${newReq.category}: ${newReq.title} at ${newReq.locationName}. Reporter: ${newReq.contactName} (${newReq.contactPhone})`,
+                    }
+                  );
+                }
+              } else if (activeUser.type === 'citizen') {
+                // Check if this citizen is the author who posted this request
+                const isAuthor =
+                  (activeUser.phone && newReq.contactPhone && activeUser.phone === newReq.contactPhone) ||
+                  (activeUser.name && newReq.contactName && activeUser.name.toLowerCase() === newReq.contactName.toLowerCase());
+
+                if (!isAuthor) {
+                  // Check proximity (within 5km radius)
+                  const userLat = activeUser.location?.lat || window.__NATIVE_GPS__?.lat;
+                  const userLng = activeUser.location?.lng || window.__NATIVE_GPS__?.lng;
+
+                  if (userLat && userLng && newReq.lat && newReq.lng) {
+                    const R = 6371;
+                    const dLat = (newReq.lat - userLat) * (Math.PI / 180);
+                    const dLon = (newReq.lng - userLng) * (Math.PI / 180);
+                    const a =
+                      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(userLat * (Math.PI / 180)) *
+                        Math.cos(newReq.lat * (Math.PI / 180)) *
+                        Math.sin(dLon / 2) *
+                        Math.sin(dLon / 2);
+                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                    const distKm = R * c;
+
+                    if (distKm <= 5) {
+                      triggerDeviceNotification(`⚠️ NEARBY EMERGENCY (${distKm.toFixed(1)}km away)`, {
+                        body: `${newReq.title} at ${newReq.locationName}. Stay safe!`,
+                      });
+                    }
+                  } else {
+                    triggerDeviceNotification(`⚠️ NEARBY EMERGENCY ALERT`, {
+                      body: `${newReq.title} reported at ${newReq.locationName}.`,
+                    });
+                  }
+                }
+              }
+            }
+
+            // Sync with backend device tokens without double-triggering locally
             broadcastDisasterToNearbyUsers(newReq, 5);
           } else if (payload.eventType === 'UPDATE') {
             const r = payload.new;

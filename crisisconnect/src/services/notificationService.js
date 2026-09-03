@@ -289,11 +289,6 @@ export async function broadcastDisasterToNearbyUsers(incident, radiusKm = 5) {
       }
     }
 
-    // Trigger local alert for the current device if nearby
-    triggerDeviceNotification(`⚠️ NEARBY EMERGENCY REPORTED (${radiusKm}km radius)`, {
-      body: `${incident.title || incident.category} at ${incident.location_name || incident.locationName || 'Your Vicinity'}!`,
-    });
-
     return notifiedTokens;
   } catch (err) {
     console.warn('Proximity broadcast error:', err);
@@ -302,30 +297,8 @@ export async function broadcastDisasterToNearbyUsers(incident, radiusKm = 5) {
 }
 
 /**
- * Listens for new incoming emergency requests across the network using Supabase Realtime
+ * Realtime events are handled centrally with role/authority filtering in CrisisContext
  */
 export function listenForIncomingAlerts() {
-  if (!isSupabaseConfigured) {
-    return () => {};
-  }
-
-  const channel = supabase
-    .channel('realtime:emergency_alerts')
-    .on(
-      'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'emergency_requests' },
-      (payload) => {
-        const newReq = payload.new;
-        if (newReq) {
-          triggerDeviceNotification(`🚨 NEW EMERGENCY: ${newReq.category}`, {
-            body: `${newReq.title} at ${newReq.location_name || 'Nearby Area'}`,
-          });
-        }
-      }
-    )
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(channel);
-  };
+  return () => {};
 }
