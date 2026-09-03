@@ -9,6 +9,9 @@ import {
   Vibration,
   LogBox,
   StatusBar as RNStatusBar,
+  ActivityIndicator,
+  Text,
+  TouchableOpacity,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as Location from 'expo-location';
@@ -39,6 +42,7 @@ const APP_URL = 'http://10.110.80.99:5173';
 export default function App() {
   const webViewRef = useRef(null);
   const [coords, setCoords] = useState(null);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     // 1. Request Native System Permissions on Launch
@@ -220,9 +224,26 @@ export default function App() {
           showsVerticalScrollIndicator={true}
           showsHorizontalScrollIndicator={false}
           allowsBackForwardNavigationGestures={true}
-          pullToRefreshEnabled={false}
+          pullToRefreshEnabled={true}
           mediaPlaybackRequiresUserAction={false}
           allowsInlineMediaPlayback={true}
+          startInLoadingState={true}
+          renderLoading={() => (
+            <View style={styles.loadingOverlay}>
+              <ActivityIndicator size="large" color="#ef4444" />
+              <Text style={styles.loadingText}>Connecting to CrisisConnect Network...</Text>
+              <Text style={styles.loadingSubtext}>{APP_URL}</Text>
+            </View>
+          )}
+          onError={(syntheticEvent) => {
+            console.warn('WebView error:', syntheticEvent.nativeEvent);
+            setHasError(true);
+          }}
+          onHttpError={(syntheticEvent) => {
+            console.warn('WebView HTTP error:', syntheticEvent.nativeEvent.statusCode);
+            if (syntheticEvent.nativeEvent.statusCode >= 400) setHasError(true);
+          }}
+          onLoadEnd={() => setHasError(false)}
           onMessage={(event) => {
             try {
               const data = JSON.parse(event.nativeEvent.data);
@@ -257,6 +278,25 @@ export default function App() {
             } catch (e) {}
           }}
         />
+
+        {hasError && (
+          <View style={styles.errorOverlay}>
+            <Text style={styles.errorIcon}>🚨</Text>
+            <Text style={styles.errorTitle}>Connection Interrupted</Text>
+            <Text style={styles.errorSubtitle}>
+              Unable to reach the CrisisConnect server at {APP_URL}. Please ensure your phone is connected to the same Wi-Fi network.
+            </Text>
+            <TouchableOpacity
+              style={styles.retryBtn}
+              onPress={() => {
+                setHasError(false);
+                webViewRef.current?.reload();
+              }}
+            >
+              <Text style={styles.retryBtnText}>🔄 Tap to Reload</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -276,5 +316,68 @@ const styles = StyleSheet.create({
   webView: {
     flex: 1,
     backgroundColor: '#020617',
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#020617',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    zIndex: 10,
+  },
+  loadingText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  loadingSubtext: {
+    color: '#94a3b8',
+    fontSize: 11,
+    marginTop: 6,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  errorOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#020617',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 28,
+    zIndex: 20,
+  },
+  errorIcon: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  errorTitle: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '900',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  errorSubtitle: {
+    color: '#94a3b8',
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryBtn: {
+    backgroundColor: '#ef4444',
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 16,
+    shadowColor: '#ef4444',
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  retryBtnText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });
