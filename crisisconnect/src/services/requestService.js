@@ -1,301 +1,318 @@
+import { supabase, isSupabaseConfigured } from './supabase.js';
 import {
-  collection,
-  doc,
-  addDoc,
-  getDocs,
-  updateDoc,
-  deleteDoc,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-  serverTimestamp,
-  arrayUnion,
-} from 'firebase/firestore';
-import { db } from './firebase.js';
-import {
-  COLLECTIONS,
   REQUEST_STATUS,
   URGENCY_LEVELS,
   REQUEST_CATEGORIES,
 } from '../utils/constants.js';
 import { calculateDistance } from '../utils/helpers.js';
 
+// Local in-memory store for fallback/offline operation
+let localRequestsStore = [];
+
 /**
- * Creates a new emergency crisis request
+ * Creates a new emergency crisis request in Supabase
  *
  * @param {Object} requestData - { title, description, category, urgency, location, peopleCount, contactPhone, notes }
  * @param {Object} currentUser - Current logged-in user or anonymous victim
  * @returns {Promise<Object>} Created request document with generated ID
  */
 export async function createCrisisRequest(requestData, currentUser = null) {
-  const requestsRef = collection(db, COLLECTIONS.REQUESTS);
+  const trackingCode = `CC-${Math.floor(100000 + Math.random() * 900000)}`;
+  const lat = requestData.location?.lat || requestData.lat || 19.0760;
+  const lng = requestData.location?.lng || requestData.lng || 72.8777;
 
   const payload = {
+    id: `req_${Date.now()}`,
+    tracking_token: trackingCode,
+    trackingCode,
     title: requestData.title?.trim() || 'Emergency Assistance Needed',
     description: requestData.description?.trim() || '',
     category: requestData.category || REQUEST_CATEGORIES.OTHER,
     urgency: requestData.urgency || URGENCY_LEVELS.HIGH,
     status: REQUEST_STATUS.PENDING,
+    verification_status: 'UNVERIFIED',
+    people_count: Number(requestData.peopleCount) || 1,
     peopleCount: Number(requestData.peopleCount) || 1,
-    contactPhone: requestData.mobileNo || requestData.contactPhone || currentUser?.mobileNo || currentUser?.phone || '',
-    mobileNo: requestData.mobileNo || requestData.contactPhone || currentUser?.mobileNo || currentUser?.phone || '',
-    bloodGroupRequired: requestData.bloodGroupRequired || requestData.bloodGroup || null,
-    location: {
-      address: requestData.location?.address || 'Unknown location',
-      lat: requestData.location?.lat ? Number(requestData.location.lat) : null,
-      lng: requestData.location?.lng ? Number(requestData.location.lng) : null,
-    },
-    createdBy: currentUser?.uid || 'anonymous',
-    requesterName: requestData.requesterName || currentUser?.displayName || currentUser?.name || 'Anonymous Requester',
-    requesterBloodGroup: currentUser?.bloodGroup || null,
-    requesterAge: currentUser?.age || null,
-    assignedTo: null, // { uid, name, phone, assignedAt }
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+    contact_name: requestData.contactName || currentUser?.name || 'Citizen Victim',
+    contactName: requestData.contactName || currentUser?.name || 'Citizen Victim',
+    contact_phone: requestData.contactPhone || requestData.mobileNo || currentUser?.phone || '',
+    contactPhone: requestData.contactPhone || requestData.mobileNo || currentUser?.phone || '',
+    latitude: lat,
+    longitude: lng,
+    lat,
+    lng,
+    location_name: requestData.location?.address || requestData.locationName || 'Emergency GPS Location',
+    locationName: requestData.location?.address || requestData.locationName || 'Emergency GPS Location',
+    vulnerabilities: requestData.vulnerabilities || [],
+    created_at: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    timeline: [
+      {
+        status: REQUEST_STATUS.PENDING,
+        timestamp: new Date().toISOString(),
+        note: 'Emergency request registered in system.',
+      },
+    ],
   };
 
-  const docRef = await addDoc(requestsRef, payload);
-  return { id: docRef.id, ...payload };
-}
+  localRequestsStore.unshift(payload);
 
-/**
- * Subscribes to all crisis requests in real-time with optional filtering
- *
- * @param {Function} callback - Callback function receiving requests array
- * @param {Object} filters - Optional { status, category, urgency }
- * @returns {Function} Unsubscribe function
- */
-export function subscribeToRequests(callback, filters = {}) {
-  let q = collection(db, COLLECTIONS.REQUESTS);
-  const conditions = [];
+  if (isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from('emergency_requests')
+        .insert({
+          tracking_token: trackingCode,
+          title: payload.title,
+          description: payload.description,
+          category: payload.category,
+          urgency: payload.urgency,
+          status: payload.status,
+          verification_status: payload.verification_status,
+          contact_name: payload.contact_name,
+          contact_phone: payload.contact_phone,
+          people_count: payload.people_count,
+          latitude: lat,
+          longitude: lng,
+          location_name: payload.location_name,
+          vulnerabilities: payload.vulnerabilities,
+        })
+        .select()
+        .single();
 
-  if (filters.status) {
-    conditions.push(where('status', '==', filters.status));
-  }
-  if (filters.category) {
-    conditions.push(where('category', '==', filters.category));
-  }
-  if (filters.urgency) {
-    conditions.push(where('urgency', '==', filters.urgency));
-  }
-
-  // Order by creation time
-  conditions.push(orderBy('createdAt', 'desc'));
-
-  const finalQuery = query(q, ...conditions);
-
-  return onSnapshot(
-    finalQuery,
-    (snapshot) => {
-      const requests = snapshot.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      }));
-      callback(requests);
-    },
-    (error) => {
-      console.error('Error listening to crisis requests:', error);
-      callback([]);
+      if (!error && data) {
+        payload.id = data.id;
+      }
+    } catch (err) {
+      console.warn('Supabase createEmergencyRequest fallback:', err.message);
     }
-  );
+  }
+
+  return payload;
 }
 
 /**
- * Subscribes to requests created by a specific user (e.g. for Victim dashboard)
+ * Subscribes to real-time updates for crisis requests via Supabase Realtime channel
  *
- * @param {string} userId
- * @param {Function} callback
+ * @param {Function} onUpdate - Callback receiving array of requests
  * @returns {Function} Unsubscribe function
  */
-export function subscribeToUserRequests(userId, callback) {
-  if (!userId) {
-    callback([]);
-    return () => {};
-  }
-
-  const q = query(
-    collection(db, COLLECTIONS.REQUESTS),
-    where('createdBy', '==', userId),
-    orderBy('createdAt', 'desc')
-  );
-
-  return onSnapshot(q, (snapshot) => {
-    const requests = snapshot.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-    }));
-    callback(requests);
-  });
-}
-
-/**
- * Subscribes to requests assigned to a specific volunteer
- *
- * @param {string} volunteerId
- * @param {Function} callback
- * @returns {Function} Unsubscribe function
- */
-export function subscribeToAssignedRequests(volunteerId, callback) {
-  if (!volunteerId) {
-    callback([]);
-    return () => {};
-  }
-
-  const q = query(
-    collection(db, COLLECTIONS.REQUESTS),
-    where('assignedTo.uid', '==', volunteerId),
-    orderBy('createdAt', 'desc')
-  );
-
-  return onSnapshot(q, (snapshot) => {
-    const requests = snapshot.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-    }));
-    callback(requests);
-  });
-}
-
-/**
- * Updates status of a crisis request (PENDING -> IN_PROGRESS -> RESOLVED / CANCELLED)
- *
- * @param {string} requestId
- * @param {string} newStatus
- * @param {Object} updatedBy - Optional updater info
- */
-export async function updateRequestStatus(requestId, newStatus, updatedBy = {}) {
-  const reqRef = doc(db, COLLECTIONS.REQUESTS, requestId);
-  const updateData = {
-    status: newStatus,
-    updatedAt: serverTimestamp(),
-    lastUpdatedBy: updatedBy,
-  };
-
-  if (newStatus === REQUEST_STATUS.RESOLVED) {
-    updateData.resolvedAt = serverTimestamp();
-  }
-
-  return await updateDoc(reqRef, updateData);
-}
-
-/**
- * Assigns a volunteer to a request and marks it as IN_PROGRESS
- *
- * @param {string} requestId
- * @param {Object} volunteerUser - { uid, displayName, phone }
- */
-export async function assignVolunteerToRequest(requestId, volunteerUser) {
-  const reqRef = doc(db, COLLECTIONS.REQUESTS, requestId);
-  return await updateDoc(reqRef, {
-    status: REQUEST_STATUS.IN_PROGRESS,
-    assignedTo: {
-      uid: volunteerUser.uid,
-      name: volunteerUser.displayName || 'Volunteer',
-      phone: volunteerUser.phone || '',
-      assignedAt: new Date().toISOString(),
-    },
-    updatedAt: serverTimestamp(),
-  });
-}
-
-/**
- * Deletes a crisis request
- *
- * @param {string} requestId
- */
-export async function deleteCrisisRequest(requestId) {
-  const reqRef = doc(db, COLLECTIONS.REQUESTS, requestId);
-  return await deleteDoc(reqRef);
-}
-
-/**
- * Fetches and sorts requests by proximity to a given coordinate
- *
- * @param {number} userLat
- * @param {number} userLng
- * @param {number} maxDistanceKm - default 50km
- * @returns {Promise<Array>} Sorted requests with calculated distance
- */
-export async function getNearbyRequests(userLat, userLng, maxDistanceKm = 50) {
-  const q = query(
-    collection(db, COLLECTIONS.REQUESTS),
-    where('status', 'in', [REQUEST_STATUS.PENDING, REQUEST_STATUS.IN_PROGRESS])
-  );
-
-  const snapshot = await getDocs(q);
-  const requests = [];
-
-  snapshot.forEach((doc) => {
-    const data = doc.data();
-    let distance = null;
-
-    if (userLat && userLng && data.location?.lat && data.location?.lng) {
-      distance = calculateDistance(
-        userLat,
-        userLng,
-        data.location.lat,
-        data.location.lng
-      );
-    }
-
-    if (distance === null || distance <= maxDistanceKm) {
-      requests.push({
-        id: doc.id,
-        ...data,
-        distance, // km from user
+export function subscribeToRequests(onUpdate) {
+  if (isSupabaseConfigured) {
+    // Initial fetch from Supabase
+    supabase
+      .from('emergency_requests')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          const formatted = data.map((r) => ({
+            id: r.id,
+            trackingCode: r.tracking_token,
+            title: r.title,
+            description: r.description,
+            category: r.category,
+            urgency: r.urgency,
+            status: r.status,
+            verificationStatus: r.verification_status,
+            locationName: r.location_name,
+            lat: r.latitude,
+            lng: r.longitude,
+            location: { lat: r.latitude, lng: r.longitude, address: r.location_name },
+            contactName: r.contact_name,
+            contactPhone: r.contact_phone,
+            peopleCount: r.people_count,
+            vulnerabilities: r.vulnerabilities || [],
+            createdAt: r.created_at,
+          }));
+          onUpdate(formatted);
+        } else {
+          onUpdate(localRequestsStore);
+        }
+      })
+      .catch(() => {
+        onUpdate(localRequestsStore);
       });
-    }
-  });
 
-  // Sort by distance (closest first), fallback by urgency
-  const urgencyWeight = {
-    [URGENCY_LEVELS.CRITICAL]: 4,
-    [URGENCY_LEVELS.HIGH]: 3,
-    [URGENCY_LEVELS.MEDIUM]: 2,
-    [URGENCY_LEVELS.LOW]: 1,
-  };
+    // Supabase Realtime listener
+    const channel = supabase
+      .channel('realtime:emergency_requests')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'emergency_requests' },
+        () => {
+          // Re-fetch on any change
+          supabase
+            .from('emergency_requests')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .then(({ data }) => {
+              if (data) {
+                const formatted = data.map((r) => ({
+                  id: r.id,
+                  trackingCode: r.tracking_token,
+                  title: r.title,
+                  description: r.description,
+                  category: r.category,
+                  urgency: r.urgency,
+                  status: r.status,
+                  verificationStatus: r.verification_status,
+                  locationName: r.location_name,
+                  lat: r.latitude,
+                  lng: r.longitude,
+                  location: { lat: r.latitude, lng: r.longitude, address: r.location_name },
+                  contactName: r.contact_name,
+                  contactPhone: r.contact_phone,
+                  peopleCount: r.people_count,
+                  vulnerabilities: r.vulnerabilities || [],
+                  createdAt: r.created_at,
+                }));
+                onUpdate(formatted);
+              }
+            });
+        }
+      )
+      .subscribe();
 
-  return requests.sort((a, b) => {
-    if (a.distance !== null && b.distance !== null) {
-      return a.distance - b.distance;
-    }
-    return (urgencyWeight[b.urgency] || 0) - (urgencyWeight[a.urgency] || 0);
-  });
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }
+
+  // Fallback to local memory listener
+  onUpdate(localRequestsStore);
+  return () => {};
 }
 
 /**
- * Verification Mechanism: Validates a crisis request to prevent fake/outdated emergencies.
- * Allows volunteers, authorized responders, or NGOs to verify an emergency as genuine.
+ * Updates the status of an emergency request in Supabase
+ *
+ * @param {string} requestId
+ * @param {string} newStatus - PENDING | VERIFIED | ASSIGNED | IN_PROGRESS | RESOLVED
+ * @param {string} note - Status change commentary
+ */
+export async function updateRequestStatus(requestId, newStatus, note = '') {
+  // Update local memory
+  localRequestsStore = localRequestsStore.map((r) =>
+    r.id === requestId
+      ? {
+          ...r,
+          status: newStatus,
+          timeline: [
+            ...(r.timeline || []),
+            {
+              status: newStatus,
+              timestamp: new Date().toISOString(),
+              note: note || `Status updated to ${newStatus}`,
+            },
+          ],
+        }
+      : r
+  );
+
+  if (isSupabaseConfigured) {
+    try {
+      await supabase
+        .from('emergency_requests')
+        .update({
+          status: newStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', requestId);
+    } catch (err) {
+      console.warn('Supabase updateRequestStatus fallback:', err.message);
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Verification Mechanism: Validates a crisis request in Supabase to prevent fake/outdated emergencies.
  *
  * @param {string} requestId
  * @param {Object} verifierUser - { uid, name, role }
  */
 export async function verifyCrisisRequest(requestId, verifierUser) {
-  const reqRef = doc(db, COLLECTIONS.REQUESTS, requestId);
+  const verifierName = verifierUser?.displayName || verifierUser?.name || 'Authorized Responder';
 
-  return await updateDoc(reqRef, {
-    isVerified: true,
-    status: REQUEST_STATUS.VERIFIED,
-    verifiedAt: serverTimestamp(),
-    verifiedBy: arrayUnion({
-      uid: verifierUser?.uid || 'anonymous',
-      name: verifierUser?.displayName || verifierUser?.name || 'Authorized Responder',
-      role: verifierUser?.role || 'VOLUNTEER',
-      timestamp: new Date().toISOString(),
-    }),
-    updatedAt: serverTimestamp(),
-  });
+  // Update local memory
+  localRequestsStore = localRequestsStore.map((r) =>
+    r.id === requestId
+      ? {
+          ...r,
+          isVerified: true,
+          status: REQUEST_STATUS.VERIFIED,
+          verificationStatus: 'verified',
+          verifiedAt: new Date().toISOString(),
+          verifiedBy: verifierName,
+        }
+      : r
+  );
+
+  if (isSupabaseConfigured) {
+    try {
+      await supabase
+        .from('emergency_requests')
+        .update({
+          status: REQUEST_STATUS.VERIFIED,
+          verification_status: 'VERIFIED',
+          verified_by: verifierName,
+          verified_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', requestId);
+    } catch (err) {
+      console.warn('Supabase verifyCrisisRequest fallback:', err.message);
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Assigns an NGO or Volunteer to a Request
+ */
+export async function assignVolunteerToRequest(requestId, volunteerData) {
+  const volunteerName = volunteerData.name || 'Assigned NGO Unit';
+
+  localRequestsStore = localRequestsStore.map((r) =>
+    r.id === requestId
+      ? {
+          ...r,
+          status: REQUEST_STATUS.ASSIGNED,
+          assignedNGO: volunteerData,
+        }
+      : r
+  );
+
+  if (isSupabaseConfigured) {
+    try {
+      await supabase
+        .from('emergency_requests')
+        .update({
+          status: REQUEST_STATUS.ASSIGNED,
+          assigned_ngo: volunteerName,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', requestId);
+    } catch (err) {
+      console.warn('Supabase assignVolunteer fallback:', err.message);
+    }
+  }
+
+  return true;
 }
 
 /**
  * Duplicate Prevention: Scans for active emergencies of the same category within
- * a close geographical radius (e.g. 500m) reported within the last 2 hours.
+ * a close geographical radius (e.g. 500m).
  *
  * @param {number} lat
  * @param {number} lng
  * @param {string} category
  * @param {number} maxDistanceKm - Default 0.5km (500 meters)
+ * @param {Array} preloadedRequests - Optional memory array
  * @returns {Promise<Array>} List of potential duplicate requests
  */
 export async function checkForPotentialDuplicates(lat, lng, category, maxDistanceKm = 0.5, preloadedRequests = null) {
@@ -304,26 +321,35 @@ export async function checkForPotentialDuplicates(lat, lng, category, maxDistanc
   let candidateList = [];
   if (Array.isArray(preloadedRequests)) {
     candidateList = preloadedRequests;
-  } else {
+  } else if (isSupabaseConfigured) {
     try {
-      const q = query(
-        collection(db, COLLECTIONS.REQUESTS),
-        where('category', '==', category),
-        where('status', 'in', [REQUEST_STATUS.PENDING, REQUEST_STATUS.VERIFIED, REQUEST_STATUS.IN_PROGRESS])
-      );
-      const snapshot = await getDocs(q);
-      snapshot.forEach((doc) => {
-        candidateList.push({ id: doc.id, ...doc.data() });
-      });
+      const { data } = await supabase
+        .from('emergency_requests')
+        .select('*')
+        .eq('category', category)
+        .in('status', [REQUEST_STATUS.PENDING, REQUEST_STATUS.VERIFIED, REQUEST_STATUS.IN_PROGRESS]);
+
+      if (data) {
+        candidateList = data.map((r) => ({
+          id: r.id,
+          category: r.category,
+          location: { lat: r.latitude, lng: r.longitude },
+        }));
+      }
     } catch {
-      return [];
+      candidateList = localRequestsStore;
     }
+  } else {
+    candidateList = localRequestsStore;
   }
 
   const duplicates = [];
   candidateList.forEach((data) => {
-    if (data.category === category && data.location?.lat && data.location?.lng) {
-      const dist = calculateDistance(lat, lng, data.location.lat, data.location.lng);
+    const rLat = data.location?.lat || data.latitude || data.lat;
+    const rLng = data.location?.lng || data.longitude || data.lng;
+
+    if (data.category === category && rLat && rLng) {
+      const dist = calculateDistance(lat, lng, rLat, rLng);
       if (dist !== null && dist <= maxDistanceKm) {
         duplicates.push({
           ...data,
@@ -338,48 +364,23 @@ export async function checkForPotentialDuplicates(lat, lng, category, maxDistanc
 
 /**
  * Outdated Check: Flags requests older than maxHours (default 24h) without resolution.
- *
- * @param {Object|Date} createdAt
- * @param {number} maxHours - default 24
- * @returns {boolean}
  */
 export function isRequestOutdated(createdAt, maxHours = 24) {
   if (!createdAt) return false;
-  let createdDate;
-  if (createdAt.toDate && typeof createdAt.toDate === 'function') {
-    createdDate = createdAt.toDate();
-  } else if (createdAt instanceof Date) {
-    createdDate = createdAt;
-  } else if (createdAt.seconds) {
-    createdDate = new Date(createdAt.seconds * 1000);
-  } else {
-    createdDate = new Date(createdAt);
-  }
-
+  const createdDate = new Date(createdAt);
   const hoursDiff = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60);
   return hoursDiff >= maxHours;
 }
 
 /**
  * Marks a request as OUTDATED to prevent volunteers from wasting time on dead calls
- *
- * @param {string} requestId
  */
 export async function markRequestOutdated(requestId) {
-  const reqRef = doc(db, COLLECTIONS.REQUESTS, requestId);
-  return await updateDoc(reqRef, {
-    status: REQUEST_STATUS.OUTDATED,
-    updatedAt: serverTimestamp(),
-  });
+  return await updateRequestStatus(requestId, REQUEST_STATUS.OUTDATED, 'Marked outdated by system (>24h)');
 }
 
 /**
  * Location-Based Matching: Finds and ranks available volunteers within a given radius.
- *
- * @param {number} requestLat
- * @param {number} requestLng
- * @param {number} maxDistanceKm - Default 15km
- * @returns {Promise<Array>} Ranked nearby volunteers
  */
 export async function matchNearbyVolunteers(requestLat, requestLng, maxDistanceKm = 15, preloadedVolunteers = null) {
   if (!requestLat || !requestLng) return [];
@@ -387,34 +388,42 @@ export async function matchNearbyVolunteers(requestLat, requestLng, maxDistanceK
   let candidateVolunteers = [];
   if (Array.isArray(preloadedVolunteers)) {
     candidateVolunteers = preloadedVolunteers;
-  } else {
+  } else if (isSupabaseConfigured) {
     try {
-      const q = query(
-        collection(db, COLLECTIONS.USERS),
-        where('role', 'in', ['VOLUNTEER', 'ORGANIZATION']),
-        where('isAvailable', '==', true)
-      );
-      const snapshot = await getDocs(q);
-      snapshot.forEach((doc) => {
-        candidateVolunteers.push({ id: doc.id, ...doc.data() });
-      });
+      const { data } = await supabase
+        .from('citizens')
+        .select('*')
+        .not('latitude', 'is', null);
+
+      if (data) {
+        candidateVolunteers = data.map((u) => ({
+          id: u.id,
+          uid: u.id,
+          name: u.name,
+          phone: u.phone,
+          bloodGroup: u.blood_group,
+          location: { lat: u.latitude, lng: u.longitude },
+        }));
+      }
     } catch {
-      return [];
+      candidateVolunteers = [];
     }
   }
 
   const matchedVolunteers = [];
   candidateVolunteers.forEach((user) => {
-    if (user.location?.lat && user.location?.lng) {
-      const distance = calculateDistance(requestLat, requestLng, user.location.lat, user.location.lng);
+    const uLat = user.location?.lat || user.latitude || user.lat;
+    const uLng = user.location?.lng || user.longitude || user.lng;
+
+    if (uLat && uLng) {
+      const distance = calculateDistance(requestLat, requestLng, uLat, uLng);
       if (distance !== null && distance <= maxDistanceKm) {
         matchedVolunteers.push({
           id: user.id || user.uid,
           uid: user.uid || user.id,
-          name: user.name || user.displayName,
+          name: user.name,
           phone: user.mobileNo || user.phone,
           bloodGroup: user.bloodGroup,
-          role: user.role,
           distance: Number(distance.toFixed(2)),
         });
       }
@@ -424,3 +433,40 @@ export async function matchNearbyVolunteers(requestLat, requestLng, maxDistanceK
   return matchedVolunteers.sort((a, b) => a.distance - b.distance);
 }
 
+/**
+ * Retrieves requests ordered by distance from given coordinates
+ */
+export async function getNearbyRequests(userLat, userLng, maxRadiusKm = 50) {
+  let allRequests = localRequestsStore;
+
+  if (isSupabaseConfigured) {
+    try {
+      const { data } = await supabase.from('emergency_requests').select('*');
+      if (data) {
+        allRequests = data.map((r) => ({
+          id: r.id,
+          trackingCode: r.tracking_token,
+          title: r.title,
+          category: r.category,
+          urgency: r.urgency,
+          status: r.status,
+          location: { lat: r.latitude, lng: r.longitude, address: r.location_name },
+          lat: r.latitude,
+          lng: r.longitude,
+        }));
+      }
+    } catch {
+      allRequests = localRequestsStore;
+    }
+  }
+
+  return allRequests
+    .map((req) => {
+      const rLat = req.location?.lat || req.lat;
+      const rLng = req.location?.lng || req.lng;
+      const distance = calculateDistance(userLat, userLng, rLat, rLng);
+      return { ...req, distance };
+    })
+    .filter((req) => req.distance === null || req.distance <= maxRadiusKm)
+    .sort((a, b) => (a.distance || 0) - (b.distance || 0));
+}

@@ -1,6 +1,5 @@
 import { useEffect, useState, useContext } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../services/firebase.js';
+import { supabase, isSupabaseConfigured } from '../services/supabase.js';
 import {
   registerWithEmail,
   loginWithEmail,
@@ -26,7 +25,7 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [deviceToken, setDeviceToken] = useState(() => getOrCreateDeviceToken());
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => isSupabaseConfigured);
 
   // Local session for 3-role gateway
   const [session, setSession] = useState(() => {
@@ -49,7 +48,7 @@ export function AuthProvider({ children }) {
     }
   }, [session]);
 
-  // Sync profile data from Firestore
+  // Sync profile data from Supabase / DB
   const fetchAndSetProfile = async (uid) => {
     try {
       const profile = await getUserProfile(uid);
@@ -62,18 +61,23 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Supabase Auth listener
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      if (user) {
-        await fetchAndSetProfile(user.uid);
-      } else {
-        setUserProfile(null);
-      }
-      setLoading(false);
-    });
+    if (isSupabaseConfigured) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, authSession) => {
+        if (authSession?.user) {
+          setCurrentUser(authSession.user);
+          await fetchAndSetProfile(authSession.user.id);
+        } else {
+          setCurrentUser(null);
+        }
+        setLoading(false);
+      });
 
-    return () => unsubscribe();
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
   }, []);
 
   // Global Real-Time Emergency Alerts Listener
@@ -92,7 +96,7 @@ export function AuthProvider({ children }) {
   const login = async (email, password, currentLocation) => {
     const result = await loginWithEmail(email, password, currentLocation);
     if (result.user) {
-      await fetchAndSetProfile(result.user.uid);
+      await fetchAndSetProfile(result.user.id || email);
     }
     return result;
   };
@@ -117,13 +121,13 @@ export function AuthProvider({ children }) {
 
   const refreshProfile = async () => {
     if (currentUser) {
-      return await fetchAndSetProfile(currentUser.uid);
+      return await fetchAndSetProfile(currentUser.id);
     }
   };
 
   const updateLocation = async (coords) => {
     if (currentUser && coords) {
-      await updateUserLocation(currentUser.uid, coords);
+      await updateUserLocation(currentUser.id, coords);
       await refreshProfile();
     }
   };

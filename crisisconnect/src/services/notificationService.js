@@ -1,17 +1,5 @@
-import {
-  collection,
-  doc,
-  setDoc,
-  serverTimestamp,
-  onSnapshot,
-  query,
-  orderBy,
-  limit,
-} from 'firebase/firestore';
 import toast from 'react-hot-toast';
-import { db } from './firebase.js';
-import { registerDeviceTokenInSupabase } from './supabase.js';
-import { COLLECTIONS } from '../utils/constants.js';
+import { supabase, isSupabaseConfigured, registerDeviceTokenInSupabase } from './supabase.js';
 
 const LOCAL_STORAGE_DEVICE_TOKEN = 'crisisconnect_device_token';
 
@@ -39,203 +27,142 @@ export async function requestNotificationPermission() {
  * @returns {string} Unique device token
  */
 export function getOrCreateDeviceToken() {
-  if (typeof window === 'undefined') return 'server_mock_token';
+  if (typeof window === 'undefined' && typeof globalThis.localStorage === 'undefined') {
+    return 'server_mock_token';
+  }
 
-  let token = localStorage.getItem(LOCAL_STORAGE_DEVICE_TOKEN);
+  const storage = typeof window !== 'undefined' ? window.localStorage : globalThis.localStorage;
+  let token = storage ? storage.getItem(LOCAL_STORAGE_DEVICE_TOKEN) : null;
+
   if (!token) {
     const randomHex = Math.random().toString(36).substring(2, 10);
     const timeStamp = Date.now().toString(36);
     token = `dev_${timeStamp}_${randomHex}`;
-    localStorage.setItem(LOCAL_STORAGE_DEVICE_TOKEN, token);
+    if (storage) {
+      storage.setItem(LOCAL_STORAGE_DEVICE_TOKEN, token);
+    }
   }
   return token;
 }
 
 /**
- * Registers the device token in Firestore database
- *
- * @param {string} userId - Auth user ID or 'anonymous'
- * @param {Object} metadata - { email, name, location, bloodGroup }
- * @returns {Promise<string>} Registered token
+ * Registers the device token in Supabase database for targeted and broadcast push alerts
  */
 export async function registerDeviceToken(userId, metadata = {}) {
   const token = getOrCreateDeviceToken();
 
   try {
-    const tokenDocRef = doc(db, COLLECTIONS.DEVICE_TOKENS, token);
-    await setDoc(
-      tokenDocRef,
-      {
-        token,
-        userId: userId || 'anonymous',
-        userName: metadata.name || metadata.displayName || '',
-        userEmail: metadata.email || '',
-        userPhone: metadata.mobileNo || metadata.phone || '',
-        bloodGroup: metadata.bloodGroup || '',
-        location: metadata.location || null,
-        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
-        lastActiveAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
+    await registerDeviceTokenInSupabase(token, {
+      ...metadata,
+      userId,
+    });
   } catch (err) {
-    console.warn('Could not store device token in Firestore:', err.message);
-  }
-
-  // Persist to Supabase if configured
-  try {
-    await registerDeviceTokenInSupabase(token, metadata);
-  } catch {
-    // Graceful fallback
+    console.warn('Supabase device token registration fallback:', err.message);
   }
 
   return token;
 }
 
 /**
- * Plays an emergency beep audio alert using the Web Audio API
+ * Plays an emergency siren audio alert using Web Audio API
  */
 export function playEmergencyAlertSound() {
+  if (typeof window === 'undefined') return;
+
   try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
 
-    const ctx = new AudioCtx();
-    const now = ctx.currentTime;
+    const audioCtx = new AudioContextClass();
 
-    // Beep 1 (High frequency alarm)
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
+    // High emergency multi-tone siren
+    const osc1 = audioCtx.createOscillator();
+    const osc2 = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
     osc1.type = 'sawtooth';
+    osc2.type = 'sine';
+
+    // Alternating warble frequencies (880Hz to 440Hz)
+    const now = audioCtx.currentTime;
     osc1.frequency.setValueAtTime(880, now);
-    osc1.frequency.exponentialRampToValueAtTime(440, now + 0.2);
+    osc1.frequency.exponentialRampToValueAtTime(440, now + 0.25);
+    osc1.frequency.exponentialRampToValueAtTime(880, now + 0.5);
 
-    gain1.gain.setValueAtTime(0.3, now);
-    gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+    osc2.frequency.setValueAtTime(440, now);
+    osc2.frequency.exponentialRampToValueAtTime(880, now + 0.25);
+    osc2.frequency.exponentialRampToValueAtTime(440, now + 0.5);
 
-    osc1.connect(gain1);
-    gain1.connect(ctx.destination);
+    gainNode.gain.setValueAtTime(0.25, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+
+    osc1.connect(gainNode);
+    osc2.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
     osc1.start(now);
-    osc1.stop(now + 0.2);
+    osc2.start(now);
 
-    // Beep 2 (Second urgent pulse)
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.type = 'sawtooth';
-    osc2.frequency.setValueAtTime(980, now + 0.25);
-    osc2.frequency.exponentialRampToValueAtTime(520, now + 0.45);
-
-    gain2.gain.setValueAtTime(0.35, now + 0.25);
-    gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
-
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
-    osc2.start(now + 0.25);
-    osc2.stop(now + 0.45);
-  } catch (e) {
-    console.warn('Web Audio playback failed:', e);
+    osc1.stop(now + 0.65);
+    osc2.stop(now + 0.65);
+  } catch {
+    // Audio Context restricted before user gesture
   }
 }
 
 /**
- * Broadcasts a local browser push notification and audio alert
- *
- * @param {string} title
- * @param {Object} options - { body, icon, urgency }
+ * Triggers an immediate device notification with siren audio and toast
  */
 export function triggerDeviceNotification(title, options = {}) {
-  // 1. Play alert sound
+  // 1. Play Emergency Siren Audio
   playEmergencyAlertSound();
 
-  // 2. In-app interactive toast
-  toast.error(
-    `🚨 ${title}\n${options.body || ''}`,
-    {
-      duration: 6000,
-      position: 'top-right',
-      style: {
-        background: '#991b1b',
-        color: '#fff',
-        fontWeight: '600',
-        padding: '16px',
-        borderRadius: '10px',
-        border: '2px solid #ef4444',
-      },
-    }
-  );
+  // 2. Display React Hot Toast
+  toast.error(`${title} - ${options.body || 'Emergency assistance response needed.'}`, {
+    duration: 6000,
+    position: 'top-right',
+  });
 
-  // 3. Desktop Native Notification
+  // 3. Trigger Browser Native Push Notification if permitted
   if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
     try {
-      new Notification(`🚨 CrisisConnect: ${title}`, {
-        body: options.body || 'Immediate attention requested in your area.',
+      new Notification(title, {
+        body: options.body || 'CrisisConnect Emergency Alert',
         icon: '/favicon.svg',
-        vibrate: [200, 100, 200, 100, 200],
-        tag: options.id || 'emergency-alert',
+        tag: 'crisisconnect-alert',
+        requireInteraction: true,
       });
-    } catch (e) {
-      console.warn('Desktop notification failed:', e);
+    } catch (err) {
+      console.warn('Native notification failed:', err);
     }
   }
 }
 
 /**
- * Real-time listener for incoming emergency alerts across the network.
- * Automatically notifies all connected devices when someone posts or updates an alert.
- *
- * @param {Function} onAlertReceived - Optional callback receiving the emergency payload
- * @returns {Function} Unsubscribe function
+ * Listens for new incoming emergency requests across the network using Supabase Realtime
  */
-export function listenForIncomingAlerts(onAlertReceived) {
-  let isInitialLoad = true;
-  const q = query(
-    collection(db, COLLECTIONS.REQUESTS),
-    orderBy('createdAt', 'desc'),
-    limit(20)
-  );
+export function listenForIncomingAlerts() {
+  if (!isSupabaseConfigured) {
+    return () => {};
+  }
 
-  const unsubscribe = onSnapshot(
-    q,
-    (snapshot) => {
-      // First snapshot loads existing records; don't spam alerts for historical records
-      if (isInitialLoad) {
-        isInitialLoad = false;
-        return;
-      }
-
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === 'added') {
-          const alertData = { id: change.doc.id, ...change.doc.data() };
-          triggerDeviceNotification(
-            `NEW EMERGENCY: ${alertData.title}`,
-            {
-              body: `${alertData.category} • Urgency: ${alertData.urgency}\n${alertData.description || 'Assistance requested immediately.'}`,
-              id: alertData.id,
-              urgency: alertData.urgency,
-            }
-          );
-          if (onAlertReceived) onAlertReceived(alertData, 'added');
-        } else if (change.type === 'modified') {
-          const alertData = { id: change.doc.id, ...change.doc.data() };
-          if (alertData.status === 'RESOLVED') {
-            toast.success(`✅ Emergency Resolved: ${alertData.title}`);
-          } else {
-            triggerDeviceNotification(
-              `EMERGENCY UPDATED: ${alertData.title}`,
-              {
-                body: `Status changed to ${alertData.status}`,
-                id: alertData.id,
-              }
-            );
-          }
-          if (onAlertReceived) onAlertReceived(alertData, 'modified');
+  const channel = supabase
+    .channel('realtime:emergency_alerts')
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'emergency_requests' },
+      (payload) => {
+        const newReq = payload.new;
+        if (newReq) {
+          triggerDeviceNotification(`🚨 NEW EMERGENCY: ${newReq.category}`, {
+            body: `${newReq.title} at ${newReq.location_name || 'Nearby Area'}`,
+          });
         }
-      });
-    },
-    (err) => {
-      console.error('Error listening for incoming emergency alerts:', err);
-    }
-  );
+      }
+    )
+    .subscribe();
 
-  return unsubscribe;
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }

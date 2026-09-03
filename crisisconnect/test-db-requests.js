@@ -23,10 +23,13 @@ import {
   triggerDeviceNotification,
 } from './src/services/notificationService.js';
 import {
-  createEmergencyRequest,
-  updateEmergencyStatus,
-  subscribeToUserEmergencies,
-} from './src/database/firestoreHelpers.js';
+  supabase,
+  registerCitizenInSupabase,
+  loginCitizenInSupabase,
+  registerDeviceTokenInSupabase,
+  createEmergencyRequestInSupabase,
+  subscribeToSupabaseEmergencies,
+} from './src/services/supabase.js';
 import { sampleRequests } from './src/database/sampleRequests.js';
 
 let passed = 0;
@@ -44,7 +47,7 @@ function assert(condition, message) {
 
 async function runTests() {
   console.log("\n=======================================================");
-  console.log("🗄️ CRISISCONNECT COMPLETE DATABASE REQUESTS VERIFICATION");
+  console.log("🗄️ CRISISCONNECT SUPABASE DATABASE REQUESTS VERIFICATION");
   console.log("=======================================================\n");
 
   // 1. Citizen Database (services/db.js)
@@ -169,14 +172,17 @@ async function runTests() {
     assert(false, `Auth Service tests encountered error: ${err.message}`);
   }
 
-  // 5. Firestore Client Helpers (database/firestoreHelpers.js)
-  console.log("\n🔥 5. Testing Moksha's Firestore Client Database Helpers:");
+  // 5. Supabase Database Client & Services (services/supabase.js)
+  console.log("\n⚡ 5. Testing Supabase Database Client & Services:");
   try {
-    assert(typeof createEmergencyRequest === 'function', "createEmergencyRequest is exported");
-    assert(typeof updateEmergencyStatus === 'function', "updateEmergencyStatus is exported");
-    assert(typeof subscribeToUserEmergencies === 'function', "subscribeToUserEmergencies is exported");
+    assert(Boolean(supabase), "Supabase client is initialized");
+    assert(typeof registerCitizenInSupabase === 'function', "registerCitizenInSupabase is exported");
+    assert(typeof loginCitizenInSupabase === 'function', "loginCitizenInSupabase is exported");
+    assert(typeof registerDeviceTokenInSupabase === 'function', "registerDeviceTokenInSupabase is exported");
+    assert(typeof createEmergencyRequestInSupabase === 'function', "createEmergencyRequestInSupabase is exported");
+    assert(typeof subscribeToSupabaseEmergencies === 'function', "subscribeToSupabaseEmergencies is exported");
   } catch (err) {
-    assert(false, `Firestore Helpers tests encountered error: ${err.message}`);
+    assert(false, `Supabase tests encountered error: ${err.message}`);
   }
 
   // 6. Sample Emergencies Database Integrity (database/sampleRequests.js)
