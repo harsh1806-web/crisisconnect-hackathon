@@ -37,7 +37,7 @@ export async function registerCitizenInSupabase(citizenData) {
     .upsert(
       {
         name: citizenData.name,
-        phone: citizenData.phone,
+        phone: (citizenData.phone || '').replace(/\D/g, '').slice(-10),
         password_hash: citizenData.password || '', // or supabase.auth
         age: Number(citizenData.age) || 25,
         blood_group: citizenData.bloodGroup || 'O+',
@@ -46,7 +46,7 @@ export async function registerCitizenInSupabase(citizenData) {
         latitude: citizenData.lat || 19.0760,
         longitude: citizenData.lng || 72.8777,
         ice_name: citizenData.emergencyContactName || '',
-        ice_phone: citizenData.emergencyContactPhone || '',
+        ice_phone: (citizenData.emergencyContactPhone || '').replace(/\D/g, '').slice(-10),
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'phone' }

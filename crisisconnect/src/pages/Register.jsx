@@ -97,14 +97,14 @@ export default function Register() {
       // 3. Persist directly to Supabase Database
       await registerCitizenInSupabase({
         name,
-        phone,
+        phone: cleanPhone,
         password,
         age: Number(age) || 25,
         bloodGroup,
         email,
         address,
-        emergencyContactName: iceName,
-        emergencyContactPhone: icePhone,
+        emergencyContactName: iceName || 'Emergency Contact',
+        emergencyContactPhone: cleanIcePhone,
         lat: 19.0760,
         lng: 72.8777,
       });

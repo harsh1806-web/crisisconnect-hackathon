@@ -199,7 +199,7 @@ export default function Login() {
         address: citizen.address,
         emergencyContact: {
           name: citizen.ice_name || 'Primary Contact',
-          phone: citizen.ice_phone || citizen.phone || '+91 99999 00000',
+          phone: String(citizen.ice_phone || citizen.phone || '9876543210').replace(/\D/g, '').slice(-10),
         },
         location: {
           lat: citizen.latitude,

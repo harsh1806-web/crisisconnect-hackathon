@@ -163,9 +163,12 @@ export function AuthProvider({ children }) {
       bloodGroup: userData.bloodGroup || userData.blood_group || 'O+',
       allergies: userData.allergies || 'None Reported',
       address: userData.address || '',
-      emergencyContact: userData.emergencyContact || {
+      emergencyContact: userData.emergencyContact ? {
+        name: userData.emergencyContact.name || 'Primary Contact',
+        phone: String(userData.emergencyContact.phone || userData.phone || '9876543210').replace(/\D/g, '').slice(-10),
+      } : {
         name: userData.ice_name || userData.emergencyContactName || 'Primary Contact',
-        phone: userData.ice_phone || userData.emergencyContactPhone || userData.phone || '+91 99999 00000',
+        phone: String(userData.ice_phone || userData.emergencyContactPhone || userData.phone || '9876543210').replace(/\D/g, '').slice(-10),
       },
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(userData.name || 'Citizen')}`,
       ...userData,

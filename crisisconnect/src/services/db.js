@@ -5,13 +5,13 @@ const INITIAL_CITIZENS = [
   {
     id: 'usr-alex',
     name: 'Alex Taylor',
-    phone: '+1-555-0145',
+    phone: '9876543210',
     email: 'alex.taylor@example.com',
     bloodGroup: 'O+',
     allergies: 'None Reported',
     emergencyContact: {
       name: 'Claire Taylor (Sister)',
-      phone: '+1-555-0199',
+      phone: '9876543211',
     },
     address: 'Sector 4, Block 12, Riverview',
     createdAt: new Date().toISOString(),
@@ -19,13 +19,13 @@ const INITIAL_CITIZENS = [
   {
     id: 'usr-sarah',
     name: 'Sarah Jenkins',
-    phone: '+1-555-0192',
+    phone: '9876543220',
     email: 'sarah.jenkins@example.com',
     bloodGroup: 'A+',
     allergies: 'Penicillin',
     emergencyContact: {
       name: 'Mark Jenkins',
-      phone: '+1-555-0190',
+      phone: '9876543221',
     },
     address: '14 Lakeview Crescent, Sector 4',
     createdAt: new Date().toISOString(),
@@ -73,13 +73,13 @@ export const citizenDB = {
     const newCitizen = {
       id: `cit-${Date.now()}`,
       name: citizenData.name.trim(),
-      phone: citizenData.phone.trim(),
+      phone: (citizenData.phone || '').replace(/\D/g, '').slice(-10),
       email: citizenData.email?.trim() || '',
       bloodGroup: citizenData.bloodGroup || 'Unknown',
       allergies: citizenData.allergies?.trim() || 'None',
       emergencyContact: {
         name: citizenData.emergencyContactName?.trim() || 'Primary Contact',
-        phone: citizenData.emergencyContactPhone?.trim() || '',
+        phone: (citizenData.emergencyContactPhone || '').replace(/\D/g, '').slice(-10),
       },
       address: citizenData.address?.trim() || 'Disaster Relief Area',
       createdAt: new Date().toISOString(),
