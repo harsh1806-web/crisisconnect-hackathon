@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Link } from 'react-router-dom';
@@ -306,6 +306,7 @@ export default function MapView() {
           />
 
           <MapController center={mapCenter} zoom={mapZoom} />
+          <MapZoomListener onZoomChange={setCurrentZoom} />
 
           {/* User Live Real-Time Location Beacon & Accuracy Radius */}
           {userLocation && (
