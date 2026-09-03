@@ -140,10 +140,7 @@ export default function UserCreateRequest() {
       return;
     }
 
-    if (!locationName.trim()) {
-      toast.error('Please specify your address or use GPS detection.');
-      return;
-    }
+    const effectiveLocation = locationName.trim() || `GPS: [${lat.toFixed(4)}, ${lng.toFixed(4)}]`;
 
     // Check for potential duplicates within 500m radius
     if (!bypassDuplicate) {
@@ -169,7 +166,7 @@ export default function UserCreateRequest() {
       category,
       urgency,
       description,
-      locationName,
+      locationName: effectiveLocation,
       lat,
       lng,
       peopleCount: Number(peopleCount) || 1,
@@ -466,7 +463,7 @@ export default function UserCreateRequest() {
         <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-2">
           <div className="flex items-center justify-between">
             <label className="block text-xs font-bold text-slate-900">
-              4. Location & Address <span className="text-red-500">*</span>
+              4. Location & Landmark <span className="text-slate-400 font-normal">(Optional if GPS active)</span>
             </label>
             <button
               type="button"
@@ -484,9 +481,8 @@ export default function UserCreateRequest() {
               type="text"
               value={locationName}
               onChange={(e) => setLocationName(e.target.value)}
-              placeholder="e.g. 14 River Road, Near St. Peter Church"
+              placeholder="e.g. Near St. Peter Church (Optional — GPS will be used)"
               className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
-              required
             />
           </div>
 

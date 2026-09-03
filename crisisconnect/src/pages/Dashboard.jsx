@@ -292,13 +292,13 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Demo helper */}
+      {/* Cache reset helper */}
       <div className="text-center pt-4">
         <button
           onClick={resetDemoData}
           className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 underline cursor-pointer"
         >
-          <RotateCcw className="w-3.5 h-3.5" /> Reset Demo Data to Default
+          <RotateCcw className="w-3.5 h-3.5" /> Clear Emergency Cache & Refresh
         </button>
       </div>
     </div>

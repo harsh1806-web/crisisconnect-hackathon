@@ -129,15 +129,15 @@ export default function UserTrackStatus() {
           </div>
         </div>
 
-        <Link
-          to={`https://www.google.com/maps/search/?api=1&query=${request.lat},${request.lng}`}
+        <a
+          href={`https://www.google.com/maps/search/?api=1&query=${request.lat},${request.lng}`}
           target="_blank"
           rel="noreferrer"
-          className="flex items-center gap-1 p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold"
+          className="flex items-center gap-1 p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold cursor-pointer"
           title="Open Map"
         >
           <MapPin className="w-4 h-4 text-red-500" />
-        </Link>
+        </a>
       </div>
 
       {/* Incident Summary Card */}
