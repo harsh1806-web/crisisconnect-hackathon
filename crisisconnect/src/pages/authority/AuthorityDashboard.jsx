@@ -24,6 +24,7 @@ import {
 import { useCrisis } from '../../context/CrisisContext';
 import { useAuth } from '../../context/AuthContext';
 import { playEmergencyAlertSound } from '../../services/notificationService';
+import AuthorityMobilizeVolunteersModal from '../../components/AuthorityMobilizeVolunteersModal';
 import toast from 'react-hot-toast';
 
 // Custom Map Pins for Leaflet
@@ -88,7 +89,15 @@ function MapController({ center, zoom }) {
 }
 
 export default function AuthorityDashboard() {
-  const { crisisInfo, requests, shelters, verifyRequest, updateRequestStatus, addRequest } = useCrisis();
+  const {
+    crisisInfo,
+    requests,
+    shelters,
+    verifyRequest,
+    updateRequestStatus,
+    addRequest,
+    publishAuthorityVolunteerTask,
+  } = useCrisis();
   const { currentUser, logout } = useAuth();
 
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -98,6 +107,7 @@ export default function AuthorityDashboard() {
   const [mapCenter, setMapCenter] = useState([19.0760, 72.8777]);
   const [mapZoom, setMapZoom] = useState(12);
   const [isSendingTest, setIsSendingTest] = useState(false);
+  const [isMobilizeOpen, setIsMobilizeOpen] = useState(false);
 
   const handleSendTestAlert = async () => {
     setIsSendingTest(true);
@@ -259,9 +269,18 @@ export default function AuthorityDashboard() {
               <span>{isSendingTest ? 'Sending...' : 'Send Test Alert'}</span>
             </button>
 
+            <button
+              onClick={() => setIsMobilizeOpen(true)}
+              className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/30 flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Mobilize Civilian Volunteers in Real Time"
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Mobilize Volunteers</span>
+            </button>
+
             <Link
               to="/authority/requests"
-              className="px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors shadow-md shadow-blue-500/30 flex items-center gap-1"
+              className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors border border-slate-700 flex items-center gap-1"
             >
               <span>Verify Queue</span>
               <span className="px-1.5 py-0.2 rounded-full bg-white/20 text-[10px] ml-1">
@@ -785,6 +804,15 @@ export default function AuthorityDashboard() {
           )}
         </div>
       </div>
+
+      {/* Authority Mobilize Volunteers Modal */}
+      {isMobilizeOpen && (
+        <AuthorityMobilizeVolunteersModal
+          authority={currentUser}
+          onPublish={publishAuthorityVolunteerTask}
+          onClose={() => setIsMobilizeOpen(false)}
+        />
+      )}
     </div>
   );
 }

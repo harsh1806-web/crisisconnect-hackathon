@@ -81,6 +81,23 @@ export function CrisisProvider({ children }) {
     return INITIAL_BROADCASTS;
   });
 
+  // Volunteer Karma Points System (for redeeming brand vouchers)
+  const [karmaPoints, setKarmaPoints] = useState(() => {
+    try {
+      const saved = localStorage.getItem('crisisconnect_karma_pts');
+      return saved !== null ? Number(saved) : 250;
+    } catch {
+      return 250;
+    }
+  });
+
+  const updateKarmaPoints = (newPts) => {
+    setKarmaPoints(newPts);
+    try {
+      localStorage.setItem('crisisconnect_karma_pts', String(newPts));
+    } catch {}
+  };
+
   // Real-time Emergency Requests - initialized strictly from live database, no demo data
   const [requests, setRequests] = useState([]);
 
@@ -522,7 +539,36 @@ export function CrisisProvider({ children }) {
         return t;
       })
     );
-    toast.success(`${citizenName} registered! Contact coordinator for briefing.`);
+    // Award citizen with +100 Karma Points
+    updateKarmaPoints(karmaPoints + 100);
+    toast.success(`🎉 ${citizenName} registered! +100 Karma Points added to your profile!`);
+  };
+
+  // Authority Action: Mobilize and publish new volunteer requirement to citizens & Supabase
+  const publishAuthorityVolunteerTask = async (newTask) => {
+    setVolunteerTasks((prev) => [newTask, ...prev]);
+
+    // Persist to Supabase emergency_requests as VOLUNTEER_MOBILIZATION broadcast
+    try {
+      await createCrisisRequest({
+        title: `📢 VOLUNTEER CALL: ${newTask.title}`,
+        description: `${newTask.description}\n\n• Sector: ${newTask.sector}\n• Assembly Point: ${newTask.location}\n• Volunteers Needed: ${newTask.volunteersNeeded}\n• Shift: ${newTask.timeRequired}\n• Lead: ${newTask.coordinator} (${newTask.coordinatorPhone})\n• Requirements: ${newTask.requirements}`,
+        category: 'VOLUNTEER_MOBILIZATION',
+        urgency: 'HIGH',
+        contactName: newTask.coordinator,
+        contactPhone: newTask.coordinatorPhone,
+        peopleCount: newTask.volunteersNeeded,
+        location: {
+          lat: 19.0760,
+          lng: 72.8777,
+          address: newTask.location,
+        },
+        vulnerabilities: [`SECTOR:${newTask.sector}`, `TASK_ID:${newTask.id}`],
+      });
+    } catch (err) {
+      console.warn('Supabase volunteer task persist note:', err);
+    }
+    return newTask;
   };
 
   // NGO Action: Record Incoming Donation / Supply Drop
@@ -738,6 +784,9 @@ export function CrisisProvider({ children }) {
         ngos,
         donations,
         volunteerTasks,
+        karmaPoints,
+        updateKarmaPoints,
+        publishAuthorityVolunteerTask,
         addRequest,
         triggerSOS,
         signUpForVolunteerTask,

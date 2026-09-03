@@ -19,18 +19,37 @@ import {
   Truck,
   Pill,
   Radio,
+  WifiOff,
+  Award,
+  QrCode,
+  Gift,
 } from 'lucide-react';
 import { useCrisis } from '../../context/CrisisContext';
 import { useAuth } from '../../context/AuthContext';
 import SOSButton from '../../components/SOSButton';
+import VolunteerPassModal from '../../components/VolunteerPassModal';
+import VolunteerRewardsModal from '../../components/VolunteerRewardsModal';
+import OfflineSmsModal from '../../components/OfflineSmsModal';
 import toast from 'react-hot-toast';
 
 export default function UserDashboard() {
-  const { crisisInfo, broadcasts, requests, shelters, volunteerTasks, signUpForVolunteerTask, addRequest } =
-    useCrisis();
+  const {
+    crisisInfo,
+    broadcasts,
+    requests,
+    shelters,
+    volunteerTasks,
+    signUpForVolunteerTask,
+    addRequest,
+    karmaPoints,
+    updateKarmaPoints,
+  } = useCrisis();
   const { currentUser, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('emergency'); // 'emergency' | 'volunteering'
   const [isSendingTest, setIsSendingTest] = useState(false);
+  const [selectedPassTask, setSelectedPassTask] = useState(null);
+  const [isRewardsOpen, setIsRewardsOpen] = useState(false);
+  const [isOfflineSmsOpen, setIsOfflineSmsOpen] = useState(false);
 
   const handleCitizenTestAlert = async () => {
     setIsSendingTest(true);
@@ -93,27 +112,40 @@ export default function UserDashboard() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+          {/* Karma Points & Vouchers */}
+          <button
+            onClick={() => setIsRewardsOpen(true)}
+            className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-black flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+            title="Redeem Volunteer Karma Points for Brand Vouchers"
+          >
+            <Award className="w-3.5 h-3.5 text-amber-600" />
+            <span>{karmaPoints} pts</span>
+          </button>
+
+          {/* Offline SMS SOS Protocol */}
+          <button
+            onClick={() => setIsOfflineSmsOpen(true)}
+            className="px-2 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-900 border border-amber-400 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+            title="Cell Towers Down / Offline SMS SOS"
+          >
+            <WifiOff className="w-3.5 h-3.5 text-amber-700" />
+            <span className="hidden xs:inline">SMS SOS</span>
+          </button>
+
           <button
             onClick={handleCitizenTestAlert}
             disabled={isSendingTest}
-            className="px-2.5 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+            className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
             title="Send Test Citizen SOS Alert"
           >
             <Radio className={`w-3.5 h-3.5 ${isSendingTest ? 'animate-spin' : 'animate-pulse'}`} />
             <span className="hidden sm:inline">Test Alert</span>
           </button>
 
-          <a
-            href="tel:112"
-            className="p-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors border border-red-200"
-            title="Call 112 Hotline"
-          >
-            <PhoneCall className="w-4 h-4" />
-          </a>
           <button
             onClick={logout}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
             title="Switch portal / Logout"
           >
             <LogOut className="w-4 h-4" />
@@ -368,11 +400,16 @@ export default function UserDashboard() {
                         </div>
                       </div>
 
-                      {/* Coordinator Call Bar */}
-                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                        <div className="text-[10px] text-slate-500 truncate">
-                          Coordinator: <strong className="text-slate-800">{task.coordinator}</strong>
-                        </div>
+                      {/* Coordinator & Pass Action Bar */}
+                      <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                        <button
+                          onClick={() => setSelectedPassTask(task)}
+                          className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+                        >
+                          <QrCode className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>View Official Pass</span>
+                        </button>
+
                         <a
                           href={`tel:${task.coordinatorPhone}`}
                           className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shrink-0 shadow-xs"
@@ -385,6 +422,25 @@ export default function UserDashboard() {
               </div>
             </div>
           )}
+
+          {/* Volunteer Impact Rewards Banner */}
+          <div className="p-3.5 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-200 flex items-center justify-between gap-2 shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shadow-xs shrink-0">
+                <Award className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-black text-amber-950">Volunteer Rewards Store</p>
+                <p className="text-[10px] text-amber-800">You have <strong>{karmaPoints} Karma Points</strong>! Redeem Apollo, BigBasket & Uber vouchers.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsRewardsOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs cursor-pointer shrink-0 shadow-xs"
+            >
+              Vouchers →
+            </button>
+          </div>
 
           {/* Section 2: Open Volunteer Missions Available in Your Area */}
           <div className="space-y-2.5">
@@ -401,9 +457,16 @@ export default function UserDashboard() {
                     className="p-4 bg-white rounded-3xl border border-slate-200 shadow-xs space-y-3 hover:border-slate-300 transition-colors"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-slate-100 text-slate-700 border border-slate-200">
-                        {task.sector}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-slate-100 text-slate-700 border border-slate-200">
+                          {task.sector}
+                        </span>
+                        {task.isAuthorityMobilized && (
+                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200 animate-pulse">
+                            📢 Authority Call
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
                         <Clock className="w-3 h-3" /> {task.timeRequired}
                       </span>
@@ -433,7 +496,7 @@ export default function UserDashboard() {
                         className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl cursor-pointer transition-colors shadow-2xs flex items-center gap-1"
                       >
                         <HeartHandshake className="w-3.5 h-3.5" />
-                        <span>Sign Up to Help</span>
+                        <span>Sign Up to Help (+100 pts)</span>
                       </button>
                     </div>
                   </div>
@@ -441,6 +504,31 @@ export default function UserDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modals */}
+      {selectedPassTask && (
+        <VolunteerPassModal
+          task={selectedPassTask}
+          user={currentUser}
+          onClose={() => setSelectedPassTask(null)}
+        />
+      )}
+
+      {isRewardsOpen && (
+        <VolunteerRewardsModal
+          user={currentUser}
+          points={karmaPoints}
+          onPointsUpdate={updateKarmaPoints}
+          onClose={() => setIsRewardsOpen(false)}
+        />
+      )}
+
+      {isOfflineSmsOpen && (
+        <OfflineSmsModal
+          user={currentUser}
+          onClose={() => setIsOfflineSmsOpen(false)}
+        />
       )}
     </div>
   );
