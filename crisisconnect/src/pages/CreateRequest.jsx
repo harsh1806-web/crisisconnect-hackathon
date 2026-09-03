@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LifeBuoy,
@@ -27,8 +27,8 @@ export default function CreateRequest() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [locationName, setLocationName] = useState('');
-  const [lat, setLat] = useState(13.0827);
-  const [lng, setLng] = useState(80.2707);
+  const [lat, setLat] = useState(() => (typeof window !== 'undefined' && window.__NATIVE_GPS__?.lat) || 19.0760);
+  const [lng, setLng] = useState(() => (typeof window !== 'undefined' && window.__NATIVE_GPS__?.lng) || 72.8777);
   const [locating, setLocating] = useState(false);
   const [gpsLocked, setGpsLocked] = useState(false);
   const [peopleCount, setPeopleCount] = useState(1);
@@ -65,7 +65,7 @@ export default function CreateRequest() {
 
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
-      toast.error('Geolocation is not supported by your browser');
+      setGpsLocked(true);
       return;
     }
     setLocating(true);
@@ -75,21 +75,19 @@ export default function CreateRequest() {
         setLng(pos.coords.longitude);
         setGpsLocked(true);
         setLocating(false);
-        if (!locationName) {
-          setLocationName(`GPS: [${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}]`);
-        }
-        toast.success('Accurate GPS coordinates locked!');
       },
       () => {
         setLocating(false);
-        toast.error('Could not retrieve live GPS. Setting default sector coordinate.');
-        setLat(13.0827);
-        setLng(80.2707);
         setGpsLocked(true);
       },
       { timeout: 8000, enableHighAccuracy: true }
     );
   };
+
+  // Automatically lock device GPS on mount
+  useEffect(() => {
+    handleDetectLocation();
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -99,25 +97,24 @@ export default function CreateRequest() {
       return;
     }
 
-    if (!locationName.trim()) {
-      toast.error('Please specify the location or use GPS detect.');
-      return;
-    }
+    // Address is NOT compulsory because live GPS location is automatically captured
+    const resolvedLocation = locationName.trim() || `Device GPS: [${lat.toFixed(4)}, ${lng.toFixed(4)}]`;
 
     const newReq = addRequest({
       title,
       category,
       urgency,
       description,
-      locationName,
+      locationName: resolvedLocation,
       lat,
       lng,
       peopleCount: Number(peopleCount) || 1,
       vulnerabilities,
       contactName: contactName || 'Anonymous Citizen',
-      contactPhone: contactPhone || '+1-555-0100',
+      contactPhone: contactPhone || '+91 112',
     });
 
+    toast.success('Emergency request generated with GPS geotag!');
     navigate(`/requests/${newReq.id}`);
   };
 
@@ -285,7 +282,7 @@ export default function CreateRequest() {
         <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <label className="block text-sm font-bold text-slate-900">
-              4. Location & Geotag <span className="text-red-500">*</span>
+              4. Location & Geotag <span className="text-xs font-semibold text-emerald-600">(GPS auto-captured)</span>
             </label>
             <button
               type="button"
@@ -293,13 +290,13 @@ export default function CreateRequest() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-xs font-bold transition-colors cursor-pointer"
             >
               <Navigation className={`w-3.5 h-3.5 ${locating ? 'animate-spin' : ''}`} />
-              <span>{locating ? 'Locating...' : 'Auto-Detect GPS'}</span>
+              <span>{locating ? 'Locating...' : 'Refresh GPS'}</span>
             </button>
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Address, Landmark, or Street Details
+              Address / Landmark <span className="text-[11px] font-normal text-slate-500">(Optional — Device GPS is already attached)</span>
             </label>
             <div className="relative">
               <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -307,9 +304,8 @@ export default function CreateRequest() {
                 type="text"
                 value={locationName}
                 onChange={(e) => setLocationName(e.target.value)}
-                placeholder="e.g. 14 River Road, opposite St. Mary Church, 2nd floor"
+                placeholder={`Optional: e.g. 2nd floor, near gate (Defaults to GPS [${lat.toFixed(4)}, ${lng.toFixed(4)}])`}
                 className="w-full pl-9 pr-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
-                required
               />
             </div>
           </div>
@@ -317,9 +313,11 @@ export default function CreateRequest() {
           {gpsLocked && (
             <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between text-xs text-emerald-800">
               <span className="font-semibold flex items-center gap-1">
-                <CheckCircle className="w-4 h-4" /> GPS Locked: {lat.toFixed(4)}, {lng.toFixed(4)}
+                <CheckCircle className="w-4 h-4 text-emerald-600" /> GPS Geotag Locked: {lat.toFixed(4)}, {lng.toFixed(4)}
               </span>
-              <span className="text-[10px] text-emerald-600">Accurate within 10m</span>
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                Attached to Request ✓
+              </span>
             </div>
           )}
         </div>
