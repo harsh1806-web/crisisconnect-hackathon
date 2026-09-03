@@ -13,11 +13,13 @@ import {
   UserPlus,
   Database,
   Lock,
+  AlertOctagon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import { registerActiveDeviceSession } from '../services/notificationService';
 import ForgotPasswordModal from '../components/ForgotPasswordModal';
+import PublicEmergencySOSModal from '../components/PublicEmergencySOSModal';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { useLanguage } from '../context/LanguageContext';
 import toast from 'react-hot-toast';
@@ -130,6 +132,9 @@ export default function Login() {
   // Forgot password modal state
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const [forgotModalRole, setForgotModalRole] = useState('citizen');
+
+  // Immediate Public SOS state (no login required)
+  const [isPublicSOSOpen, setIsPublicSOSOpen] = useState(false);
 
   // Authority form - specialized by emergency agency
   const [selectedAgencyId, setSelectedAgencyId] = useState('police');
@@ -315,6 +320,21 @@ export default function Login() {
               Disaster Database Online
             </span>
           </div>
+        </div>
+
+        {/* EMERGENCY PUBLIC SOS (NO LOGIN REQUIRED) */}
+        <div className="p-3 bg-red-950/10 border-b-2 border-red-500/20 text-center">
+          <button
+            type="button"
+            onClick={() => setIsPublicSOSOpen(true)}
+            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-red-600 hover:from-red-700 hover:to-red-700 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-red-600/30 animate-pulse active:scale-98 transition-all cursor-pointer border border-red-500"
+          >
+            <AlertOctagon className="w-4 h-4 text-white animate-bounce" />
+            <span>🚨 EMERGENCY SOS (NO LOGIN REQUIRED)</span>
+          </button>
+          <p className="text-[10px] text-red-600 font-bold mt-1.5 flex items-center justify-center gap-1">
+            <span>Auto-detects GPS & AI routes to designated authority</span>
+          </p>
         </div>
 
         {/* 3-Role Gateway Segmented Control */}
@@ -685,6 +705,13 @@ export default function Login() {
             setUserPassword(newPass);
             setIsForgotModalOpen(false);
           }}
+        />
+      )}
+
+      {/* Immediate Public Emergency SOS Modal (No Login Required) */}
+      {isPublicSOSOpen && (
+        <PublicEmergencySOSModal
+          onClose={() => setIsPublicSOSOpen(false)}
         />
       )}
     </div>
