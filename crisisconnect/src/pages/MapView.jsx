@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Link } from 'react-router-dom';
@@ -67,12 +67,33 @@ const getUserLocationIcon = (zoom = 13) => {
 
 const userLocationIcon = getUserLocationIcon(13);
 
-// Helper component to smoothly center map
+// Helper component to smoothly center map ONLY when center/zoom is explicitly updated
 function MapController({ center, zoom }) {
   const map = useMap();
-  if (center) {
-    map.flyTo(center, zoom || 14, { duration: 1.5 });
-  }
+  const lastTargetRef = useRef(null);
+
+  useEffect(() => {
+    if (!center || !map) return;
+    const [lat, lng] = center;
+    const targetZoom = zoom || 14;
+
+    const prev = lastTargetRef.current;
+    // Only fly if target actually changed
+    const isNewTarget =
+      !prev ||
+      Math.abs(prev.lat - lat) > 0.0005 ||
+      Math.abs(prev.lng - lng) > 0.0005 ||
+      prev.zoom !== targetZoom;
+
+    if (isNewTarget) {
+      lastTargetRef.current = { lat, lng, zoom: targetZoom };
+      map.flyTo([lat, lng], targetZoom, {
+        duration: 0.8,
+        easeLinearity: 0.25,
+      });
+    }
+  }, [center, zoom, map]);
+
   return null;
 }
 
@@ -153,62 +174,64 @@ export default function MapView() {
     return true;
   });
 
-  // Continuous Real-Time Live GPS tracking: Updates map as you move in real-time
-  useEffect(() => {
-    let initialCenterDone = false;
+  // Persistent initial-center guard so map NEVER jerks or re-centers after initial load
+  const hasInitiallyCenteredRef = useRef(false);
 
+  // Continuous Real-Time Live GPS tracking: Updates user marker smoothly without disrupting map camera
+  useEffect(() => {
     // 1. Instant check for native mobile GPS coordinates
     if (window.__NATIVE_GPS__) {
       const coords = [window.__NATIVE_GPS__.lat, window.__NATIVE_GPS__.lng];
       setUserLocation(coords);
-      setMapCenter(coords);
-      setMapZoom(16);
-      initialCenterDone = true;
-    }
-
-    // 2. Continuous native mobile GPS listener
-    window.onNativeGpsUpdate = (lat, lng) => {
-      const coords = [lat, lng];
-      setUserLocation(coords);
-      if (!initialCenterDone) {
+      if (window.__NATIVE_GPS__.accuracy) setGpsAccuracy(window.__NATIVE_GPS__.accuracy);
+      if (!hasInitiallyCenteredRef.current) {
         setMapCenter(coords);
         setMapZoom(16);
-        initialCenterDone = true;
+        hasInitiallyCenteredRef.current = true;
       }
-    };
-
-    if (!navigator.geolocation) {
-      return;
     }
 
-    const watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        const coords = [pos.coords.latitude, pos.coords.longitude];
-        setUserLocation(coords);
-        setGpsAccuracy(pos.coords.accuracy || 20);
-
-        // Immediately snap map to user's real-time live location on first coordinate lock
-        if (!initialCenterDone) {
-          setMapCenter(coords);
-          setMapZoom(16);
-          initialCenterDone = true;
-          toast.success('Live GPS lock established!');
-        }
-      },
-      (err) => {
-        console.warn('Real-time GPS update warning:', err.message);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 1000, // 1s fresh updates
+    // 2. Continuous native mobile GPS listener (updates blue dot position only)
+    window.onNativeGpsUpdate = (lat, lng, accuracy) => {
+      const coords = [lat, lng];
+      setUserLocation(coords);
+      if (accuracy) setGpsAccuracy(accuracy);
+      if (!hasInitiallyCenteredRef.current) {
+        setMapCenter(coords);
+        setMapZoom(16);
+        hasInitiallyCenteredRef.current = true;
       }
-    );
-
-    return () => {
-      navigator.geolocation.clearWatch(watchId);
-      window.onNativeGpsUpdate = null;
     };
+
+    // 3. Fallback browser geolocation watcher
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const coords = [pos.coords.latitude, pos.coords.longitude];
+          setUserLocation(coords);
+          setGpsAccuracy(pos.coords.accuracy || 20);
+
+          if (!hasInitiallyCenteredRef.current) {
+            setMapCenter(coords);
+            setMapZoom(16);
+            hasInitiallyCenteredRef.current = true;
+          }
+        },
+        (err) => {
+          console.warn('GPS watch notice:', err.message);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 3000,
+        }
+      );
+
+      return () => {
+        navigator.geolocation.clearWatch(watchId);
+        window.onNativeGpsUpdate = null;
+      };
+    }
   }, []);
 
   const handleLocateMe = () => {
