@@ -9,8 +9,27 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "CrisisConnect requires GPS access to broadcast SOS beacons and display nearby evacuation perimeters.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "CrisisConnect requires background location to warn you about incoming disasters."
+      }
     },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow CrisisConnect to use your location for emergency dispatch."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#dc2626"
+        }
+      ]
+    ],
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
