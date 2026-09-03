@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LifeBuoy,
@@ -12,9 +12,11 @@ import {
   CheckCircle,
   AlertOctagon,
   Send,
+  Sparkles,
 } from 'lucide-react';
 import { useCrisis } from '../context/CrisisContext';
 import { useAuth } from '../context/AuthContext';
+import { classifyDisaster } from '../services/aiDisasterClassifier';
 import toast from 'react-hot-toast';
 
 export default function CreateRequest() {
@@ -62,6 +64,19 @@ export default function CreateRequest() {
       setVulnerabilities([...vulnerabilities, item]);
     }
   };
+
+  // Real-time AI Disaster Classification preview
+  const aiPreview = useMemo(() => {
+    if (!title.trim() && !description.trim()) return null;
+    return classifyDisaster({
+      title,
+      description,
+      category,
+      urgency,
+      peopleCount,
+      vulnerabilities,
+    });
+  }, [title, description, category, urgency, peopleCount, vulnerabilities]);
 
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
@@ -233,6 +248,109 @@ export default function CreateRequest() {
               className="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
             />
           </div>
+
+          {/* AI Disaster Routing & Live Triage Preview Card (v2.0) */}
+          {aiPreview && (
+            <div className="p-4 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white rounded-2xl border border-indigo-500/40 shadow-xl space-y-3 animate-fade-in">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-2xl">{aiPreview.targetAuthority.icon}</span>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                      <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">
+                        AI LIVE TRIAGE ({aiPreview.confidence} MATCH)
+                      </p>
+                    </div>
+                    <p className="text-xs font-bold text-white leading-tight">
+                      Intimated to: {aiPreview.targetAuthority.name}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 block">
+                    Hotline {aiPreview.targetAuthority.hotline}
+                  </span>
+                  <span className="text-[9px] text-emerald-400 font-bold block mt-0.5">
+                    SLA: ~{aiPreview.targetAuthority.slaMinutes} mins
+                  </span>
+                </div>
+              </div>
+
+              {/* Classification & Urgency Reasoning */}
+              <div className="text-[11px] text-slate-300 pt-2 border-t border-slate-800/80 space-y-1.5">
+                <div className="flex flex-wrap items-center justify-between gap-1">
+                  <p>
+                    <span className="text-slate-400 font-semibold">Classification:</span>{' '}
+                    <strong className="text-white">{aiPreview.disasterType}</strong>
+                  </p>
+                  <span
+                    className={`text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider ${
+                      aiPreview.urgencyLevel === 'CRITICAL'
+                        ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    }`}
+                  >
+                    {aiPreview.urgencyLevel}
+                  </span>
+                </div>
+
+                {aiPreview.urgencyReasoning && (
+                  <p className="text-[10px] text-amber-200/90 font-medium bg-amber-950/40 border border-amber-500/20 p-2 rounded-xl">
+                    ⚡ {aiPreview.urgencyReasoning}
+                  </p>
+                )}
+
+                {/* Extracted Vulnerabilities */}
+                {aiPreview.extractedVulnerabilities && aiPreview.extractedVulnerabilities.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1 pt-1">
+                    <span className="text-[10px] text-slate-400">Extracted Vulnerabilities:</span>
+                    {aiPreview.extractedVulnerabilities.map((v) => (
+                      <span
+                        key={v}
+                        className="text-[9px] font-bold bg-rose-950/60 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-md"
+                      >
+                        ⚠️ {v}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Sized Rescue Logistics */}
+                {aiPreview.targetAuthority.requiredEquipment && (
+                  <div className="pt-1">
+                    <span className="text-[10px] text-slate-400 block mb-1">
+                      🛠️ AI Allocated Rescue Gear:
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {aiPreview.targetAuthority.requiredEquipment.slice(0, 3).map((eq) => (
+                        <span
+                          key={eq}
+                          className="text-[9px] bg-slate-800/90 text-slate-200 px-2 py-0.5 rounded-lg border border-slate-700"
+                        >
+                          ✓ {eq}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* AI Survival Protocols */}
+                {aiPreview.survivalProtocol && aiPreview.survivalProtocol.length > 0 && (
+                  <div className="pt-2 border-t border-slate-800/80 space-y-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1">
+                      🛡️ AI Immediate Survival Protocol (While Awaiting Dispatch):
+                    </span>
+                    <ul className="space-y-0.5 pl-3 list-disc text-[10px] text-slate-300 leading-relaxed">
+                      {aiPreview.survivalProtocol.slice(0, 3).map((step, idx) => (
+                        <li key={idx}>{step}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* People Count & Vulnerabilities */}
           <div className="pt-2">
