@@ -142,7 +142,7 @@ export default function UserDashboard() {
             title="Send Test Citizen SOS Alert"
           >
             <Radio className={`w-3.5 h-3.5 ${isSendingTest ? 'animate-spin' : 'animate-pulse'}`} />
-            <span className="hidden sm:inline">Test Alert</span>
+            <span className="hidden sm:inline">{t('test_alert')}</span>
           </button>
 
           <button
@@ -194,7 +194,7 @@ export default function UserDashboard() {
               <span className="truncate text-[11px]">{crisisInfo.status}: {crisisInfo.title}</span>
             </div>
             <Link to="/map" className="text-red-700 text-[11px] font-bold shrink-0 hover:underline">
-              Map →
+              {t('map_arrow')}
             </Link>
           </div>
 
@@ -242,7 +242,7 @@ export default function UserDashboard() {
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
                   <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">
-                    Active Incident in Progress
+                    {t('active_incident_in_progress')}
                   </span>
                 </div>
                 <span className="text-xs font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full capitalize">
@@ -262,7 +262,7 @@ export default function UserDashboard() {
                 className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs"
               >
                 <Clock className="w-4 h-4" />
-                <span>Track Incident Status & Updates</span>
+                <span>{t('track_incident_status')}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -285,7 +285,7 @@ export default function UserDashboard() {
                     <Icon className="w-5 h-5 shrink-0" />
                     <div className="text-left">
                       <p className="text-xs font-bold text-slate-900">{cat.name}</p>
-                      <p className="text-[10px] text-slate-500">Report need →</p>
+                      <p className="text-[10px] text-slate-500">{t('report_need')}</p>
                     </div>
                   </Link>
                 );
@@ -297,7 +297,7 @@ export default function UserDashboard() {
           {broadcasts.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider px-1">
-                Civil Defense Advisories
+                {t('civil_defense_advisories')}
               </h3>
               {broadcasts.slice(0, 1).map((b) => (
                 <div key={b.id} className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 text-xs space-y-1">
@@ -315,10 +315,10 @@ export default function UserDashboard() {
           <div className="space-y-2">
             <div className="flex items-center justify-between px-1">
               <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                Nearest Safe Evacuation Shelters
+                {t('nearest_shelters')}
               </h3>
               <Link to="/map" className="text-xs text-emerald-600 font-bold hover:underline">
-                View on Map
+                {t('view_map')}
               </Link>
             </div>
             <div className="space-y-2">
@@ -328,7 +328,7 @@ export default function UserDashboard() {
                     <p className="text-xs font-bold text-slate-900">{sh.name}</p>
                     <p className="text-[10px] text-slate-500">{sh.address}</p>
                     <span className="inline-block text-[10px] font-bold text-emerald-700 mt-1">
-                      Capacity: {sh.occupied} / {sh.capacity}
+                      {t('shelter_capacity')}: {sh.occupied} / {sh.capacity}
                     </span>
                   </div>
                   <a
@@ -351,10 +351,10 @@ export default function UserDashboard() {
           <div className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border border-emerald-200/80 space-y-1.5 text-xs text-emerald-950 shadow-xs">
             <div className="flex items-center gap-2 text-emerald-900 font-black text-sm">
               <HeartHandshake className="w-5 h-5 text-emerald-600 shrink-0" />
-              <span>Community Disaster Responders Hub</span>
+              <span>{t('responders_hub_title')}</span>
             </div>
             <p className="text-[11px] text-emerald-800 leading-relaxed">
-              When disaster strikes, local citizens save lives. If you are in a safe, dry zone, sign up below to assist responding NGOs and local authorities with food supply, medical triage, or rescue support.
+              {t('responders_hub_desc')}
             </p>
           </div>
 
@@ -364,10 +364,10 @@ export default function UserDashboard() {
               <div className="flex items-center justify-between px-1">
                 <h3 className="text-xs font-black text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
                   <CheckCircle className="w-4 h-4 text-emerald-600" />
-                  My Active Deployed Missions ({volunteerTasks.filter((t) => t.userRegistered).length})
+                  {t('my_active_missions')} ({volunteerTasks.filter((t) => t.userRegistered).length})
                 </h3>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  Verified Responder
+                  {t('verified_responder')}
                 </span>
               </div>
 
@@ -385,7 +385,7 @@ export default function UserDashboard() {
                         </span>
                         <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                          Ready for Duty
+                          {t('ready_for_duty')}
                         </span>
                       </div>
 
@@ -409,14 +409,14 @@ export default function UserDashboard() {
                           className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
                         >
                           <QrCode className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>View Official Pass</span>
+                          <span>{t('view_official_pass')}</span>
                         </button>
 
                         <a
                           href={`tel:${task.coordinatorPhone}`}
                           className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shrink-0 shadow-xs"
                         >
-                          <PhoneCall className="w-3.5 h-3.5" /> Call Lead
+                          <PhoneCall className="w-3.5 h-3.5" /> {t('call_lead')}
                         </a>
                       </div>
                     </div>
@@ -432,22 +432,22 @@ export default function UserDashboard() {
                 <Award className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-xs font-black text-amber-950">Volunteer Rewards Store</p>
-                <p className="text-[10px] text-amber-800">You have <strong>{karmaPoints} Karma Points</strong>! Redeem Apollo, BigBasket & Uber vouchers.</p>
+                <p className="text-xs font-black text-amber-950">{t('rewards_store_title')}</p>
+                <p className="text-[10px] text-amber-800">{t('rewards_store_desc')}</p>
               </div>
             </div>
             <button
               onClick={() => setIsRewardsOpen(true)}
               className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs cursor-pointer shrink-0 shadow-xs"
             >
-              Vouchers →
+              {t('rewards_btn')}
             </button>
           </div>
 
           {/* Section 2: Open Volunteer Missions Available in Your Area */}
           <div className="space-y-2.5">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider px-1">
-              Available Community Aid Missions ({volunteerTasks.filter((t) => !t.userRegistered).length})
+              {t('available_missions')} ({volunteerTasks.filter((t) => !t.userRegistered).length})
             </h3>
 
             <div className="space-y-3">

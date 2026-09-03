@@ -58,10 +58,10 @@ export default function PublicEmergencySOSModal({ onClose, onSOSDispatched }) {
 
   // Preset emergency situational chips for 1-tap input in panic
   const PRESET_CHIPS = [
-    { label: '🌊 Flood Water Rising Rapidly', text: 'Water level rising rapidly inside house. Multiple people trapped on roof needing immediate boat rescue.' },
-    { label: '🔥 Massive Fire / Gas Leak', text: 'Active fire spreading from LPG cylinder explosion with heavy smoke and toxic fumes.' },
-    { label: '🏥 Severe Bleeding / Medical Emergency', text: 'Critical patient unconscious with severe bleeding and low oxygen. Need ALS ambulance.' },
-    { label: '🏚️ Building / Wall Collapsed', text: 'Structure collapsed with multiple civilians trapped underneath rubble.' },
+    { label: t('preset_flood'), text: 'Water level rising rapidly inside house. Multiple people trapped on roof needing immediate boat rescue.' },
+    { label: t('preset_fire'), text: 'Active fire spreading from LPG cylinder explosion with heavy smoke and toxic fumes.' },
+    { label: t('preset_medical'), text: 'Critical patient unconscious with severe bleeding and low oxygen. Need ALS ambulance.' },
+    { label: t('preset_collapse'), text: 'Structure collapsed with multiple civilians trapped underneath rubble.' },
   ];
 
   const handleDispatch = async (e) => {
@@ -163,13 +163,13 @@ export default function PublicEmergencySOSModal({ onClose, onSOSDispatched }) {
           </div>
           <div>
             <span className="text-[10px] font-black uppercase tracking-widest text-red-600 bg-red-50 px-2 py-0.5 rounded-md border border-red-200 inline-block mb-0.5">
-              NO LOGIN REQUIRED
+              {t('no_login_needed')}
             </span>
             <h3 className="text-lg sm:text-xl font-black text-slate-950 leading-tight">
-              Immediate Public SOS Beacon
+              {t('public_sos_title')}
             </h3>
             <p className="text-xs text-slate-600 mt-0.5">
-              Device GPS automatically locked & sent to response forces
+              {t('public_sos_desc')}
             </p>
           </div>
         </div>
@@ -199,10 +199,10 @@ export default function PublicEmergencySOSModal({ onClose, onSOSDispatched }) {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-xs font-black text-slate-900">
-                  What is Your Emergency Situation? <span className="text-red-600">*</span>
+                  {t('what_is_situation')} <span className="text-red-600">*</span>
                 </label>
                 <span className="text-[10px] font-bold text-red-600 uppercase flex items-center gap-1">
-                  <Bot className="w-3 h-3 text-red-600" /> AI Auto-Routes to Authority
+                  <Bot className="w-3 h-3 text-red-600" /> {t('ai_auto_routes')}
                 </span>
               </div>
               <textarea
@@ -210,7 +210,7 @@ export default function PublicEmergencySOSModal({ onClose, onSOSDispatched }) {
                 rows={3}
                 value={situation}
                 onChange={(e) => setSituation(e.target.value)}
-                placeholder="Type what happened (e.g. 3 people trapped in rising flood on 2nd floor, water rising fast)"
+                placeholder={t('type_situation_placeholder')}
                 className="w-full text-base px-3.5 py-2.5 rounded-xl border-2 border-slate-300 bg-white text-slate-950 font-semibold placeholder:text-slate-400 focus:outline-none focus:border-red-600 focus:ring-2 focus:ring-red-100 shadow-xs"
               />
             </div>
@@ -218,7 +218,7 @@ export default function PublicEmergencySOSModal({ onClose, onSOSDispatched }) {
             {/* Fast 1-Tap Situation Chips */}
             <div>
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                Or Tap a Quick Emergency Situation:
+                {t('or_tap_preset')}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                 {PRESET_CHIPS.map((chip, i) => (
@@ -244,12 +244,12 @@ export default function PublicEmergencySOSModal({ onClose, onSOSDispatched }) {
                 {isAnalyzing ? (
                   <>
                     <Bot className="w-5 h-5 animate-spin" />
-                    <span>AI CLASSIFYING & DISPATCHING TO AUTHORITIES...</span>
+                    <span>{t('ai_analyzing_dispatch')}</span>
                   </>
                 ) : (
                   <>
                     <AlertOctagon className="w-5 h-5 animate-pulse" />
-                    <span>🚨 AI DISPATCH TO DESIGNATED AUTHORITY</span>
+                    <span>{t('ai_dispatch_button')}</span>
                   </>
                 )}
               </button>
@@ -271,10 +271,10 @@ export default function PublicEmergencySOSModal({ onClose, onSOSDispatched }) {
                 <CheckCircle2 className="w-7 h-7" />
               </div>
               <h4 className="text-base font-black text-emerald-950">
-                CRITICAL SOS BEACON BROADCASTED!
+                {t('sos_broadcasted_success')}
               </h4>
               <p className="text-xs text-emerald-800">
-                Your situation has been analyzed by AI and dispatched directly to the official response agency.
+                {t('sos_success_desc')}
               </p>
             </div>
 
@@ -282,10 +282,10 @@ export default function PublicEmergencySOSModal({ onClose, onSOSDispatched }) {
             <div className="p-4 bg-slate-900 text-white rounded-2xl border border-slate-800 space-y-3 shadow-lg">
               <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                 <span className="text-[10px] font-black uppercase tracking-widest text-red-400">
-                  🤖 AI ASSIGNED EMERGENCY FORCE
+                  {t('assigned_force')}
                 </span>
                 <span className="text-[10px] font-bold bg-red-600/30 text-red-300 px-2 py-0.5 rounded-full border border-red-500/30">
-                  CRITICAL PRIORITY
+                  {t('critical_priority')}
                 </span>
               </div>
 
@@ -303,13 +303,13 @@ export default function PublicEmergencySOSModal({ onClose, onSOSDispatched }) {
 
               <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
                 <div className="p-2 rounded-xl bg-slate-800/80 border border-slate-700">
-                  <span className="text-[10px] text-slate-400 block font-semibold">Response SLA</span>
+                  <span className="text-[10px] text-slate-400 block font-semibold">{t('response_sla')}</span>
                   <span className="font-black text-amber-400">
                     ~{dispatchedResult.aiResult.targetAuthority.responseSlaMinutes} Minutes
                   </span>
                 </div>
                 <div className="p-2 rounded-xl bg-slate-800/80 border border-slate-700">
-                  <span className="text-[10px] text-slate-400 block font-semibold">Tracking Beacon</span>
+                  <span className="text-[10px] text-slate-400 block font-semibold">{t('tracking_beacon')}</span>
                   <span className="font-mono font-bold text-emerald-400">
                     {dispatchedResult.trackingCode}
                   </span>
@@ -331,7 +331,7 @@ export default function PublicEmergencySOSModal({ onClose, onSOSDispatched }) {
               onClick={onClose}
               className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs cursor-pointer transition-colors"
             >
-              Close Window
+              {t('close_window')}
             </button>
           </div>
         )}

@@ -330,17 +330,17 @@ export default function Login() {
             className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-red-600 hover:from-red-700 hover:to-red-700 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-red-600/30 animate-pulse active:scale-98 transition-all cursor-pointer border border-red-500"
           >
             <AlertOctagon className="w-4 h-4 text-white animate-bounce" />
-            <span>🚨 EMERGENCY SOS (NO LOGIN REQUIRED)</span>
+            <span>{t('public_sos_banner_title')}</span>
           </button>
           <p className="text-[10px] text-red-600 font-bold mt-1.5 flex items-center justify-center gap-1">
-            <span>Auto-detects GPS & AI routes to designated authority</span>
+            <span>{t('public_sos_banner_subtitle')}</span>
           </p>
         </div>
 
         {/* 3-Role Gateway Segmented Control */}
         <div className="p-3 bg-slate-50 border-b border-slate-200">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center mb-2">
-            Select Your Role to Enter:
+            {t('select_role_prompt')}
           </p>
           <div className="grid grid-cols-3 p-1 bg-slate-200/80 rounded-2xl gap-1">
             <button
@@ -353,7 +353,7 @@ export default function Login() {
               }`}
             >
               <User className="w-3.5 h-3.5 text-red-600" />
-              <span>Citizen</span>
+              <span>{t('role_citizen')}</span>
             </button>
 
             <button
@@ -366,7 +366,7 @@ export default function Login() {
               }`}
             >
               <HeartHandshake className="w-3.5 h-3.5 text-emerald-600" />
-              <span>NGO Org</span>
+              <span>{t('role_ngo')}</span>
             </button>
 
             <button
@@ -379,7 +379,7 @@ export default function Login() {
               }`}
             >
               <Building2 className="w-3.5 h-3.5 text-blue-600" />
-              <span>Authority</span>
+              <span>{t('role_authority')}</span>
             </button>
           </div>
         </div>
@@ -390,9 +390,9 @@ export default function Login() {
           {activeTab === 'citizen' && (
             <div className="space-y-4">
               <div className="text-center mb-2">
-                <h2 className="text-base font-bold text-slate-900">Citizen Login</h2>
+                <h2 className="text-base font-bold text-slate-900">{t('citizen_login_title')}</h2>
                 <p className="text-xs text-slate-500">
-                  Register in database first or login with registered phone
+                  {t('citizen_login_subtitle')}
                 </p>
               </div>
 
@@ -400,17 +400,17 @@ export default function Login() {
               <div className="p-3.5 bg-red-50/90 rounded-2xl border-2 border-dashed border-red-300 text-center space-y-1.5">
                 <div className="flex items-center justify-center gap-1.5 text-red-700 font-bold text-xs">
                   <Database className="w-4 h-4 text-red-600" />
-                  <span>New Citizen? Register in Database First:</span>
+                  <span>{t('new_citizen_prompt')}</span>
                 </div>
                 <p className="text-[11px] text-slate-600">
-                  Save your name, medical notes & ICE emergency contact to the disaster registry.
+                  {t('new_citizen_desc')}
                 </p>
                 <Link
                   to="/register"
                   className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 px-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black transition-all shadow-xs cursor-pointer"
                 >
                   <UserPlus className="w-4 h-4" />
-                  <span>REGISTER CITIZEN INFO FIRST</span>
+                  <span>{t('btn_register_first')}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
@@ -418,7 +418,7 @@ export default function Login() {
               <form onSubmit={handleCitizenSubmit} className="space-y-3 pt-1">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Registered Mobile Phone
+                    {t('mobile_phone_label')}
                   </label>
                   <div className="relative">
                     <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -426,7 +426,7 @@ export default function Login() {
                       type="tel"
                       value={userPhone}
                       onChange={(e) => setUserPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                      placeholder="10-digit mobile number (e.g. 9850422491)"
+                      placeholder={t('mobile_phone_placeholder')}
                       maxLength={10}
                       pattern="[0-9]{10}"
                       className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium tracking-wide"
@@ -445,7 +445,7 @@ export default function Login() {
                       type="password"
                       value={userPassword}
                       onChange={(e) => setUserPassword(e.target.value)}
-                      placeholder="Enter your password"
+                      placeholder={t('password_placeholder')}
                       className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium"
                       required
                     />
@@ -461,7 +461,7 @@ export default function Login() {
                       onChange={(e) => setKeepSignedIn(e.target.checked)}
                       className="w-4 h-4 rounded text-red-600 focus:ring-red-500 border-slate-300"
                     />
-                    <span>Keep me signed in</span>
+                    <span>{t('keep_signed_in')}</span>
                   </label>
 
                   <button
@@ -472,7 +472,7 @@ export default function Login() {
                     }}
                     className="text-xs font-bold text-red-600 hover:text-red-700 hover:underline cursor-pointer"
                   >
-                    Forgot Password?
+                    {t('forgot_password')}
                   </button>
                 </div>
 
@@ -481,7 +481,7 @@ export default function Login() {
                   disabled={isVerifying}
                   className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white font-bold text-xs shadow-md transition-all cursor-pointer mt-1 flex items-center justify-center gap-2"
                 >
-                  {isVerifying ? 'Verifying with Supabase...' : 'Verify from Database & Enter Dashboard'}
+                  {isVerifying ? t('verifying_login') : t('btn_login')}
                 </button>
               </form>
             </div>
@@ -491,16 +491,16 @@ export default function Login() {
           {activeTab === 'ngo' && (
             <div className="space-y-4">
               <div className="text-center mb-3">
-                <h2 className="text-base font-bold text-slate-900">NGO Operations Portal</h2>
+                <h2 className="text-base font-bold text-slate-900">{t('ngo_login_title')}</h2>
                 <p className="text-xs text-slate-500">
-                  Manage field volunteer squads, rescue missions & relief donations
+                  {t('ngo_login_subtitle')}
                 </p>
               </div>
 
               <form onSubmit={handleNGOSubmit} className="space-y-3 pt-1">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Registered Relief Organization
+                    {t('ngo_org_label')}
                   </label>
                   <select
                     value={ngoName}
@@ -516,7 +516,7 @@ export default function Login() {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Coordinator / Lead Name
+                    {t('ngo_officer_label')}
                   </label>
                   <input
                     type="text"
@@ -536,7 +536,7 @@ export default function Login() {
                       onChange={(e) => setKeepSignedIn(e.target.checked)}
                       className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300"
                     />
-                    <span>Keep me signed in</span>
+                    <span>{t('keep_signed_in')}</span>
                   </label>
 
                   <button
@@ -555,7 +555,7 @@ export default function Login() {
                   type="submit"
                   className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all cursor-pointer mt-1"
                 >
-                  Enter NGO Operations Hub
+                  {t('ngo_login_btn')}
                 </button>
               </form>
             </div>
@@ -565,9 +565,9 @@ export default function Login() {
           {activeTab === 'authority' && (
             <div className="space-y-4">
               <div className="text-center mb-3">
-                <h2 className="text-base font-bold text-slate-900">Disaster Authority Portal</h2>
+                <h2 className="text-base font-bold text-slate-900">{t('authority_login_title')}</h2>
                 <p className="text-xs text-slate-500">
-                  Verify incidents, deploy registered NGOs & monitor live SOS situations
+                  {t('authority_login_subtitle')}
                 </p>
               </div>
 
@@ -616,7 +616,7 @@ export default function Login() {
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Official Badge ID
+                      {t('auth_badge_label')}
                     </label>
                     <div className="relative">
                       <IdCard className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -632,7 +632,7 @@ export default function Login() {
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Passcode PIN
+                      {t('auth_pin_label')}
                     </label>
                     <div className="relative">
                       <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -656,7 +656,7 @@ export default function Login() {
                       onChange={(e) => setKeepSignedIn(e.target.checked)}
                       className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
                     />
-                    <span>Keep me signed in</span>
+                    <span>{t('keep_signed_in')}</span>
                   </label>
 
                   <button
@@ -689,7 +689,7 @@ export default function Login() {
             href="tel:112"
             className="inline-flex items-center gap-1.5 text-xs font-bold text-red-600 hover:underline"
           >
-            <PhoneCall className="w-3.5 h-3.5" /> Toll-Free Emergency Hotline: 112
+            <PhoneCall className="w-3.5 h-3.5" /> {t('toll_free_hotline')}
           </a>
         </div>
       </div>
