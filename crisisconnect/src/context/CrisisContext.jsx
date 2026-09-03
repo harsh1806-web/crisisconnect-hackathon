@@ -7,6 +7,13 @@ import {
   REGISTERED_NGOS,
 } from '../data/mockData';
 import toast from 'react-hot-toast';
+import {
+  createCrisisRequest,
+  subscribeToRequests,
+  updateRequestStatus as serviceUpdateRequestStatus,
+  verifyCrisisRequest as serviceVerifyCrisisRequest,
+} from '../services/requestService.js';
+import { triggerDeviceNotification } from '../services/notificationService.js';
 
 const CrisisContext = createContext(null);
 
@@ -46,6 +53,31 @@ export function CrisisProvider({ children }) {
   useEffect(() => {
     localStorage.setItem('crisisconnect_broadcasts_v2', JSON.stringify(broadcasts));
   }, [broadcasts]);
+
+  // Connect to Live Firestore requests if available
+  useEffect(() => {
+    try {
+      const unsubscribe = subscribeToRequests((liveRequests) => {
+        if (liveRequests && liveRequests.length > 0) {
+          setRequests((prev) => {
+            const liveMap = new Map(liveRequests.map((r) => [r.id, r]));
+            const merged = [...liveRequests];
+            for (const req of prev) {
+              if (!liveMap.has(req.id)) {
+                merged.push(req);
+              }
+            }
+            return merged;
+          });
+        }
+      });
+      return () => {
+        if (typeof unsubscribe === 'function') unsubscribe();
+      };
+    } catch {
+      // Fallback silently if offline or demo credentials
+    }
+  }, []);
 
   // Derived statistics for Authorities & Dashboard
   const crisisInfo = useMemo(() => {
@@ -106,6 +138,29 @@ export function CrisisProvider({ children }) {
 
     setRequests((prev) => [newReq, ...prev]);
     toast.success(`Request ${trackingCode} submitted! Authorities alerted.`);
+
+    // Persist to backend Firestore and broadcast notification
+    try {
+      createCrisisRequest({
+        title: newReq.title,
+        description: newReq.description,
+        category: (newReq.category || 'OTHER').toUpperCase(),
+        urgency: (newReq.urgency || 'MEDIUM').toUpperCase(),
+        mobileNo: newReq.contactPhone,
+        peopleCount: newReq.peopleCount,
+        location: {
+          lat: newReq.lat,
+          lng: newReq.lng,
+          address: newReq.locationName,
+        },
+      }).catch(() => {});
+      triggerDeviceNotification(`🚨 NEW EMERGENCY: ${newReq.category}`, {
+        body: `${newReq.title} at ${newReq.locationName}`,
+      });
+    } catch {
+      // Offline fallback
+    }
+
     return newReq;
   };
 
@@ -147,6 +202,28 @@ export function CrisisProvider({ children }) {
     };
 
     setRequests((prev) => [sosReq, ...prev]);
+
+    // Persist to backend Firestore and broadcast audio siren
+    try {
+      createCrisisRequest({
+        title: sosReq.title,
+        description: sosReq.description,
+        category: 'RESCUE',
+        urgency: 'CRITICAL',
+        mobileNo: sosReq.contactPhone,
+        peopleCount: sosReq.peopleCount,
+        location: {
+          lat: sosReq.lat,
+          lng: sosReq.lng,
+          address: sosReq.locationName,
+        },
+      }).catch(() => {});
+      triggerDeviceNotification('🚨 CRITICAL SOS BEACON BROADCASTED', {
+        body: `Immediate rescue required at ${sosReq.locationName}`,
+      });
+    } catch {
+      // Offline fallback
+    }
 
     try {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -195,6 +272,13 @@ export function CrisisProvider({ children }) {
       })
     );
     toast.success('Incident verified & cleared for NGO deployment!');
+
+    // Persist verification to Firestore
+    try {
+      serviceVerifyCrisisRequest(requestId, { name: authorityName, role: 'ORGANIZATION' }).catch(() => {});
+    } catch {
+      // Offline fallback
+    }
   };
 
   // 4. Authority Action: Reject Request
@@ -280,6 +364,13 @@ export function CrisisProvider({ children }) {
       })
     );
     toast.success(`Status updated: ${newStatus.replace('_', ' ').toUpperCase()}`);
+
+    // Persist status change to Firestore
+    try {
+      serviceUpdateRequestStatus(requestId, newStatus.toUpperCase()).catch(() => {});
+    } catch {
+      // Offline fallback
+    }
   };
 
   // Add real-time comment / update
@@ -338,6 +429,7 @@ export function CrisisProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useCrisis() {
   const context = useContext(CrisisContext);
   if (!context) {
