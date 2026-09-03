@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Link } from 'react-router-dom';
-import { Users, ShieldCheck, Crosshair } from 'lucide-react';
+import { Users, ShieldCheck, Crosshair, Navigation, Phone, ExternalLink, ShieldAlert, HeartPulse, X } from 'lucide-react';
+import { REAL_POLICE_STATIONS, REAL_HOSPITALS } from '../data/emergencyFacilities';
 import { useCrisis } from '../context/CrisisContext';
 import toast from 'react-hot-toast';
 
@@ -71,6 +72,9 @@ export default function MapView() {
   const [showShelters, setShowShelters] = useState(true);
   const [showRadiuses, setShowRadiuses] = useState(true);
   const [criticalOnly, setCriticalOnly] = useState(false);
+  const [showPolice, setShowPolice] = useState(true);
+  const [showHospitals, setShowHospitals] = useState(true);
+  const [navConfirmModal, setNavConfirmModal] = useState(null);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [gpsAccuracy, setGpsAccuracy] = useState(null);
@@ -477,6 +481,122 @@ export default function MapView() {
             );
           })}
 
+          {/* REAL VERIFIED POLICE STATIONS */}
+          {showPolice &&
+            REAL_POLICE_STATIONS.map((ps) => (
+              <Marker
+                key={ps.id}
+                position={[ps.lat, ps.lng]}
+                icon={createCustomPin('#1e40af', '🚓')}
+              >
+                <Popup>
+                  <div className="w-68 p-1.5 space-y-2 text-xs font-sans">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9px] font-black uppercase tracking-wider text-blue-800 bg-blue-100 border border-blue-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        🚓 Verified Police Station
+                      </span>
+                      <span className="font-mono text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                        {ps.badge}
+                      </span>
+                    </div>
+
+                    <h4 className="font-black text-slate-900 text-sm leading-snug">
+                      {ps.name}
+                    </h4>
+
+                    <p className="text-[11px] text-slate-600 leading-snug">
+                      📍 {ps.address}
+                    </p>
+
+                    <div className="p-2 rounded-xl bg-blue-50/70 border border-blue-200/80 text-[11px] space-y-1">
+                      <p className="text-slate-700 font-medium">
+                        <strong>Commander:</strong> {ps.leadOfficer}
+                      </p>
+                      <p className="text-blue-900 text-[10px] font-semibold">
+                        🛡️ {ps.availableUnits}
+                      </p>
+                    </div>
+
+                    <div className="pt-1 flex items-center justify-between gap-2 border-t border-slate-100">
+                      <a
+                        href={`tel:${ps.emergencyHotline}`}
+                        className="px-2.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs flex items-center gap-1"
+                        title="Emergency Police Dial 100"
+                      >
+                        <Phone className="w-3 h-3" /> Dial {ps.emergencyHotline}
+                      </a>
+
+                      <button
+                        onClick={() => setNavConfirmModal(ps)}
+                        className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs cursor-pointer transition-colors"
+                      >
+                        <Navigation className="w-3 h-3 text-blue-200" />
+                        <span>Navigate</span>
+                      </button>
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
+          {/* REAL VERIFIED 24/7 HOSPITALS & TRAUMA CENTRES */}
+          {showHospitals &&
+            REAL_HOSPITALS.map((hosp) => (
+              <Marker
+                key={hosp.id}
+                position={[hosp.lat, hosp.lng]}
+                icon={createCustomPin('#dc2626', '🏥')}
+              >
+                <Popup>
+                  <div className="w-68 p-1.5 space-y-2 text-xs font-sans">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9px] font-black uppercase tracking-wider text-rose-900 bg-rose-100 border border-rose-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        🏥 24/7 Emergency Hospital
+                      </span>
+                      <span className="font-mono text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                        {hosp.badge}
+                      </span>
+                    </div>
+
+                    <h4 className="font-black text-slate-900 text-sm leading-snug">
+                      {hosp.name}
+                    </h4>
+
+                    <p className="text-[11px] text-slate-600 leading-snug">
+                      📍 {hosp.address}
+                    </p>
+
+                    <div className="p-2 rounded-xl bg-rose-50/70 border border-rose-200/80 text-[11px] space-y-1">
+                      <p className="text-rose-950 font-bold text-[10px]">
+                        🩺 {hosp.specialty}
+                      </p>
+                      <p className="text-slate-700 text-[10px]">
+                        🏥 {hosp.facilities}
+                      </p>
+                    </div>
+
+                    <div className="pt-1 flex items-center justify-between gap-2 border-t border-slate-100">
+                      <a
+                        href={`tel:${hosp.emergencyHotline}`}
+                        className="px-2.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs flex items-center gap-1"
+                        title="Ambulance Emergency Dial 108"
+                      >
+                        <Phone className="w-3 h-3" /> Dial {hosp.emergencyHotline}
+                      </a>
+
+                      <button
+                        onClick={() => setNavConfirmModal(hosp)}
+                        className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs cursor-pointer transition-colors"
+                      >
+                        <Navigation className="w-3 h-3 text-blue-200" />
+                        <span>Navigate</span>
+                      </button>
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
           {/* Shelters Pins */}
           {showShelters &&
             shelters.map((sh) => (
@@ -565,6 +685,71 @@ export default function MapView() {
           )}
         </div>
       </div>
+      {/* Navigation Modal Confirmation */}
+      {navConfirmModal && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white text-slate-900 w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-slate-200 space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">{navConfirmModal.icon || '🧭'}</span>
+                <div>
+                  <h3 className="font-black text-sm text-slate-900 leading-tight">
+                    Start Navigation
+                  </h3>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">
+                    {navConfirmModal.type === 'POLICE' ? 'Police Station' : 'Emergency Hospital'}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setNavConfirmModal(null)}
+                className="p-1 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-1 text-xs">
+              <h4 className="font-bold text-slate-900 text-sm">{navConfirmModal.name}</h4>
+              <p className="text-slate-600 text-[11px] leading-relaxed">📍 {navConfirmModal.address}</p>
+              <p className="text-blue-600 font-mono text-[10px] font-semibold pt-1">
+                GPS: {navConfirmModal.lat}, {navConfirmModal.lng}
+              </p>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${navConfirmModal.lat},${navConfirmModal.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setNavConfirmModal(null)}
+                className="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+              >
+                <Navigation className="w-4 h-4" />
+                <span>Open in Google Maps (Turn-by-Turn)</span>
+              </a>
+
+              <a
+                href={`https://maps.apple.com/?daddr=${navConfirmModal.lat},${navConfirmModal.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setNavConfirmModal(null)}
+                className="w-full py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <span>Open in Apple Maps</span>
+              </a>
+
+              <a
+                href={`tel:${navConfirmModal.emergencyHotline || navConfirmModal.phone}`}
+                className="w-full py-2.5 rounded-2xl bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <Phone className="w-4 h-4" />
+                <span>Call Emergency Hotline ({navConfirmModal.emergencyHotline || navConfirmModal.phone})</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

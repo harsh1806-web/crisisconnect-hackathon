@@ -29,6 +29,7 @@ import { playEmergencyAlertSound } from '../../services/notificationService';
 import AuthorityMobilizeVolunteersModal from '../../components/AuthorityMobilizeVolunteersModal';
 import IncidentVerificationModal from '../../components/IncidentVerificationModal';
 import VolunteerAttendanceModal from '../../components/VolunteerAttendanceModal';
+import { REAL_POLICE_STATIONS, REAL_HOSPITALS } from '../../data/emergencyFacilities';
 import toast from 'react-hot-toast';
 
 // Custom Map Pins for Leaflet
@@ -584,6 +585,88 @@ export default function AuthorityDashboard() {
                     <p className="text-[10px] font-semibold text-slate-500">
                       Capacity: {shelter.occupancy} / {shelter.capacity} occupied
                     </p>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
+            {/* Real Verified Police Stations */}
+            {REAL_POLICE_STATIONS.map((ps) => (
+              <Marker
+                key={ps.id}
+                position={[ps.lat, ps.lng]}
+                icon={createPin('#1e40af', '🚓')}
+              >
+                <Popup>
+                  <div className="p-1.5 space-y-1.5 max-w-xs text-xs font-sans">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9px] font-black uppercase text-blue-800 bg-blue-100 px-1.5 py-0.5 rounded">
+                        🚓 Police Station
+                      </span>
+                      <span className="font-mono text-[9px] font-bold text-slate-500">
+                        {ps.badge}
+                      </span>
+                    </div>
+                    <h4 className="font-black text-slate-900 text-xs">{ps.name}</h4>
+                    <p className="text-[11px] text-slate-600">📍 {ps.address}</p>
+                    <p className="text-[10px] text-slate-500 font-semibold">{ps.availableUnits}</p>
+                    <div className="pt-1 border-t border-slate-100 flex items-center justify-between">
+                      <a
+                        href={`tel:${ps.emergencyHotline}`}
+                        className="text-red-600 font-bold hover:underline"
+                      >
+                        Dial {ps.emergencyHotline}
+                      </a>
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${ps.lat},${ps.lng}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2 py-1 rounded bg-blue-600 text-white font-bold text-[10px] flex items-center gap-1"
+                      >
+                        <Navigation className="w-3 h-3" /> Turn-by-Turn
+                      </a>
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
+            {/* Real Verified Hospitals */}
+            {REAL_HOSPITALS.map((hosp) => (
+              <Marker
+                key={hosp.id}
+                position={[hosp.lat, hosp.lng]}
+                icon={createPin('#dc2626', '🏥')}
+              >
+                <Popup>
+                  <div className="p-1.5 space-y-1.5 max-w-xs text-xs font-sans">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9px] font-black uppercase text-rose-800 bg-rose-100 px-1.5 py-0.5 rounded">
+                        🏥 24/7 Hospital
+                      </span>
+                      <span className="font-mono text-[9px] font-bold text-slate-500">
+                        {hosp.badge}
+                      </span>
+                    </div>
+                    <h4 className="font-black text-slate-900 text-xs">{hosp.name}</h4>
+                    <p className="text-[11px] text-slate-600">📍 {hosp.address}</p>
+                    <p className="text-[10px] text-slate-500">{hosp.facilities}</p>
+                    <div className="pt-1 border-t border-slate-100 flex items-center justify-between">
+                      <a
+                        href={`tel:${hosp.emergencyHotline}`}
+                        className="text-red-600 font-bold hover:underline"
+                      >
+                        Dial {hosp.emergencyHotline}
+                      </a>
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${hosp.lat},${hosp.lng}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2 py-1 rounded bg-blue-600 text-white font-bold text-[10px] flex items-center gap-1"
+                      >
+                        <Navigation className="w-3 h-3" /> Turn-by-Turn
+                      </a>
+                    </div>
                   </div>
                 </Popup>
               </Marker>
