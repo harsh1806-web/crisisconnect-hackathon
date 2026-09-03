@@ -78,20 +78,29 @@ export default function App() {
         }
 
         // Native iOS/Android Notification Permission Dialog
-        const { status: notifStatus } = await Notifications.requestPermissionsAsync({
-          ios: {
-            allowAlert: true,
-            allowBadge: true,
-            allowSound: true,
-          },
-        });
+        if (Platform.OS === 'ios') {
+          const { status: notifStatus } = await Notifications.requestPermissionsAsync({
+            ios: {
+              allowAlert: true,
+              allowBadge: true,
+              allowSound: true,
+            },
+          });
 
-        if (notifStatus === 'granted') {
+          if (notifStatus === 'granted') {
+            try {
+              const token = await Notifications.getExpoPushTokenAsync();
+              setExpoPushToken(token.data);
+            } catch (e) {
+              console.log('Push token generation error:', e);
+            }
+          }
+        } else {
+          // Android: Request notification permissions safely without remote push token
           try {
-            const token = await Notifications.getExpoPushTokenAsync();
-            setExpoPushToken(token.data);
+            await Notifications.requestPermissionsAsync();
           } catch (e) {
-            console.log('Push token generation error:', e);
+            console.log('Android notification permission error:', e);
           }
         }
       } catch (err) {
