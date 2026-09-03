@@ -135,7 +135,41 @@ export function AuthProvider({ children }) {
     switchRole(roleKey);
   };
 
+  // Portal view helpers (Sharvari's User & Authority login portals)
+  const isUser = isVictim || userProfile?.role === 'user' || userProfile?.role === USER_ROLES.VICTIM || !userProfile?.role;
+  const isAuthority = isVolunteer || isOrganization || isAdmin || userProfile?.role === 'authority';
+
+  const loginAsUser = (userData = {}) => {
+    const userSession = {
+      type: 'user',
+      name: 'Aditya Sharma',
+      phone: '+91 98765 43210',
+      mobileNo: '+91 98765 43210',
+      bloodGroup: 'O+',
+      age: 28,
+      role: USER_ROLES.VICTIM,
+      ...userData,
+    };
+    setUserProfile(userSession);
+    return userSession;
+  };
+
+  const loginAsAuthority = (authData = {}) => {
+    const authSession = {
+      type: 'authority',
+      name: 'Captain R. Deshmukh',
+      authorityId: 'NDRF-W7-409',
+      unit: 'National Disaster Response Force (NDRF)',
+      rank: 'Senior Operations Commander',
+      role: USER_ROLES.ORGANIZATION,
+      ...authData,
+    };
+    setUserProfile(authSession);
+    return authSession;
+  };
+
   const value = {
+    session: userProfile || currentUser,
     currentUser: currentUser || userProfile,
     userProfile,
     deviceToken,
@@ -150,12 +184,16 @@ export function AuthProvider({ children }) {
     enableNotifications,
     switchRole,
     loginAs,
+    loginAsUser,
+    loginAsAuthority,
     isVictim,
     isCitizen,
     isVolunteer,
     isOrganization,
     isAdmin,
     isCoordinator,
+    isUser,
+    isAuthority,
   };
 
   return (
