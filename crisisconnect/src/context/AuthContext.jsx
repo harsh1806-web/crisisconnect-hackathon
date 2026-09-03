@@ -171,7 +171,6 @@ export function AuthProvider({ children }) {
     setSession(s);
     setUserProfile(s);
     registerActiveDeviceSession(s);
-    toast.success(`NGO Portal: Signed in with ${s.ngoName || 'NGO Partner'}`);
     return s;
   };
 
@@ -184,7 +183,6 @@ export function AuthProvider({ children }) {
     setSession(s);
     setUserProfile(s);
     registerActiveDeviceSession(s);
-    toast.success(`Authority Command: Signed in as ${s.rank || 'Commander'}`);
     return s;
   };
 

@@ -90,15 +90,8 @@ export const AUTHORITY_AGENCIES = [
 export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { loginAsCitizen, loginAsNGO, loginAsAuthority, session, logout } = useAuth();
+  const { loginAsCitizen, loginAsNGO, loginAsAuthority } = useAuth();
   const [activeTab, setActiveTab] = useState('citizen'); // 'citizen' | 'ngo' | 'authority'
-
-  // If user navigates back to /login via browser/phone back button, immediately ensure clean logout
-  useEffect(() => {
-    if (session) {
-      logout();
-    }
-  }, [session, logout]);
 
   // Citizen form - initialized directly from searchParams if redirected from registration
   const userName = searchParams.get('name') || '';
@@ -163,18 +156,20 @@ export default function Login() {
         return;
       }
 
-      // 4. Register mobile device token & request push alert permissions
-      await registerActiveDeviceSession({
-        id: citizen.id,
-        phone: citizen.phone,
-        name: citizen.name,
-        bloodGroup: citizen.blood_group,
-        role: 'CITIZEN',
-        latitude: citizen.latitude,
-        longitude: citizen.longitude,
-      });
-
-      toast.success('📱 Mobile device registered in Supabase for live emergency alerts!');
+      // 4. Register mobile device token quietly in background
+      try {
+        await registerActiveDeviceSession({
+          id: citizen.id,
+          phone: citizen.phone,
+          name: citizen.name,
+          bloodGroup: citizen.blood_group,
+          role: 'CITIZEN',
+          latitude: citizen.latitude,
+          longitude: citizen.longitude,
+        });
+      } catch (devErr) {
+        toast.error('Device registration issue: ' + (devErr.message || 'Push alerts limited'));
+      }
 
       // 5. Login citizen with real Supabase record
       loginAsCitizen({
@@ -196,7 +191,7 @@ export default function Login() {
         },
       });
 
-      toast.success(`Verified from Supabase Database! Welcome, ${citizen.name}.`);
+      toast.success(`Welcome, ${citizen.name}!`);
       navigate('/user/dashboard', { replace: true });
     } catch (err) {
       toast.error('Login error: ' + err.message);
