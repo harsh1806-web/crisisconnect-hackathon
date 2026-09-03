@@ -163,6 +163,8 @@ export function CrisisProvider({ children }) {
             ? 'ndrf'
             : activeUser.badgeId?.toLowerCase().startsWith('usar')
             ? 'usar'
+            : activeUser.badgeId?.toLowerCase().startsWith('relief')
+            ? 'relief'
             : 'all');
 
         const isGeneralCoordinator =

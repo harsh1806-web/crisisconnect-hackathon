@@ -93,8 +93,27 @@ export default function ForgotPasswordModal({ role = 'citizen', initialPhone = '
         setIsProcessing(false);
       }
     } else if (role === 'authority') {
-      setCitizenName('Commanding Officer');
-      setRetrievedPassword('police123');
+      const b = authorityBadge.toUpperCase();
+      const isRelief = b.includes('RELIEF');
+      const isFire = b.includes('FIRE');
+      const isHosp = b.includes('HOSP');
+      const isNdrf = b.includes('NDRF');
+      const isUsar = b.includes('USAR');
+
+      const pin = isRelief
+        ? 'relief1070'
+        : isFire
+        ? 'fire101'
+        : isHosp
+        ? 'hosp108'
+        : isNdrf
+        ? 'ndrf1077'
+        : isUsar
+        ? 'usar112'
+        : 'police123';
+
+      setCitizenName(isRelief ? 'Director Meera Deshmukh' : 'Commanding Officer');
+      setRetrievedPassword(pin);
       toast.success('Official Command PIN Verified!');
       setStep(2);
     } else {

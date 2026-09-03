@@ -90,6 +90,19 @@ export const AUTHORITY_AGENCIES = [
     desc: 'Collapsed buildings, heavy concrete cutters, acoustic life detectors, K9 units',
     theme: 'border-purple-500/40 bg-purple-50/70 text-purple-900',
   },
+  {
+    id: 'relief',
+    name: 'Relief & Humanitarian Services (RHS)',
+    shortName: 'Relief & Humanitarian (1070)',
+    badge: 'RELIEF-1070',
+    pin: 'relief1070',
+    officer: 'Director Meera Deshmukh',
+    rank: 'Chief Humanitarian Operations Officer',
+    hotline: '1070',
+    icon: '📦',
+    desc: 'Emergency food & dry rations, drinking water supply, temporary shelters, blankets, dignity kits, child & community welfare',
+    theme: 'border-emerald-500/40 bg-emerald-50/70 text-emerald-900',
+  },
 ];
 
 export const NGO_ORGANIZATIONS = [
