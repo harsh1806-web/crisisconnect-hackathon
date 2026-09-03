@@ -677,7 +677,14 @@ export function CrisisProvider({ children }) {
       prev.map((t) => {
         if (t.id === taskId) {
           const updatedRoster = (t.roster || []).map((vol) => {
-            if (vol.id === volunteerId || vol.citizenName === volunteerId) {
+            const cleanVolId = String(volunteerId || '').replace(/\D/g, '').slice(-10);
+            const cleanVolPhone = String(vol.citizenPhone || '').replace(/\D/g, '').slice(-10);
+            const isMatch =
+              vol.id === volunteerId ||
+              vol.citizenName === volunteerId ||
+              (cleanVolId && cleanVolPhone && cleanVolId === cleanVolPhone);
+
+            if (isMatch) {
               affectedVolunteer = vol;
               const prevPoints = vol.pointsAwarded || 0;
               const newPoints = status === 'ATTENDED' ? 100 : 0;
@@ -695,10 +702,13 @@ export function CrisisProvider({ children }) {
           });
 
           // Check if current user is this volunteer
+          const cleanUserPhone = String(sessionRef.current?.phone || '').replace(/\D/g, '').slice(-10);
+          const cleanAffPhone = String(affectedVolunteer?.citizenPhone || '').replace(/\D/g, '').slice(-10);
           const isUser =
             (sessionRef.current?.name &&
               affectedVolunteer?.citizenName &&
               sessionRef.current.name.toLowerCase() === affectedVolunteer.citizenName.toLowerCase()) ||
+            Boolean(cleanUserPhone && cleanAffPhone && cleanUserPhone === cleanAffPhone) ||
             t.userRegistered;
 
           return {
@@ -773,12 +783,12 @@ export function CrisisProvider({ children }) {
   const updateNGOMission = (requestId, squadNote, authorName = 'NGO Squad Lead') => {
     setRequests((prev) =>
       prev.map((r) => {
-        if (r.id === requestId) {
+        if (r.id === requestId || r.trackingCode === requestId) {
           return {
             ...r,
             status: 'in_progress',
             updates: [
-              ...r.updates,
+              ...(r.updates || []),
               {
                 id: `up-${Date.now()}`,
                 author: authorName,
@@ -792,6 +802,10 @@ export function CrisisProvider({ children }) {
       })
     );
     toast.success('Field Squad deployment update dispatched!');
+
+    try {
+      serviceUpdateRequestStatus(requestId, 'IN_PROGRESS', squadNote).catch(() => {});
+    } catch {}
   };
 
   // Authority Actions
