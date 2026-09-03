@@ -7,6 +7,7 @@ import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 
 import Login from './pages/Login';
+import Register from './pages/Register';
 
 // 1. Citizen Portal Pages (Flow: Login -> Dashboard -> Create Request -> Submitted -> Track Status)
 import UserDashboard from './pages/user/UserDashboard';
@@ -58,6 +59,7 @@ function AppRoutes() {
 
             {/* 3-Role Gateway Authentication */}
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
             {/* 1. CITIZEN PORTAL */}
             <Route path="/user/dashboard" element={<UserDashboard />} />

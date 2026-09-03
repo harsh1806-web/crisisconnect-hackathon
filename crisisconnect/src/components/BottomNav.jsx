@@ -16,8 +16,8 @@ export default function BottomNav() {
   const location = useLocation();
   const { isAuthority, isNGO } = useAuth();
 
-  // Don't render bottom nav on login gateway page
-  if (location.pathname === '/login') return null;
+  // Don't render bottom nav on login or registration gateway pages
+  if (location.pathname === '/login' || location.pathname === '/register') return null;
 
   const isActive = (path) => {
     if (path === '/' && location.pathname === '/') return true;

@@ -17,7 +17,7 @@ export default function Navbar() {
   const { isAuthority, isNGO, logout } = useAuth();
   const { crisisInfo } = useCrisis();
 
-  const isLoginPage = location.pathname === '/login';
+  const isLoginPage = location.pathname === '/login' || location.pathname === '/register';
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-2xs">
