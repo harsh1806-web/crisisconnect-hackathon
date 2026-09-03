@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Link } from 'react-router-dom';
-import { Users, ShieldCheck, Crosshair, Navigation, Phone, ExternalLink, ShieldAlert, HeartPulse, X } from 'lucide-react';
+import { Users, ShieldCheck, Crosshair, Navigation, Phone, ExternalLink, ShieldAlert, HeartPulse, X, Compass, ArrowUpDown } from 'lucide-react';
 import { REAL_POLICE_STATIONS, REAL_HOSPITALS } from '../data/emergencyFacilities';
+import EmergencyFacilitiesSorterModal from '../components/EmergencyFacilitiesSorterModal';
 import { useCrisis } from '../context/CrisisContext';
 import toast from 'react-hot-toast';
 
@@ -75,6 +76,7 @@ export default function MapView() {
   const [showPolice, setShowPolice] = useState(true);
   const [showHospitals, setShowHospitals] = useState(true);
   const [navConfirmModal, setNavConfirmModal] = useState(null);
+  const [isSorterOpen, setIsSorterOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [gpsAccuracy, setGpsAccuracy] = useState(null);
@@ -685,6 +687,23 @@ export default function MapView() {
           )}
         </div>
       </div>
+      {/* Emergency Facilities Sorter Drawer / Modal */}
+      {isSorterOpen && (
+        <EmergencyFacilitiesSorterModal
+          userLocation={userLocation}
+          onSelectFacility={(fac) => {
+            setMapCenter([fac.lat, fac.lng]);
+            setMapZoom(16);
+            toast.success(`Centered on ${fac.name}!`);
+          }}
+          onNavigate={(fac) => {
+            setIsSorterOpen(false);
+            setNavConfirmModal(fac);
+          }}
+          onClose={() => setIsSorterOpen(false)}
+        />
+      )}
+
       {/* Navigation Modal Confirmation */}
       {navConfirmModal && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
