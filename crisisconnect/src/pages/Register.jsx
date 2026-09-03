@@ -13,6 +13,7 @@ import {
 import { citizenDB } from '../services/db';
 import { useAuth } from '../context/AuthContext';
 import { getOrCreateDeviceToken, registerDeviceToken } from '../services/notificationService';
+import { registerCitizenInSupabase } from '../services/supabase';
 import toast from 'react-hot-toast';
 
 export default function Register() {
@@ -78,8 +79,23 @@ export default function Register() {
           age: Number(age) || 25,
           bloodGroup,
           location: { address, lat: 19.0760, lng: 72.8777 },
-        });
+        }).catch(() => {});
       }
+
+      // 3. Persist to Supabase Database
+      await registerCitizenInSupabase({
+        name,
+        phone,
+        password,
+        age: Number(age) || 25,
+        bloodGroup,
+        email,
+        address,
+        emergencyContactName: iceName,
+        emergencyContactPhone: icePhone,
+        lat: 19.0760,
+        lng: 72.8777,
+      }).catch(() => {});
     } catch {
       // Offline fallback
     }

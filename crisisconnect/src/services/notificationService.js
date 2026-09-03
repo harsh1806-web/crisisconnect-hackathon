@@ -10,6 +10,7 @@ import {
 } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { db } from './firebase.js';
+import { registerDeviceTokenInSupabase } from './supabase.js';
 import { COLLECTIONS } from '../utils/constants.js';
 
 const LOCAL_STORAGE_DEVICE_TOKEN = 'crisisconnect_device_token';
@@ -79,6 +80,13 @@ export async function registerDeviceToken(userId, metadata = {}) {
     );
   } catch (err) {
     console.warn('Could not store device token in Firestore:', err.message);
+  }
+
+  // Persist to Supabase if configured
+  try {
+    await registerDeviceTokenInSupabase(token, metadata);
+  } catch {
+    // Graceful fallback
   }
 
   return token;

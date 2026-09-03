@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { citizenDB } from '../services/db';
+import { getOrCreateDeviceToken, registerDeviceToken } from '../services/notificationService';
 import toast from 'react-hot-toast';
 
 export default function Login() {
@@ -57,23 +58,31 @@ export default function Login() {
         emergencyContact: existing.emergencyContact,
         address: existing.address,
       });
-      toast.success(`Verified from Database! Welcome, ${existing.name}.`);
+
+      // Generate device token upon login and register in database for alert notifications
+      try {
+        const token = getOrCreateDeviceToken();
+        registerDeviceToken(token, {
+          name: existing.name,
+          mobileNo: existing.phone,
+          bloodGroup: existing.bloodGroup,
+          role: 'CITIZEN',
+          location: { address: existing.address },
+        }).catch(() => {});
+      } catch {
+        // Fallback
+      }
+
+      toast.success(`Verified from Database! Welcome, ${existing.name}. Device token registered for notifications.`);
       navigate('/user/dashboard');
       return;
     }
 
-    // If not found in database, automatically save to database first
-    const registered = citizenDB.register({
-      name: userName.trim() || 'Citizen User',
-      phone: userPhone.trim(),
+    // If not found in database, redirect citizen to register first
+    toast.error('Mobile number not found! Please register your emergency profile first.', {
+      duration: 4000,
     });
-
-    loginAsCitizen({
-      name: registered.citizen.name,
-      phone: registered.citizen.phone,
-    });
-    toast.success('Profile saved to Database! Entering Dashboard...');
-    navigate('/user/dashboard');
+    navigate(`/register?phone=${encodeURIComponent(userPhone)}&name=${encodeURIComponent(userName)}`);
   };
 
   const handleNGOSubmit = (e) => {
