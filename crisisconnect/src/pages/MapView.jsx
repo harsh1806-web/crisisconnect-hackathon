@@ -76,6 +76,24 @@ function MapController({ center, zoom }) {
   return null;
 }
 
+// Helper component to track map zoom level and scale icons smoothly
+function MapZoomListener({ onZoomChange }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!map) return;
+    const handleZoom = () => {
+      if (typeof onZoomChange === 'function') {
+        onZoomChange(map.getZoom());
+      }
+    };
+    map.on('zoomend', handleZoom);
+    return () => {
+      map.off('zoomend', handleZoom);
+    };
+  }, [map, onZoomChange]);
+  return null;
+}
+
 // Helper to compute minutes remaining before a solved alert disappears (1-hour window)
 const getRemainingMins = (req) => {
   if (!req.resolvedAt) return 60;
