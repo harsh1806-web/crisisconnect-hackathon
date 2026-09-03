@@ -11,14 +11,14 @@ import {
   onSnapshot,
   serverTimestamp,
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { db } from './firebase.js';
 import {
   COLLECTIONS,
   REQUEST_STATUS,
   URGENCY_LEVELS,
   REQUEST_CATEGORIES,
-} from '../utils/constants';
-import { calculateDistance } from '../utils/helpers';
+} from '../utils/constants.js';
+import { calculateDistance } from '../utils/helpers.js';
 
 /**
  * Creates a new emergency crisis request

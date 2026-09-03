@@ -10,8 +10,8 @@ import {
   onSnapshot,
   serverTimestamp,
 } from 'firebase/firestore';
-import { db } from './firebase';
-import { COLLECTIONS, RESOURCE_STATUS, RESOURCE_TYPES } from '../utils/constants';
+import { db } from './firebase.js';
+import { COLLECTIONS, RESOURCE_STATUS, RESOURCE_TYPES } from '../utils/constants.js';
 
 /**
  * Creates a new relief resource entry (e.g. food packets, ambulance, shelters)

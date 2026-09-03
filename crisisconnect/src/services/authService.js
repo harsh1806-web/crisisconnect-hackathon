@@ -13,9 +13,9 @@ import {
   updateDoc,
   serverTimestamp,
 } from 'firebase/firestore';
-import { auth, db, googleProvider } from './firebase';
-import { COLLECTIONS, USER_ROLES } from '../utils/constants';
-import { registerDeviceToken } from './notificationService';
+import { auth, db, googleProvider } from './firebase.js';
+import { COLLECTIONS, USER_ROLES } from '../utils/constants.js';
+import { registerDeviceToken } from './notificationService.js';
 
 /**
  * Creates a new user with Email/Password and stores their full profile in Firestore:

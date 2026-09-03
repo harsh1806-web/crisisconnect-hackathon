@@ -9,8 +9,8 @@ import {
   limit,
 } from 'firebase/firestore';
 import toast from 'react-hot-toast';
-import { db } from './firebase';
-import { COLLECTIONS } from '../utils/constants';
+import { db } from './firebase.js';
+import { COLLECTIONS } from '../utils/constants.js';
 
 const LOCAL_STORAGE_DEVICE_TOKEN = 'crisisconnect_device_token';
 

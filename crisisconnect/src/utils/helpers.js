@@ -1,4 +1,4 @@
-import { URGENCY_LEVELS, REQUEST_STATUS } from './constants';
+import { URGENCY_LEVELS, REQUEST_STATUS } from './constants.js';
 
 /**
  * Calculates the great-circle distance between two geographic coordinates
