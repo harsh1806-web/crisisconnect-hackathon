@@ -2,7 +2,6 @@ import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import {
   INITIAL_CRISIS_INFO,
   INITIAL_BROADCASTS,
-  INITIAL_REQUESTS,
   INITIAL_SHELTERS,
   REGISTERED_NGOS,
   INITIAL_NGO_DONATIONS,
@@ -11,11 +10,11 @@ import {
 import toast from 'react-hot-toast';
 import {
   createCrisisRequest,
-  subscribeToRequests,
   updateRequestStatus as serviceUpdateRequestStatus,
   verifyCrisisRequest as serviceVerifyCrisisRequest,
 } from '../services/requestService.js';
 import { triggerDeviceNotification } from '../services/notificationService.js';
+import { supabase } from '../services/supabase.js';
 
 const CrisisContext = createContext(null);
 
@@ -62,57 +61,98 @@ export function CrisisProvider({ children }) {
     return INITIAL_BROADCASTS;
   });
 
-  const [requests, setRequests] = useState(() => {
-    const saved = localStorage.getItem('crisisconnect_requests_v3');
-    if (saved) {
+  // Real-time Emergency Requests - initialized strictly from live database, no demo data
+  const [requests, setRequests] = useState([]);
+
+  // Fetch live emergencies directly from Supabase on mount
+  useEffect(() => {
+    // Clear any previous demo cache from localStorage
+    localStorage.removeItem('crisisconnect_requests_v3');
+
+    const fetchSupabaseRequests = async () => {
       try {
-        return JSON.parse(saved);
-      } catch {
-        return INITIAL_REQUESTS;
-      }
-    }
-    return INITIAL_REQUESTS;
-  });
+        const { data, error } = await supabase
+          .from('emergency_requests')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-  useEffect(() => {
-    localStorage.setItem('crisisconnect_requests_v3', JSON.stringify(requests));
-  }, [requests]);
-
-  useEffect(() => {
-    localStorage.setItem('crisisconnect_broadcasts_v3', JSON.stringify(broadcasts));
-  }, [broadcasts]);
-
-  useEffect(() => {
-    localStorage.setItem('crisisconnect_donations_v1', JSON.stringify(donations));
-  }, [donations]);
-
-  useEffect(() => {
-    localStorage.setItem('crisisconnect_voltasks_v1', JSON.stringify(volunteerTasks));
-  }, [volunteerTasks]);
-
-  // Connect to Live Firestore requests if available
-  useEffect(() => {
-    try {
-      const unsubscribe = subscribeToRequests((liveRequests) => {
-        if (liveRequests && liveRequests.length > 0) {
-          setRequests((prev) => {
-            const liveMap = new Map(liveRequests.map((r) => [r.id, r]));
-            const merged = [...liveRequests];
-            for (const req of prev) {
-              if (!liveMap.has(req.id)) {
-                merged.push(req);
-              }
-            }
-            return merged;
-          });
+        if (!error && data) {
+          const mapped = data.map((r) => ({
+            id: r.id,
+            trackingCode: r.tracking_token || r.id,
+            title: r.title || `${r.category || 'Emergency'} Assistance`,
+            category: r.category || 'General',
+            urgency: (r.urgency || 'HIGH').toLowerCase(),
+            verificationStatus: (r.verification_status || 'PENDING').toLowerCase(),
+            status: (r.status || 'PENDING').toLowerCase(),
+            description: r.description || '',
+            locationName: r.location_name || '',
+            lat: Number(r.latitude) || 19.0760,
+            lng: Number(r.longitude) || 72.8777,
+            peopleCount: r.people_count || 1,
+            contactName: r.user_name || 'Citizen',
+            contactPhone: r.user_phone || '',
+            createdAt: r.created_at || new Date().toISOString(),
+          }));
+          setRequests(mapped);
         }
-      });
-      return () => {
-        if (typeof unsubscribe === 'function') unsubscribe();
-      };
-    } catch {
-      // Fallback silently if offline or demo credentials
-    }
+      } catch (err) {
+        console.warn('Error loading Supabase requests:', err);
+      }
+    };
+
+    fetchSupabaseRequests();
+
+    // Listen for Realtime inserts/updates
+    const channel = supabase
+      .channel('realtime:live_crisis_sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'emergency_requests' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const r = payload.new;
+            const newReq = {
+              id: r.id,
+              trackingCode: r.tracking_token || r.id,
+              title: r.title || `${r.category || 'Emergency'} Assistance`,
+              category: r.category || 'General',
+              urgency: (r.urgency || 'HIGH').toLowerCase(),
+              verificationStatus: (r.verification_status || 'PENDING').toLowerCase(),
+              status: (r.status || 'PENDING').toLowerCase(),
+              description: r.description || '',
+              locationName: r.location_name || '',
+              lat: Number(r.latitude) || 19.0760,
+              lng: Number(r.longitude) || 72.8777,
+              peopleCount: r.people_count || 1,
+              contactName: r.user_name || 'Citizen',
+              contactPhone: r.user_phone || '',
+              createdAt: r.created_at || new Date().toISOString(),
+            };
+            setRequests((prev) => [newReq, ...prev.filter((item) => item.id !== newReq.id)]);
+          } else if (payload.eventType === 'UPDATE') {
+            const r = payload.new;
+            setRequests((prev) =>
+              prev.map((item) =>
+                item.id === r.id
+                  ? {
+                      ...item,
+                      status: (r.status || item.status).toLowerCase(),
+                      verificationStatus: (r.verification_status || item.verificationStatus).toLowerCase(),
+                    }
+                  : item
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setRequests((prev) => prev.filter((item) => item.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Derived statistics for Authorities & Dashboard
@@ -513,11 +553,11 @@ export function CrisisProvider({ children }) {
     localStorage.removeItem('crisisconnect_broadcasts_v3');
     localStorage.removeItem('crisisconnect_donations_v1');
     localStorage.removeItem('crisisconnect_voltasks_v1');
-    setRequests(INITIAL_REQUESTS);
-    setBroadcasts(INITIAL_BROADCASTS);
-    setDonations(INITIAL_NGO_DONATIONS);
-    setVolunteerTasks(INITIAL_CITIZEN_VOLUNTEER_TASKS);
-    toast.success('Restored default demo scenario.');
+    setRequests([]);
+    setBroadcasts([]);
+    setDonations({ totalFundsRaised: 0, totalFundsDeployed: 0, supplies: [], recentDonations: [] });
+    setVolunteerTasks([]);
+    toast.success('Cleared all local emergency cache.');
   };
 
   return (
