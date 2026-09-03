@@ -14,14 +14,20 @@ import { StatusBar } from 'expo-status-bar';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 
-// Configure system notification presentation for Android & iOS
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+// Configure system notification presentation for Android & iOS (safely for Expo Go)
+try {
+  if (Notifications && typeof Notifications.setNotificationHandler === 'function') {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
+    });
+  }
+} catch (e) {
+  console.warn('Notification setup note:', e);
+}
 
 // Suppress non-fatal development warning banners in Expo Go
 LogBox.ignoreAllLogs(true);
@@ -227,15 +233,19 @@ export default function App() {
                 Vibration.vibrate([0, 500, 250, 500]);
 
                 // Native Heads-Up Banner / Lockscreen Notification Pop-up
-                Notifications.scheduleNotificationAsync({
-                  content: {
-                    title: data.title || '🚨 EMERGENCY DISASTER ALERT',
-                    body: data.message || 'Immediate response required in your sector.',
-                    sound: true,
-                    priority: Notifications.AndroidNotificationPriority.MAX,
-                  },
-                  trigger: null,
-                }).catch(() => {});
+                try {
+                  if (Notifications && typeof Notifications.scheduleNotificationAsync === 'function') {
+                    Notifications.scheduleNotificationAsync({
+                      content: {
+                        title: data.title || '🚨 EMERGENCY DISASTER ALERT',
+                        body: data.message || 'Immediate response required in your sector.',
+                        sound: true,
+                        priority: Notifications.AndroidNotificationPriority?.MAX || 'max',
+                      },
+                      trigger: null,
+                    }).catch(() => {});
+                  }
+                } catch (notifErr) {}
 
                 Alert.alert(
                   data.title || '🚨 EMERGENCY DISASTER ALERT',
