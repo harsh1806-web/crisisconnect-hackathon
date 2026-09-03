@@ -91,12 +91,31 @@ export default function MapView() {
 
   // Continuous Real-Time Live GPS tracking: Updates map as you move in real-time
   useEffect(() => {
-    if (!navigator.geolocation) {
-      toast.error('Geolocation is not supported by your browser.');
-      return;
+    let initialCenterDone = false;
+
+    // 1. Instant check for native mobile GPS coordinates
+    if (window.__NATIVE_GPS__) {
+      const coords = [window.__NATIVE_GPS__.lat, window.__NATIVE_GPS__.lng];
+      setUserLocation(coords);
+      setMapCenter(coords);
+      setMapZoom(16);
+      initialCenterDone = true;
     }
 
-    let initialCenterDone = false;
+    // 2. Continuous native mobile GPS listener
+    window.onNativeGpsUpdate = (lat, lng) => {
+      const coords = [lat, lng];
+      setUserLocation(coords);
+      if (!initialCenterDone) {
+        setMapCenter(coords);
+        setMapZoom(16);
+        initialCenterDone = true;
+      }
+    };
+
+    if (!navigator.geolocation) {
+      return;
+    }
 
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
@@ -124,6 +143,7 @@ export default function MapView() {
 
     return () => {
       navigator.geolocation.clearWatch(watchId);
+      window.onNativeGpsUpdate = null;
     };
   }, []);
 

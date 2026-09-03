@@ -23,56 +23,107 @@ const APP_URL = 'http://10.110.80.99:5173';
 export default function App() {
   const webViewRef = useRef(null);
   const [coords, setCoords] = useState(null);
-  const [expoPushToken, setExpoPushToken] = useState(null);
 
   useEffect(() => {
     // 1. Request Native System Permissions on Launch
     const requestNativePermissions = async () => {
       try {
-        // Native iOS/Android Location Dialog
+        // Native Location Dialog
         const { status: locStatus } = await Location.requestForegroundPermissionsAsync();
-        if (locStatus === 'granted') {
-          const currentLoc = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.High,
+        if (locStatus !== 'granted') {
+          Alert.alert(
+            'GPS Permission Required',
+            'CrisisConnect requires Location permission to display your live coordinates on the disaster map and coordinate rescues.',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+
+        // Check if Android device location toggle is enabled
+        const hasServices = await Location.hasServicesEnabledAsync();
+        if (!hasServices && Platform.OS === 'android') {
+          try {
+            await Location.enableNetworkProviderAsync();
+          } catch (e) {
+            Alert.alert(
+              'Location Services Disabled',
+              'Please turn ON Location / GPS in your phone settings so CrisisConnect can pinpoint your position.',
+              [{ text: 'OK' }]
+            );
+          }
+        }
+
+        const injectGpsToWeb = (lat, lng) => {
+          if (webViewRef.current) {
+            const script = `
+              window.__NATIVE_GPS__ = { lat: ${lat}, lng: ${lng} };
+              if (typeof window.onNativeGpsUpdate === 'function') {
+                window.onNativeGpsUpdate(${lat}, ${lng});
+              }
+              if (navigator && navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition = function(success) {
+                  success({
+                    coords: {
+                      latitude: ${lat},
+                      longitude: ${lng},
+                      accuracy: 15,
+                    },
+                    timestamp: Date.now()
+                  });
+                };
+              }
+              true;
+            `;
+            webViewRef.current.injectJavaScript(script);
+          }
+        };
+
+        // Instant cached position fallback
+        try {
+          const lastLoc = await Location.getLastKnownPositionAsync();
+          if (lastLoc) {
+            setCoords({ lat: lastLoc.coords.latitude, lng: lastLoc.coords.longitude });
+            injectGpsToWeb(lastLoc.coords.latitude, lastLoc.coords.longitude);
+          }
+        } catch (e) {}
+
+        // High/Balanced accuracy position lock
+        let currentLoc = null;
+        try {
+          currentLoc = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
           });
+        } catch (e) {
+          try {
+            currentLoc = await Location.getCurrentPositionAsync({
+              accuracy: Location.Accuracy.Lowest,
+            });
+          } catch (e2) {}
+        }
+
+        if (currentLoc) {
           setCoords({
             lat: currentLoc.coords.latitude,
             lng: currentLoc.coords.longitude,
           });
-
-          // Continuously track location updates
-          Location.watchPositionAsync(
-            {
-              accuracy: Location.Accuracy.High,
-              timeInterval: 2000,
-              distanceInterval: 5,
-            },
-            (newLoc) => {
-              setCoords({
-                lat: newLoc.coords.latitude,
-                lng: newLoc.coords.longitude,
-              });
-              // Inject updated coordinates directly into WebView
-              if (webViewRef.current) {
-                const script = `
-                  window.__NATIVE_GPS__ = { lat: ${newLoc.coords.latitude}, lng: ${newLoc.coords.longitude} };
-                  if (typeof window.onNativeGpsUpdate === 'function') {
-                    window.onNativeGpsUpdate(${newLoc.coords.latitude}, ${newLoc.coords.longitude});
-                  }
-                  true;
-                `;
-                webViewRef.current.injectJavaScript(script);
-              }
-            }
-          );
-        } else {
-          Alert.alert(
-            'Location Access Required',
-            'CrisisConnect requires GPS permissions to locate you during emergency rescue operations.',
-            [{ text: 'OK' }]
-          );
+          injectGpsToWeb(currentLoc.coords.latitude, currentLoc.coords.longitude);
         }
 
+        // Continuously track location updates as device moves
+        Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.Balanced,
+            timeInterval: 3000,
+            distanceInterval: 10,
+          },
+          (newLoc) => {
+            setCoords({
+              lat: newLoc.coords.latitude,
+              lng: newLoc.coords.longitude,
+            });
+            injectGpsToWeb(newLoc.coords.latitude, newLoc.coords.longitude);
+          }
+        );
       } catch (err) {
         console.warn('Native permissions error:', err);
       }
