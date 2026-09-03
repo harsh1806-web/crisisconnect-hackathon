@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Link } from 'react-router-dom';
-import { Users, Navigation, ShieldCheck } from 'lucide-react';
+import { Users, ShieldCheck, Crosshair } from 'lucide-react';
 import { useCrisis } from '../context/CrisisContext';
 import toast from 'react-hot-toast';
 
@@ -73,6 +73,7 @@ export default function MapView() {
   const [criticalOnly, setCriticalOnly] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
+  const [gpsAccuracy, setGpsAccuracy] = useState(null);
 
   const defaultCenter = requests.length > 0 && requests[0].lat && requests[0].lng
     ? [requests[0].lat, requests[0].lng]
@@ -88,24 +89,64 @@ export default function MapView() {
     return true;
   });
 
-  const handleLocateMe = () => {
+  // Continuous Real-Time Live GPS tracking: Updates map as you move in real-time
+  useEffect(() => {
     if (!navigator.geolocation) {
       toast.error('Geolocation is not supported by your browser.');
       return;
     }
-    navigator.geolocation.getCurrentPosition(
+
+    let initialCenterDone = false;
+
+    const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const coords = [pos.coords.latitude, pos.coords.longitude];
         setUserLocation(coords);
-        setMapCenter(coords);
-        setMapZoom(15);
-        toast.success('Map centered on your current position!');
+        setGpsAccuracy(pos.coords.accuracy || 20);
+
+        // Immediately snap map to user's real-time live location on first coordinate lock
+        if (!initialCenterDone) {
+          setMapCenter(coords);
+          setMapZoom(16);
+          initialCenterDone = true;
+          toast.success('Live GPS lock established!');
+        }
       },
-      () => {
-        toast.error('Could not determine your GPS location.');
+      (err) => {
+        console.warn('Real-time GPS update warning:', err.message);
       },
-      { timeout: 8000 }
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 1000, // 1s fresh updates
+      }
     );
+
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, []);
+
+  const handleLocateMe = () => {
+    if (userLocation) {
+      setMapCenter([...userLocation]);
+      setMapZoom(16);
+      toast.success('Centered on your live GPS position!');
+    } else if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const coords = [pos.coords.latitude, pos.coords.longitude];
+          setUserLocation(coords);
+          setMapCenter(coords);
+          setMapZoom(16);
+          toast.success('Live GPS location locked!');
+        },
+        () => {
+          toast.error('Could not determine your live GPS location.');
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    }
   };
 
   return (
@@ -163,14 +204,34 @@ export default function MapView() {
           </button>
         </div>
 
-        {/* Locate Me Button */}
+        {/* Right Action Bar: Real-time GPS Chip & Re-center */}
         <div className="pointer-events-auto flex items-center gap-2">
+          {/* Live Real-Time GPS Status Chip */}
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl px-3 py-2 shadow-lg border border-slate-200 flex items-center gap-2">
+            <span
+              className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                userLocation ? 'bg-emerald-500 animate-ping' : 'bg-amber-400 animate-pulse'
+              }`}
+            />
+            <div className="text-[11px] leading-tight">
+              <span className="font-black text-slate-800 flex items-center gap-1">
+                {userLocation ? 'Real-Time GPS' : 'Connecting GPS...'}
+              </span>
+              {userLocation && (
+                <p className="font-mono text-[10px] text-slate-500">
+                  {userLocation[0].toFixed(4)}, {userLocation[1].toFixed(4)}
+                </p>
+              )}
+            </div>
+          </div>
+
           <button
             onClick={handleLocateMe}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-lg transition-all cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-lg transition-all cursor-pointer"
+            title="Snap map back to your current live position"
           >
-            <Navigation className="w-4 h-4 text-blue-400" />
-            <span>Locate Me</span>
+            <Crosshair className="w-4 h-4 text-blue-400" />
+            <span className="hidden sm:inline">My Live Location</span>
           </button>
         </div>
       </div>
@@ -190,16 +251,44 @@ export default function MapView() {
 
           <MapController center={mapCenter} zoom={mapZoom} />
 
-          {/* User Location Beacon */}
+          {/* User Live Real-Time Location Beacon & Accuracy Radius */}
           {userLocation && (
-            <Marker position={userLocation} icon={userLocationIcon}>
-              <Popup>
-                <div className="text-xs p-1">
-                  <p className="font-bold text-blue-600">Your Current Position</p>
-                  <p className="text-slate-500">Live GPS lock</p>
-                </div>
-              </Popup>
-            </Marker>
+            <>
+              <Circle
+                center={userLocation}
+                radius={gpsAccuracy || 35}
+                pathOptions={{
+                  color: '#2563eb',
+                  fillColor: '#3b82f6',
+                  fillOpacity: 0.18,
+                  weight: 1.5,
+                }}
+              />
+              <Marker position={userLocation} icon={userLocationIcon}>
+                <Popup>
+                  <div className="p-1.5 space-y-1.5 text-xs font-sans">
+                    <div className="flex items-center gap-1.5 font-bold text-blue-600">
+                      <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping" />
+                      <span>Your Live Real-Time Position</span>
+                    </div>
+                    <p className="font-mono text-[10px] text-slate-600">
+                      📍 {userLocation[0].toFixed(5)}, {userLocation[1].toFixed(5)}
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      GPS Accuracy: ±{Math.round(gpsAccuracy || 10)} meters
+                    </p>
+                    <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between">
+                      <Link
+                        to="/user/dashboard"
+                        className="text-[11px] font-bold text-red-600 hover:underline"
+                      >
+                        Trigger SOS Here →
+                      </Link>
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            </>
           )}
 
           {/* 500-Meter Duplicate / Hazard Zones */}
