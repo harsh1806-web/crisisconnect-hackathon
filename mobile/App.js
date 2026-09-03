@@ -7,10 +7,14 @@ import {
   Platform,
   Alert,
   Vibration,
+  LogBox,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
+
+// Suppress non-fatal development warning banners in Expo Go
+LogBox.ignoreAllLogs(true);
 
 // Vite Dev Server on local Wi-Fi host
 const APP_URL = 'http://10.110.80.99:5173';
