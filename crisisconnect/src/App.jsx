@@ -7,6 +7,7 @@ import { LanguageProvider } from './context/LanguageContext';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import ProtectedRoute from './components/ProtectedRoute';
+import EmergencyPermissionsModal from './components/EmergencyPermissionsModal';
 
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -88,6 +89,7 @@ function AppRoutes() {
 
       {/* Main App Container */}
       <div className="w-full sm:max-w-4xl min-h-screen bg-slate-50 flex flex-col relative sm:shadow-xl sm:border-x sm:border-slate-200">
+        <EmergencyPermissionsModal />
         <Navbar />
 
         <main className="flex-1 pb-16">
