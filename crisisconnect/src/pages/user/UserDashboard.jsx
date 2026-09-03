@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   PlusCircle,
@@ -52,6 +52,44 @@ export default function UserDashboard() {
   const [selectedPassTask, setSelectedPassTask] = useState(null);
   const [isRewardsOpen, setIsRewardsOpen] = useState(false);
   const [isOfflineSmsOpen, setIsOfflineSmsOpen] = useState(false);
+
+  // Device GPS for sorting volunteer tasks by proximity to user
+  const [userCoords, setUserCoords] = useState(null);
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => setUserCoords({ lat: 19.0760, lng: 72.8777 }),
+        { timeout: 4000 }
+      );
+    } else {
+      setUserCoords({ lat: 19.0760, lng: 72.8777 });
+    }
+  }, []);
+
+  const getDistanceKm = (taskLat, taskLng) => {
+    if (!userCoords || !taskLat || !taskLng) return null;
+    const R = 6371; // Earth radius in km
+    const dLat = ((taskLat - userCoords.lat) * Math.PI) / 180;
+    const dLng = ((taskLng - userCoords.lng) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((userCoords.lat * Math.PI) / 180) *
+        Math.cos((taskLat * Math.PI) / 180) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return (R * c).toFixed(1);
+  };
+
+  const sortedVolunteerTasks = useMemo(() => {
+    const list = [...volunteerTasks];
+    return list.sort((a, b) => {
+      const distA = parseFloat(getDistanceKm(a.lat, a.lng) || '999');
+      const distB = parseFloat(getDistanceKm(b.lat, b.lng) || '999');
+      return distA - distB;
+    });
+  }, [volunteerTasks, userCoords]);
 
   const handleCitizenTestAlert = async () => {
     setIsSendingTest(true);
@@ -444,65 +482,98 @@ export default function UserDashboard() {
             </button>
           </div>
 
-          {/* Section 2: Open Volunteer Missions Available in Your Area */}
+          {/* Section 2: Open Volunteer Missions Available in Your Area (Sorted by Map Proximity) */}
           <div className="space-y-2.5">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider px-1">
-              {t('available_missions')} ({volunteerTasks.filter((t) => !t.userRegistered).length})
-            </h3>
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                <span>📍 Nearby Volunteer Missions (Closest First)</span>
+              </h3>
+              <Link
+                to="/map"
+                className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 hover:underline"
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                <span>Open Map</span>
+              </Link>
+            </div>
 
             <div className="space-y-3">
-              {volunteerTasks
+              {sortedVolunteerTasks
                 .filter((t) => !t.userRegistered)
-                .map((task) => (
-                  <div
-                    key={task.id}
-                    className="p-4 bg-white rounded-3xl border border-slate-200 shadow-xs space-y-3 hover:border-slate-300 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-slate-100 text-slate-700 border border-slate-200">
-                          {task.sector}
-                        </span>
-                        {task.isAuthorityMobilized && (
-                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200 animate-pulse">
-                            📢 Authority Call
+                .map((task, idx) => {
+                  const dist = getDistanceKm(task.lat, task.lng);
+                  return (
+                    <div
+                      key={task.id}
+                      className={`p-4 bg-white rounded-3xl border shadow-xs space-y-3 transition-colors ${
+                        idx === 0
+                          ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/10'
+                          : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-slate-100 text-slate-700 border border-slate-200">
+                            {task.sector}
                           </span>
+                          {dist && (
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                              <MapPin className="w-3 h-3 text-emerald-600" />
+                              {dist} km away {idx === 0 && '• Nearest'}
+                            </span>
+                          )}
+                          {task.isAuthorityMobilized && (
+                            <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200 animate-pulse">
+                              📢 Authority Call
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> {task.timeRequired}
+                        </span>
+                      </div>
+
+                      <div>
+                        <h4 className="font-bold text-sm text-slate-900">{task.title}</h4>
+                        <p className="text-xs text-slate-600 mt-1 leading-relaxed">{task.description}</p>
+                        
+                        <div className="flex items-center justify-between flex-wrap gap-2 mt-2 pt-1 border-t border-slate-100">
+                          <p className="text-[11px] text-slate-500 flex items-center gap-1 font-medium">
+                            <MapPin className="w-3.5 h-3.5 text-slate-400" /> {task.location}
+                          </p>
+                          <Link
+                            to={`/map?lat=${task.lat}&lng=${task.lng}&title=${encodeURIComponent(task.title)}`}
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-red-600 hover:text-red-700 hover:underline"
+                          >
+                            <MapPin className="w-3 h-3" />
+                            <span>View on Map →</span>
+                          </Link>
+                        </div>
+
+                        {task.requirements && (
+                          <p className="text-[10px] text-slate-400 mt-1 italic">
+                            ℹ️ {task.requirements}
+                          </p>
                         )}
                       </div>
-                      <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> {task.timeRequired}
-                      </span>
-                    </div>
 
-                    <div>
-                      <h4 className="font-bold text-sm text-slate-900">{task.title}</h4>
-                      <p className="text-xs text-slate-600 mt-1 leading-relaxed">{task.description}</p>
-                      <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-1.5 font-medium">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400" /> {task.location}
-                      </p>
-                      {task.requirements && (
-                        <p className="text-[10px] text-slate-400 mt-1 italic">
-                          ℹ️ {task.requirements}
-                        </p>
-                      )}
-                    </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                        <span className="text-slate-500 font-medium flex items-center gap-1 text-[11px]">
+                          <Users className="w-3.5 h-3.5 text-emerald-600" />
+                          <strong>{task.volunteersSignedUp}</strong> / {task.volunteersNeeded} slots filled
+                        </span>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                      <span className="text-slate-500 font-medium flex items-center gap-1 text-[11px]">
-                        <Users className="w-3.5 h-3.5 text-emerald-600" />
-                        <strong>{task.volunteersSignedUp}</strong> / {task.volunteersNeeded} slots filled
-                      </span>
-
-                      <button
-                        onClick={() => signUpForVolunteerTask(task.id, currentUser?.name)}
-                        className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl cursor-pointer transition-colors shadow-2xs flex items-center gap-1"
-                      >
-                        <HeartHandshake className="w-3.5 h-3.5" />
-                        <span>Sign Up to Help (+100 pts)</span>
-                      </button>
+                        <button
+                          onClick={() => signUpForVolunteerTask(task.id, currentUser?.name)}
+                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl cursor-pointer transition-colors shadow-2xs flex items-center gap-1"
+                        >
+                          <HeartHandshake className="w-3.5 h-3.5" />
+                          <span>Sign Up to Help (+100 pts)</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
             </div>
           </div>
         </div>

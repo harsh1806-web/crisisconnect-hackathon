@@ -1,36 +1,7 @@
 const CITIZENS_STORAGE_KEY = 'crisisconnect_registered_citizens_db_v1';
 
-// Initial seeds for the citizen database
-const INITIAL_CITIZENS = [
-  {
-    id: 'usr-alex',
-    name: 'Alex Taylor',
-    phone: '9876543210',
-    email: 'alex.taylor@example.com',
-    bloodGroup: 'O+',
-    allergies: 'None Reported',
-    emergencyContact: {
-      name: 'Claire Taylor (Sister)',
-      phone: '9876543211',
-    },
-    address: 'Sector 4, Block 12, Riverview',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'usr-sarah',
-    name: 'Sarah Jenkins',
-    phone: '9876543220',
-    email: 'sarah.jenkins@example.com',
-    bloodGroup: 'A+',
-    allergies: 'Penicillin',
-    emergencyContact: {
-      name: 'Mark Jenkins',
-      phone: '9876543221',
-    },
-    address: '14 Lakeview Crescent, Sector 4',
-    createdAt: new Date().toISOString(),
-  },
-];
+// Initial clean citizen database - no mock or demo seeds
+const INITIAL_CITIZENS = [];
 
 /**
  * Citizen Database Service

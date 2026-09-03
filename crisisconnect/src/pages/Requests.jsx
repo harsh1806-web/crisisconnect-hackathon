@@ -5,8 +5,9 @@ import {
   PlusCircle,
   Grid,
   List,
-  XCircle,
   SlidersHorizontal,
+  AlertOctagon,
+  ChevronDown,
 } from 'lucide-react';
 import { useCrisis } from '../context/CrisisContext';
 import RequestCard from '../components/RequestCard';
@@ -48,6 +49,27 @@ export default function Requests() {
       return matchesSearch && matchesStatus && matchesCategory && matchesUrgency;
     });
   }, [requests, searchTerm, statusFilter, categoryFilter, urgencyFilter]);
+
+  const priorityWeight = {
+    critical: 4,
+    high: 3,
+    medium: 2,
+    low: 1,
+  };
+
+  const sortedByPriority = useMemo(() => {
+    return [...filteredRequests].sort((a, b) => {
+      const pA = a.isSOS ? 5 : (priorityWeight[a.urgency?.toLowerCase()] || 2);
+      const pB = b.isSOS ? 5 : (priorityWeight[b.urgency?.toLowerCase()] || 2);
+      if (pB !== pA) return pB - pA;
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    });
+  }, [filteredRequests]);
+
+  const [showMoreAlerts, setShowMoreAlerts] = useState(false);
+
+  const highestPriorityAlert = sortedByPriority[0];
+  const remainingAlerts = sortedByPriority.slice(1);
 
   const resetFilters = () => {
     setSearchTerm('');
@@ -212,34 +234,75 @@ export default function Requests() {
         )}
       </div>
 
-      {/* Request Cards Grid / List */}
-      {filteredRequests.length > 0 ? (
-        <div
-          className={
-            viewMode === 'grid'
-              ? 'grid grid-cols-1 md:grid-cols-2 gap-4'
-              : 'flex flex-col gap-3'
-          }
-        >
-          {filteredRequests.map((req) => (
-            <RequestCard key={req.id} request={req} />
-          ))}
+      {/* Request Cards: 1 Highest Priority Alert First + Show More Toggle */}
+      {sortedByPriority.length > 0 ? (
+        <div className="space-y-4">
+          {/* 1. Highest Priority Alert Section */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs font-black uppercase tracking-wider text-red-600 flex items-center gap-1.5 animate-pulse">
+                <AlertOctagon className="w-4 h-4 text-red-600" />
+                Highest Priority Alert (Action Required)
+              </span>
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-red-100 text-red-800 border border-red-200 uppercase">
+                {highestPriorityAlert.isSOS ? 'SOS CRITICAL' : highestPriorityAlert.urgency || 'Critical'}
+              </span>
+            </div>
+            
+            <div className="rounded-3xl border-2 border-red-500 shadow-lg p-1 bg-red-50/15">
+              <RequestCard request={highestPriorityAlert} />
+            </div>
+          </div>
+
+          {/* 2. Remaining Alerts Collapsed Under Show More */}
+          {remainingAlerts.length > 0 && (
+            <div className="space-y-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowMoreAlerts(!showMoreAlerts)}
+                className="w-full py-3.5 px-4 rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-300 text-slate-800 font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+              >
+                <ChevronDown className={`w-4 h-4 transition-transform ${showMoreAlerts ? 'rotate-180 text-red-600' : 'text-slate-500'}`} />
+                <span>
+                  {showMoreAlerts
+                    ? 'Show Less'
+                    : `Show More Alerts & Incidents (${remainingAlerts.length} more)`}
+                </span>
+              </button>
+
+              {showMoreAlerts && (
+                <div
+                  className={
+                    viewMode === 'grid'
+                      ? 'grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in'
+                      : 'flex flex-col gap-3 animate-fade-in'
+                  }
+                >
+                  {remainingAlerts.map((req) => (
+                    <RequestCard key={req.id} request={req} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       ) : (
         <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 p-8 space-y-4">
           <div className="w-16 h-16 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
             <SlidersHorizontal className="w-8 h-8" />
           </div>
-          <h3 className="text-lg font-bold text-slate-900">No requests match your current filters</h3>
+          <h3 className="text-lg font-bold text-slate-900">No active incidents reported</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Try resetting your search filters or check back shortly as new emergency dispatches arrive.
+            Emergency requests triggered by citizens or authorities will appear here in real time.
           </p>
-          <button
-            onClick={resetFilters}
-            className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800"
-          >
-            Clear All Filters
-          </button>
+          {hasActiveFilters && (
+            <button
+              onClick={resetFilters}
+              className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800"
+            >
+              Clear All Filters
+            </button>
+          )}
         </div>
       )}
     </div>
