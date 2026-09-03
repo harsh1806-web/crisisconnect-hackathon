@@ -88,7 +88,7 @@ function MapController({ center, zoom }) {
 }
 
 export default function AuthorityDashboard() {
-  const { crisisInfo, requests, shelters, verifyRequest, updateRequestStatus } = useCrisis();
+  const { crisisInfo, requests, shelters, verifyRequest, updateRequestStatus, addRequest } = useCrisis();
   const { currentUser, logout } = useAuth();
 
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -97,6 +97,35 @@ export default function AuthorityDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [mapCenter, setMapCenter] = useState([19.0760, 72.8777]);
   const [mapZoom, setMapZoom] = useState(12);
+  const [isSendingTest, setIsSendingTest] = useState(false);
+
+  const handleSendTestAlert = async () => {
+    setIsSendingTest(true);
+    try {
+      const deptName = currentUser?.department || 'Police Command';
+      const trackingCode = `TEST-${Math.floor(100000 + Math.random() * 900000)}`;
+
+      await addRequest({
+        trackingCode,
+        title: `CRITICAL ALERT: Priority Incident Dispatched to ${deptName}`,
+        category: deptName.includes('Fire') ? 'Fire Hazard' : deptName.includes('Hospital') ? 'Medical Trauma' : 'Rescue',
+        urgency: 'critical',
+        description: `Live diagnostic emergency alert dispatched for ${deptName}. Testing live real-time notification sync.`,
+        locationName: 'Active Sector Test Zone',
+        lat: currentUser?.location?.lat || 19.0760,
+        lng: currentUser?.location?.lng || 72.8777,
+        peopleCount: 4,
+        contactName: 'Central EOC Dispatch',
+        contactPhone: currentUser?.hotline || '112',
+      });
+
+      toast.success('🚨 Test Emergency Broadcasted! Real-time alerts dispatched across network.');
+    } catch (err) {
+      toast.error('Failed to dispatch test alert: ' + err.message);
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
 
   // Auto-center on latest emergency if available
   useEffect(() => {
@@ -218,6 +247,16 @@ export default function AuthorityDashboard() {
               title="Test Audio Siren"
             >
               Test Siren
+            </button>
+
+            <button
+              onClick={handleSendTestAlert}
+              disabled={isSendingTest}
+              className="px-3 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md shadow-red-600/30 flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Broadcast Live Test Emergency Alert"
+            >
+              <Radio className={`w-3.5 h-3.5 ${isSendingTest ? 'animate-spin' : 'animate-pulse'}`} />
+              <span>{isSendingTest ? 'Sending...' : 'Send Test Alert'}</span>
             </button>
 
             <Link
