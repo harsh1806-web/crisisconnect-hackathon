@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { CrisisProvider } from './context/CrisisContext';
 
 import Navbar from './components/Navbar';
@@ -30,6 +30,27 @@ import MapView from './pages/MapView';
 import Profile from './pages/Profile';
 
 import { useEffect } from 'react';
+
+function RootRedirect() {
+  const { session } = useAuth();
+
+  let activeSession = session;
+  if (!activeSession) {
+    try {
+      const saved = localStorage.getItem('crisisconnect_session_v3');
+      if (saved) activeSession = JSON.parse(saved);
+    } catch {}
+  }
+
+  if (activeSession) {
+    const roleType = (activeSession.type || activeSession.role || '').toLowerCase();
+    if (roleType === 'authority') return <Navigate to="/authority/dashboard" replace />;
+    if (roleType === 'ngo') return <Navigate to="/ngo/dashboard" replace />;
+    return <Navigate to="/user/dashboard" replace />;
+  }
+
+  return <Navigate to="/login" replace />;
+}
 
 function AppRoutes() {
   useEffect(() => {
@@ -70,8 +91,8 @@ function AppRoutes() {
 
         <main className="flex-1 pb-16">
           <Routes>
-            {/* Landing: Always show Login page first on localhost */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            {/* Landing: Smart Root Redirect to respective portal or login */}
+            <Route path="/" element={<RootRedirect />} />
 
             {/* 3-Role Gateway Authentication */}
             <Route path="/login" element={<Login />} />

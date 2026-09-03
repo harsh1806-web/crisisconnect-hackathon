@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   MapPin,
@@ -14,7 +14,8 @@ import { useAuth } from '../context/AuthContext';
 
 export default function BottomNav() {
   const location = useLocation();
-  const { isAuthority, isNGO } = useAuth();
+  const navigate = useNavigate();
+  const { isAuthority, isNGO, logout } = useAuth();
 
   // Don't render bottom nav on login or registration gateway pages
   if (location.pathname === '/login' || location.pathname === '/register') return null;
@@ -60,13 +61,16 @@ export default function BottomNav() {
             <span>Disaster Map</span>
           </Link>
 
-          <Link
-            to="/login"
-            className="flex flex-col items-center py-1 px-3 text-[10px] font-semibold text-slate-500 hover:text-slate-900"
+          <button
+            onClick={() => {
+              logout();
+              navigate('/login', { replace: true });
+            }}
+            className="flex flex-col items-center py-1 px-3 text-[10px] font-semibold text-slate-500 hover:text-slate-900 cursor-pointer"
           >
             <LogOut className="w-5 h-5 mb-0.5" />
             <span>Switch Role</span>
-          </Link>
+          </button>
         </div>
       ) : isNGO ? (
         /* NGO Bottom Navigation (Volunteer service & Donations) */
@@ -101,13 +105,16 @@ export default function BottomNav() {
             <span>Feed</span>
           </Link>
 
-          <Link
-            to="/login"
-            className="flex flex-col items-center py-1 px-3 text-[10px] font-semibold text-slate-500 hover:text-slate-900"
+          <button
+            onClick={() => {
+              logout();
+              navigate('/login', { replace: true });
+            }}
+            className="flex flex-col items-center py-1 px-3 text-[10px] font-semibold text-slate-500 hover:text-slate-900 cursor-pointer"
           >
             <LogOut className="w-5 h-5 mb-0.5" />
             <span>Switch</span>
-          </Link>
+          </button>
         </div>
       ) : (
         /* Citizen User Bottom Navigation */
