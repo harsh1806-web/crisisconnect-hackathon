@@ -8,15 +8,21 @@ import {
   MapPin,
   CheckCircle,
   ArrowLeft,
+  Lock,
 } from 'lucide-react';
 import { citizenDB } from '../services/db';
+import { useAuth } from '../context/AuthContext';
+import { getOrCreateDeviceToken, registerDeviceToken } from '../services/notificationService';
 import toast from 'react-hot-toast';
 
 export default function Register() {
   const navigate = useNavigate();
 
+  const { signup } = useAuth();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [age, setAge] = useState('26');
+  const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [bloodGroup, setBloodGroup] = useState('O+');
@@ -25,7 +31,7 @@ export default function Register() {
   const [icePhone, setIcePhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!name.trim()) {
@@ -40,7 +46,7 @@ export default function Register() {
 
     setIsSubmitting(true);
 
-    // Save citizen into persistent Database
+    // 1. Save citizen into local/offline Database
     const res = citizenDB.register({
       name,
       phone,
@@ -51,6 +57,32 @@ export default function Register() {
       emergencyContactName: iceName,
       emergencyContactPhone: icePhone,
     });
+
+    // 2. Persist to Firestore & Register Device Token
+    try {
+      const devToken = getOrCreateDeviceToken();
+      await registerDeviceToken(devToken, {
+        name,
+        mobileNo: phone,
+        age: Number(age) || 25,
+        bloodGroup,
+        email: email || `${phone.replace(/[^0-9]/g, '')}@crisisconnect.app`,
+        role: 'VICTIM',
+        location: { address, lat: 19.0760, lng: 72.8777 },
+      });
+
+      if (password && email && typeof signup === 'function') {
+        await signup(email, password, {
+          name,
+          mobileNo: phone,
+          age: Number(age) || 25,
+          bloodGroup,
+          location: { address, lat: 19.0760, lng: 72.8777 },
+        });
+      }
+    } catch {
+      // Offline fallback
+    }
 
     toast.success(
       res.isUpdate
@@ -146,6 +178,39 @@ export default function Register() {
                   placeholder="e.g. name@example.com"
                   className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Age
+                </label>
+                <input
+                  type="number"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  placeholder="26"
+                  min="1"
+                  max="120"
+                  className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Password (For Login)
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  />
+                </div>
               </div>
             </div>
 
