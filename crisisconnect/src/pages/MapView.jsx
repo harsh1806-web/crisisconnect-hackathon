@@ -66,6 +66,13 @@ function MapController({ center, zoom }) {
   return null;
 }
 
+// Helper to compute minutes remaining before a solved alert disappears (1-hour window)
+const getRemainingMins = (req) => {
+  if (!req.resolvedAt) return 60;
+  const elapsed = Date.now() - new Date(req.resolvedAt).getTime();
+  return Math.max(1, Math.ceil((60 * 60 * 1000 - elapsed) / 60000));
+};
+
 export default function MapView() {
   const { requests, shelters } = useCrisis();
 

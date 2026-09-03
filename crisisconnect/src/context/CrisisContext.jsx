@@ -106,6 +106,32 @@ export function CrisisProvider({ children }) {
   // Real-time Emergency Requests - initialized strictly from live database, no demo data
   const [requests, setRequests] = useState([]);
 
+    // 1-Hour Auto-Expiry Engine: Resolved alerts automatically disappear after 1 hour (3600000 ms)
+  useEffect(() => {
+    const ONE_HOUR_MS = 60 * 60 * 1000;
+    const sweepExpiredResolved = () => {
+      const now = Date.now();
+      setRequests((prev) => {
+        const remaining = prev.filter((r) => {
+          if ((r.status || '').toLowerCase() === 'resolved') {
+            const resolvedTime = r.resolvedAt
+              ? new Date(r.resolvedAt).getTime()
+              : (r.updatedAt ? new Date(r.updatedAt).getTime() : null);
+            if (resolvedTime && (now - resolvedTime >= ONE_HOUR_MS)) {
+              return false; // Disappears after 1 hour!
+            }
+          }
+          return true;
+        });
+        return remaining.length === prev.length ? prev : remaining;
+      });
+    };
+
+    sweepExpiredResolved();
+    const sweeperInterval = setInterval(sweepExpiredResolved, 15000);
+    return () => clearInterval(sweeperInterval);
+  }, []);
+
   // Fetch live emergencies directly from Supabase on mount
   // Fetch live emergencies directly from Supabase on mount and sync in real time
   useEffect(() => {
