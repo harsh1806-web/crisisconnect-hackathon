@@ -28,24 +28,30 @@ export function AuthProvider({ children }) {
   const [deviceToken, setDeviceToken] = useState(() => getOrCreateDeviceToken());
   const [loading, setLoading] = useState(() => isSupabaseConfigured);
 
-  // Local session for 3-role gateway
+  // Local session for 3-role gateway with persistent device cache
   const [session, setSession] = useState(() => {
-    const saved = localStorage.getItem('crisisconnect_session_v3');
-    if (saved) {
-      try {
+    try {
+      const saved =
+        localStorage.getItem('crisisconnect_session_v3') ||
+        localStorage.getItem('crisisconnect_persisted_auth') ||
+        sessionStorage.getItem('crisisconnect_session_v3');
+      if (saved) {
         return JSON.parse(saved);
-      } catch {
-        return null;
       }
+    } catch {
+      return null;
     }
     return null;
   });
 
   useEffect(() => {
     if (session) {
-      localStorage.setItem('crisisconnect_session_v3', JSON.stringify(session));
-    } else {
-      localStorage.removeItem('crisisconnect_session_v3');
+      try {
+        const payload = JSON.stringify(session);
+        localStorage.setItem('crisisconnect_session_v3', payload);
+        localStorage.setItem('crisisconnect_persisted_auth', payload);
+        sessionStorage.setItem('crisisconnect_session_v3', payload);
+      } catch (e) {}
     }
   }, [session]);
 
@@ -114,6 +120,7 @@ export function AuthProvider({ children }) {
     } catch (e) {}
     try {
       localStorage.removeItem('crisisconnect_session_v3');
+      localStorage.removeItem('crisisconnect_persisted_auth');
       localStorage.removeItem('crisisconnect_current_user');
       sessionStorage.clear();
     } catch (e) {}
@@ -164,7 +171,10 @@ export function AuthProvider({ children }) {
       ...userData,
     };
     try {
-      localStorage.setItem('crisisconnect_session_v3', JSON.stringify(s));
+      const payload = JSON.stringify(s);
+      localStorage.setItem('crisisconnect_session_v3', payload);
+      localStorage.setItem('crisisconnect_persisted_auth', payload);
+      sessionStorage.setItem('crisisconnect_session_v3', payload);
     } catch (e) {}
     setSession(s);
     setUserProfile(s);
@@ -179,7 +189,10 @@ export function AuthProvider({ children }) {
       ...ngoData,
     };
     try {
-      localStorage.setItem('crisisconnect_session_v3', JSON.stringify(s));
+      const payload = JSON.stringify(s);
+      localStorage.setItem('crisisconnect_session_v3', payload);
+      localStorage.setItem('crisisconnect_persisted_auth', payload);
+      sessionStorage.setItem('crisisconnect_session_v3', payload);
     } catch (e) {}
     setSession(s);
     setUserProfile(s);
@@ -194,7 +207,10 @@ export function AuthProvider({ children }) {
       ...authData,
     };
     try {
-      localStorage.setItem('crisisconnect_session_v3', JSON.stringify(s));
+      const payload = JSON.stringify(s);
+      localStorage.setItem('crisisconnect_session_v3', payload);
+      localStorage.setItem('crisisconnect_persisted_auth', payload);
+      sessionStorage.setItem('crisisconnect_session_v3', payload);
     } catch (e) {}
     setSession(s);
     setUserProfile(s);

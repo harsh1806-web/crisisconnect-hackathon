@@ -90,8 +90,25 @@ export const AUTHORITY_AGENCIES = [
 export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { loginAsCitizen, loginAsNGO, loginAsAuthority } = useAuth();
+  const { session, currentUser, loginAsCitizen, loginAsNGO, loginAsAuthority } = useAuth();
   const [activeTab, setActiveTab] = useState('citizen'); // 'citizen' | 'ngo' | 'authority'
+
+  // If user is already logged in and stored in phone cache, do not show login again; route immediately!
+  useEffect(() => {
+    let active = session || currentUser;
+    if (!active) {
+      try {
+        const raw = localStorage.getItem('crisisconnect_session_v3') || localStorage.getItem('crisisconnect_persisted_auth');
+        if (raw) active = JSON.parse(raw);
+      } catch {}
+    }
+    if (active) {
+      const role = (active.type || active.role || '').toLowerCase();
+      if (role === 'authority') navigate('/authority/dashboard', { replace: true });
+      else if (role === 'ngo') navigate('/ngo/dashboard', { replace: true });
+      else navigate('/user/dashboard', { replace: true });
+    }
+  }, [session, currentUser, navigate]);
 
   // Citizen form - initialized directly from searchParams if redirected from registration
   const userName = searchParams.get('name') || '';

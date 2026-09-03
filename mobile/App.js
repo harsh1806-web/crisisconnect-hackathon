@@ -170,6 +170,12 @@ export default function App() {
           style={styles.webView}
           javaScriptEnabled={true}
           domStorageEnabled={true}
+          cacheEnabled={true}
+          cacheMode="LOAD_DEFAULT"
+          sharedCookiesEnabled={true}
+          thirdPartyCookiesEnabled={true}
+          incognito={false}
+          saveFormDataDisabled={false}
           geolocationEnabled={true}
           injectedJavaScript={injectedCode}
           scalesPageToFit={false}
