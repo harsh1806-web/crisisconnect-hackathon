@@ -200,8 +200,8 @@ export default function App() {
   `;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="light" />
+    <View style={styles.container}>
+      <StatusBar style="light" backgroundColor="#020617" />
       <View style={styles.webWrapper}>
         <WebView
           ref={webViewRef}
@@ -308,7 +308,7 @@ export default function App() {
           </View>
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -316,16 +316,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#020617',
-    paddingTop: Platform.OS === 'android' ? (RNStatusBar.currentHeight || 28) : 0,
+    paddingTop: Platform.OS === 'android' ? (RNStatusBar.currentHeight || 24) : 44,
   },
   webWrapper: {
     flex: 1,
-    backgroundColor: '#020617',
-    paddingBottom: Platform.OS === 'ios' ? 24 : 0,
+    backgroundColor: '#ffffff',
+    paddingBottom: 0,
   },
   webView: {
     flex: 1,
-    backgroundColor: '#020617',
+    backgroundColor: '#ffffff',
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
