@@ -1,6 +1,5 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { sampleRequests } from './database/sampleRequests';
-import { sampleUsers } from './database/sampleUsers';
 import './App.css';
 
 function App() {
@@ -13,7 +12,7 @@ function App() {
   // New Emergency Form state
   const [newDesc, setNewDesc] = useState('');
   const [newCategory, setNewCategory] = useState('Medical');
-  const [newSeverity, setNewSeverity] = useState('High');
+  const [newSeverity] = useState('High');
   const [newPriority, setNewPriority] = useState('P1');
   const [newAddress, setNewAddress] = useState('101 Howard St, San Francisco, CA');
 
@@ -185,7 +184,7 @@ function App() {
 
             {/* Status Timeline */}
             <div className="status-timeline">
-              {['Submitted', 'Acknowledged', 'Dispatched', 'In Progress', 'Resolved'].map((st, idx) => {
+              {['Submitted', 'Acknowledged', 'Dispatched', 'In Progress', 'Resolved'].map((st) => {
                 const isPassed = item.statusHistory.some(h => h.status === st);
                 return (
                   <div key={st} className={`timeline-step ${isPassed ? 'active' : ''}`}>
