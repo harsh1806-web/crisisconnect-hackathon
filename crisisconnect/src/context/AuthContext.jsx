@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../services/firebase';
+import { auth } from '../services/firebase.js';
 import {
   registerWithEmail,
   loginWithEmail,
@@ -9,14 +9,16 @@ import {
   resetPassword as serviceResetPassword,
   getUserProfile,
   updateUserLocation,
-} from '../services/authService';
+} from '../services/authService.js';
 import {
   getOrCreateDeviceToken,
   listenForIncomingAlerts,
   requestNotificationPermission,
-} from '../services/notificationService';
-import { USER_ROLES } from '../utils/constants';
-import { AuthContext } from './authContextInstance';
+} from '../services/notificationService.js';
+import { USER_ROLES } from '../utils/constants.js';
+import { DEMO_PROFILES } from '../data/mockData.js';
+import { AuthContext } from './authContextInstance.js';
+import toast from 'react-hot-toast';
 
 export { AuthContext };
 
@@ -25,6 +27,27 @@ export function AuthProvider({ children }) {
   const [userProfile, setUserProfile] = useState(null);
   const [deviceToken, setDeviceToken] = useState(() => getOrCreateDeviceToken());
   const [loading, setLoading] = useState(true);
+
+  // Local session for 3-role gateway
+  const [session, setSession] = useState(() => {
+    const saved = localStorage.getItem('crisisconnect_session_v3');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    if (session) {
+      localStorage.setItem('crisisconnect_session_v3', JSON.stringify(session));
+    } else {
+      localStorage.removeItem('crisisconnect_session_v3');
+    }
+  }, [session]);
 
   // Sync profile data from Firestore
   const fetchAndSetProfile = async (uid) => {
@@ -54,7 +77,6 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Global Real-Time Emergency Alerts Listener
-  // Automatically triggers notification & audio on every device when an emergency is posted/updated
   useEffect(() => {
     const unsubscribeAlerts = listenForIncomingAlerts();
     return () => unsubscribeAlerts();
@@ -85,6 +107,8 @@ export function AuthProvider({ children }) {
     await logoutUser();
     setCurrentUser(null);
     setUserProfile(null);
+    setSession(null);
+    toast('Signed out from CrisisConnect', { icon: '🚪' });
   };
 
   const resetPassword = async (email) => {
@@ -108,69 +132,53 @@ export function AuthProvider({ children }) {
     return await requestNotificationPermission();
   };
 
-  // Helper flags for role-based views (including Sharvari's frontend aliases)
-  const isVictim = userProfile?.role === USER_ROLES.VICTIM || userProfile?.role === 'citizen' || !userProfile?.role;
-  const isCitizen = isVictim;
-  const isVolunteer = userProfile?.role === USER_ROLES.VOLUNTEER || userProfile?.role === 'volunteer';
-  const isOrganization = userProfile?.role === USER_ROLES.ORGANIZATION;
-  const isAdmin = userProfile?.role === USER_ROLES.ADMIN;
-  const isCoordinator = isOrganization || isAdmin || userProfile?.role === 'coordinator';
-
-  // Demo Switch helpers for frontend UI compatibility
-  const switchRole = (roleKey) => {
-    const roleMapping = {
-      citizen: USER_ROLES.VICTIM,
-      volunteer: USER_ROLES.VOLUNTEER,
-      coordinator: USER_ROLES.ORGANIZATION,
-    };
-    const targetRole = roleMapping[roleKey] || roleKey;
-    setUserProfile((prev) => ({
-      ...(prev || {}),
-      role: targetRole,
-      roleLabel: targetRole,
-    }));
-  };
-
-  const loginAs = (roleKey) => {
-    switchRole(roleKey);
-  };
-
-  // Portal view helpers (Sharvari's User & Authority login portals)
-  const isUser = isVictim || userProfile?.role === 'user' || userProfile?.role === USER_ROLES.VICTIM || !userProfile?.role;
-  const isAuthority = isVolunteer || isOrganization || isAdmin || userProfile?.role === 'authority';
-
-  const loginAsUser = (userData = {}) => {
-    const userSession = {
-      type: 'user',
-      name: 'Aditya Sharma',
-      phone: '+91 98765 43210',
-      mobileNo: '+91 98765 43210',
-      bloodGroup: 'O+',
-      age: 28,
-      role: USER_ROLES.VICTIM,
+  // 3-Role Gateway Demo Login Functions
+  const loginAsCitizen = (userData = {}) => {
+    const s = {
+      type: 'citizen',
+      ...(DEMO_PROFILES?.citizen || {}),
       ...userData,
     };
-    setUserProfile(userSession);
-    return userSession;
+    setSession(s);
+    setUserProfile(s);
+    toast.success(`Welcome Citizen: ${s.name || 'Citizen'}!`);
+    return s;
+  };
+
+  const loginAsNGO = (ngoData = {}) => {
+    const s = {
+      type: 'ngo',
+      ...(DEMO_PROFILES?.ngo || {}),
+      ...ngoData,
+    };
+    setSession(s);
+    setUserProfile(s);
+    toast.success(`NGO Portal: Signed in with ${s.ngoName || 'NGO Partner'}`);
+    return s;
   };
 
   const loginAsAuthority = (authData = {}) => {
-    const authSession = {
+    const s = {
       type: 'authority',
-      name: 'Captain R. Deshmukh',
-      authorityId: 'NDRF-W7-409',
-      unit: 'National Disaster Response Force (NDRF)',
-      rank: 'Senior Operations Commander',
-      role: USER_ROLES.ORGANIZATION,
+      ...(DEMO_PROFILES?.authority || {}),
       ...authData,
     };
-    setUserProfile(authSession);
-    return authSession;
+    setSession(s);
+    setUserProfile(s);
+    toast.success(`Authority Command: Signed in as ${s.rank || 'Commander'}`);
+    return s;
   };
 
+  const loginAsUser = loginAsCitizen;
+
+  // Role detection flags
+  const isCitizen = session?.type === 'citizen' || userProfile?.role === USER_ROLES.VICTIM || userProfile?.role === 'citizen';
+  const isNGO = session?.type === 'ngo' || userProfile?.role === USER_ROLES.VOLUNTEER || userProfile?.role === 'ngo';
+  const isAuthority = session?.type === 'authority' || userProfile?.role === USER_ROLES.ORGANIZATION || userProfile?.role === USER_ROLES.ADMIN || userProfile?.role === 'authority';
+
   const value = {
-    session: userProfile || currentUser,
-    currentUser: currentUser || userProfile,
+    session: session || userProfile || currentUser,
+    currentUser: session || currentUser || userProfile,
     userProfile,
     deviceToken,
     loading,
@@ -182,18 +190,19 @@ export function AuthProvider({ children }) {
     refreshProfile,
     updateLocation,
     enableNotifications,
-    switchRole,
-    loginAs,
-    loginAsUser,
+    loginAsCitizen,
+    loginAsNGO,
     loginAsAuthority,
-    isVictim,
+    loginAsUser,
     isCitizen,
-    isVolunteer,
-    isOrganization,
-    isAdmin,
-    isCoordinator,
-    isUser,
+    isUser: isCitizen,
+    isNGO,
+    isVolunteer: isNGO,
     isAuthority,
+    isOrganization: isAuthority,
+    isAdmin: isAuthority,
+    isVictim: isCitizen,
+    isCoordinator: isAuthority,
   };
 
   return (
@@ -203,7 +212,6 @@ export function AuthProvider({ children }) {
   );
 }
 
-// Re-export useAuth directly from AuthContext for Sharvari's components
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext);
@@ -212,4 +220,3 @@ export function useAuth() {
   }
   return context;
 }
-

@@ -64,6 +64,68 @@ export const REGISTERED_NGOS = [
   },
 ];
 
+// NGO Relief Inventory & Donation tracking
+export const INITIAL_NGO_DONATIONS = {
+  totalFundsRaised: 42500,
+  totalFundsDeployed: 31200,
+  supplies: [
+    { id: "sup-1", name: "Clean Drinking Water Canisters (20L)", available: 1250, target: 2000, unit: "Cans" },
+    { id: "sup-2", name: "Ready-to-Eat Emergency Ration Packs", available: 3400, target: 5000, unit: "Kits" },
+    { id: "sup-3", name: "First Aid & Essential Medicine Packs", available: 820, target: 1000, unit: "Boxes" },
+    { id: "sup-4", name: "Heavy Duty Waterproof Tarpaulins", available: 410, target: 600, unit: "Tarps" },
+    { id: "sup-5", name: "Thermal Survival Blankets", available: 1600, target: 2500, unit: "Blankets" },
+  ],
+  recentDonations: [
+    { id: "don-1", donor: "Global Aid Foundation", amount: 15000, type: "Monetary Fund", items: "Disaster Emergency Grant", timestamp: "1 hour ago" },
+    { id: "don-2", donor: "Metro Citizens Welfare Club", amount: 4500, type: "Supplies", items: "500 Water Cans & 800 Meals", timestamp: "2 hours ago" },
+    { id: "don-3", donor: "Apex Pharma Relief Wing", amount: 8000, type: "Medical Kits", items: "300 Trauma First Aid Packs", timestamp: "4 hours ago" },
+    { id: "don-4", donor: "Anonymous Tech Employee", amount: 500, type: "Monetary Fund", items: "Community Relief Contribution", timestamp: "5 hours ago" },
+  ],
+};
+
+// Community Volunteering Opportunities for Citizens
+export const INITIAL_CITIZEN_VOLUNTEER_TASKS = [
+  {
+    id: "vol-task-1",
+    title: "Community Meal Box Packing & Sealing",
+    location: "Community Shelter #2 (St. Jude High School)",
+    sector: "Sector 7",
+    urgency: "Immediate",
+    timeRequired: "2-3 hours",
+    volunteersNeeded: 12,
+    volunteersSignedUp: 8,
+    description: "Help pack dry ration food packets and seal drinking water bottles for flood rescue boats.",
+    coordinator: "Sister Teresa (Relief Alliance)",
+    phone: "+1-555-AID-CORP",
+  },
+  {
+    id: "vol-task-2",
+    title: "Shelter Blanket & Bedding Distribution",
+    location: "Central Community Hall, Sector 3",
+    sector: "Sector 3",
+    urgency: "High",
+    timeRequired: "1-2 hours",
+    volunteersNeeded: 6,
+    volunteersSignedUp: 4,
+    description: "Assist newly arrived evacuees with dry bedding, mats, and sanitary kits.",
+    coordinator: "Ramesh Nair (Shelter Manager)",
+    phone: "+1-555-4001",
+  },
+  {
+    id: "vol-task-3",
+    title: "Emergency Telephone Welfare Checks for Seniors",
+    location: "Remote / Work from Phone",
+    sector: "All Sectors",
+    urgency: "Medium",
+    timeRequired: "1 hour",
+    volunteersNeeded: 20,
+    volunteersSignedUp: 15,
+    description: "Call registered elderly citizens living in vulnerable sectors to check medical and power status.",
+    coordinator: "Red Cross Social Welfare",
+    phone: "+1-555-REDCROSS",
+  },
+];
+
 export const INITIAL_BROADCASTS = [
   {
     id: "alert-1",
@@ -115,8 +177,8 @@ export const INITIAL_REQUESTS = [
     title: "Elderly Couple Trapped on 2nd Floor - Water Rising",
     category: "Rescue",
     urgency: "critical",
-    verificationStatus: "verified", // 'pending' | 'verified' | 'rejected'
-    status: "assigned", // 'pending_verification' | 'verified' | 'assigned' | 'in_progress' | 'resolved' | 'rejected'
+    verificationStatus: "verified",
+    status: "assigned",
     description:
       "Ground floor is inundated with 4 feet of water. Two senior citizens (ages 74 and 81). Inflatable boat needed immediately.",
     locationName: "14 Lakeview Crescent, Sector 4",
@@ -288,9 +350,9 @@ export const INITIAL_REQUESTS = [
 ];
 
 export const DEMO_PROFILES = {
-  user: {
+  citizen: {
     id: "usr-alex",
-    type: "user",
+    type: "citizen",
     name: "Alex Taylor",
     phone: "+1-555-0145",
     email: "alex.taylor@example.com",
@@ -301,6 +363,17 @@ export const DEMO_PROFILES = {
       name: "Claire Taylor (Sister)",
       phone: "+1-555-0199",
     },
+  },
+  ngo: {
+    id: "ngo-usr-redcross",
+    type: "ngo",
+    name: "Dr. Ananya Sen",
+    ngoName: "Red Cross Disaster Relief Corps",
+    ngoId: "ngo-2",
+    roleLabel: "NGO Relief Coordinator",
+    phone: "+1-555-REDCROSS",
+    activeSquads: 14,
+    specialty: "First Aid & Relief Supplies Distribution",
   },
   authority: {
     id: "auth-cmd-1",

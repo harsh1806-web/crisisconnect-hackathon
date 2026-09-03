@@ -5,6 +5,8 @@ import {
   INITIAL_REQUESTS,
   INITIAL_SHELTERS,
   REGISTERED_NGOS,
+  INITIAL_NGO_DONATIONS,
+  INITIAL_CITIZEN_VOLUNTEER_TASKS,
 } from '../data/mockData';
 import toast from 'react-hot-toast';
 import {
@@ -22,8 +24,34 @@ export function CrisisProvider({ children }) {
   const [shelters] = useState(INITIAL_SHELTERS);
   const [ngos] = useState(REGISTERED_NGOS);
 
+  // NGO Donations & Supplies State
+  const [donations, setDonations] = useState(() => {
+    const saved = localStorage.getItem('crisisconnect_donations_v1');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return INITIAL_NGO_DONATIONS;
+      }
+    }
+    return INITIAL_NGO_DONATIONS;
+  });
+
+  // Citizen Volunteering Tasks State
+  const [volunteerTasks, setVolunteerTasks] = useState(() => {
+    const saved = localStorage.getItem('crisisconnect_voltasks_v1');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return INITIAL_CITIZEN_VOLUNTEER_TASKS;
+      }
+    }
+    return INITIAL_CITIZEN_VOLUNTEER_TASKS;
+  });
+
   const [broadcasts, setBroadcasts] = useState(() => {
-    const saved = localStorage.getItem('crisisconnect_broadcasts_v2');
+    const saved = localStorage.getItem('crisisconnect_broadcasts_v3');
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -35,7 +63,7 @@ export function CrisisProvider({ children }) {
   });
 
   const [requests, setRequests] = useState(() => {
-    const saved = localStorage.getItem('crisisconnect_requests_v2');
+    const saved = localStorage.getItem('crisisconnect_requests_v3');
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -47,12 +75,20 @@ export function CrisisProvider({ children }) {
   });
 
   useEffect(() => {
-    localStorage.setItem('crisisconnect_requests_v2', JSON.stringify(requests));
+    localStorage.setItem('crisisconnect_requests_v3', JSON.stringify(requests));
   }, [requests]);
 
   useEffect(() => {
-    localStorage.setItem('crisisconnect_broadcasts_v2', JSON.stringify(broadcasts));
+    localStorage.setItem('crisisconnect_broadcasts_v3', JSON.stringify(broadcasts));
   }, [broadcasts]);
+
+  useEffect(() => {
+    localStorage.setItem('crisisconnect_donations_v1', JSON.stringify(donations));
+  }, [donations]);
+
+  useEffect(() => {
+    localStorage.setItem('crisisconnect_voltasks_v1', JSON.stringify(volunteerTasks));
+  }, [volunteerTasks]);
 
   // Connect to Live Firestore requests if available
   useEffect(() => {
@@ -103,7 +139,7 @@ export function CrisisProvider({ children }) {
     };
   }, [baseCrisisInfo, requests]);
 
-  // 1. Citizen Action: Create Emergency Request
+  // Citizen Action: Create Emergency Request
   const addRequest = (requestData) => {
     const codeNum = Math.floor(100 + Math.random() * 900);
     const trackingCode = `CRISIS-${codeNum}`;
@@ -164,7 +200,7 @@ export function CrisisProvider({ children }) {
     return newReq;
   };
 
-  // 2. Citizen Action: SOS Trigger
+  // Citizen Action: SOS Trigger
   const triggerSOS = (coords, customDetails = {}) => {
     const lat = coords?.lat || 13.0835 + (Math.random() - 0.5) * 0.015;
     const lng = coords?.lng || 80.2725 + (Math.random() - 0.5) * 0.015;
@@ -176,7 +212,7 @@ export function CrisisProvider({ children }) {
       title: '🚨 CRITICAL LIFE-THREATENING SOS BEACON',
       category: 'Rescue',
       urgency: 'critical',
-      verificationStatus: 'verified', // SOS is auto-verified priority
+      verificationStatus: 'verified',
       status: 'verified',
       description:
         customDetails.description ||
@@ -239,16 +275,78 @@ export function CrisisProvider({ children }) {
       osc.start();
       osc.stop(audioCtx.currentTime + 0.35);
     } catch {
-      // Audio context may be restricted
+      // Audio context might be restricted
     }
 
-    toast.error('🚨 Critical SOS Dispatched to Emergency Operations Command!', {
+    toast.error('🚨 Critical SOS Dispatched to Disaster Authorities!', {
       duration: 5000,
     });
     return sosReq;
   };
 
-  // 3. Authority Action: Verify Request
+  // Citizen Action: Sign up for local community volunteer task
+  const signUpForVolunteerTask = (taskId, citizenName = 'Local Volunteer') => {
+    setVolunteerTasks((prev) =>
+      prev.map((t) => {
+        if (t.id === taskId) {
+          return {
+            ...t,
+            volunteersSignedUp: t.volunteersSignedUp + 1,
+            userRegistered: true,
+          };
+        }
+        return t;
+      })
+    );
+    toast.success(`${citizenName} registered! Contact coordinator for briefing.`);
+  };
+
+  // NGO Action: Record Incoming Donation / Supply Drop
+  const recordDonation = (newDonation) => {
+    const entry = {
+      id: `don-${Date.now()}`,
+      donor: newDonation.donor || 'Community Benefactor',
+      amount: Number(newDonation.amount) || 0,
+      type: newDonation.type || 'Supplies',
+      items: newDonation.items || 'Relief Goods',
+      timestamp: 'Just now',
+    };
+
+    setDonations((prev) => ({
+      ...prev,
+      totalFundsRaised: prev.totalFundsRaised + (entry.type === 'Monetary Fund' ? entry.amount : 0),
+      recentDonations: [entry, ...prev.recentDonations],
+    }));
+
+    toast.success(`Donation of ${entry.items} successfully logged!`);
+  };
+
+  // NGO Action: Deploy Squad / Update Mission Progress
+  const updateNGOMission = (requestId, squadNote, authorName = 'NGO Squad Lead') => {
+    setRequests((prev) =>
+      prev.map((r) => {
+        if (r.id === requestId) {
+          return {
+            ...r,
+            status: 'in_progress',
+            updates: [
+              ...r.updates,
+              {
+                id: `up-${Date.now()}`,
+                author: authorName,
+                text: squadNote,
+                timestamp: 'Just now',
+              },
+            ],
+          };
+        }
+        return r;
+      })
+    );
+    toast.success('Field Squad deployment update dispatched!');
+  };
+
+  // Authority Actions
   const verifyRequest = (requestId, authorityName = 'Authority EOC') => {
     setRequests((prev) =>
       prev.map((r) => {
@@ -262,7 +360,7 @@ export function CrisisProvider({ children }) {
               {
                 id: `up-${Date.now()}`,
                 author: authorityName,
-                text: 'Incident details verified by Disaster Management Authority. Ready for NGO / Squad assignment.',
+                text: 'Incident details verified by Disaster Management Authority. Cleared for NGO deployment.',
                 timestamp: 'Just now',
               },
             ],
@@ -281,7 +379,6 @@ export function CrisisProvider({ children }) {
     }
   };
 
-  // 4. Authority Action: Reject Request
   const rejectRequest = (requestId, reason, authorityName = 'Authority EOC') => {
     setRequests((prev) =>
       prev.map((r) => {
@@ -308,7 +405,6 @@ export function CrisisProvider({ children }) {
     toast.error('Request marked as Rejected.');
   };
 
-  // 5. Authority Action: Assign Volunteer / NGO
   const assignNGO = (requestId, ngoData, authorityName = 'Authority EOC') => {
     setRequests((prev) =>
       prev.map((r) => {
@@ -334,7 +430,6 @@ export function CrisisProvider({ children }) {
     toast.success(`Mission assigned to ${ngoData.name}!`);
   };
 
-  // 6. Authority Action: Update Status (e.g. En Route / Resolved)
   const updateRequestStatus = (requestId, newStatus, authorName = 'Authority EOC') => {
     const statusLabels = {
       verified: 'Verified by Response Authorities',
@@ -373,7 +468,6 @@ export function CrisisProvider({ children }) {
     }
   };
 
-  // Add real-time comment / update
   const addUpdateToRequest = (requestId, text, authorName) => {
     if (!text.trim()) return;
     setRequests((prev) =>
@@ -399,10 +493,14 @@ export function CrisisProvider({ children }) {
   };
 
   const resetDemoData = () => {
-    localStorage.removeItem('crisisconnect_requests_v2');
-    localStorage.removeItem('crisisconnect_broadcasts_v2');
+    localStorage.removeItem('crisisconnect_requests_v3');
+    localStorage.removeItem('crisisconnect_broadcasts_v3');
+    localStorage.removeItem('crisisconnect_donations_v1');
+    localStorage.removeItem('crisisconnect_voltasks_v1');
     setRequests(INITIAL_REQUESTS);
     setBroadcasts(INITIAL_BROADCASTS);
+    setDonations(INITIAL_NGO_DONATIONS);
+    setVolunteerTasks(INITIAL_CITIZEN_VOLUNTEER_TASKS);
     toast.success('Restored default demo scenario.');
   };
 
@@ -414,8 +512,13 @@ export function CrisisProvider({ children }) {
         shelters,
         requests,
         ngos,
+        donations,
+        volunteerTasks,
         addRequest,
         triggerSOS,
+        signUpForVolunteerTask,
+        recordDonation,
+        updateNGOMission,
         verifyRequest,
         rejectRequest,
         assignNGO,

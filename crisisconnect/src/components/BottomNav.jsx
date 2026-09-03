@@ -7,13 +7,14 @@ import {
   User,
   ListFilter,
   Building2,
+  HeartHandshake,
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function BottomNav() {
   const location = useLocation();
-  const { isAuthority } = useAuth();
+  const { isAuthority, isNGO } = useAuth();
 
   // Don't render bottom nav on login gateway page
   if (location.pathname === '/login') return null;
@@ -27,7 +28,7 @@ export default function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-slate-200 shadow-lg px-2 py-1 max-w-md mx-auto sm:border-x">
       {isAuthority ? (
-        /* Authority Bottom Navigation */
+        /* Authority Bottom Navigation (No Emergency creation button) */
         <div className="flex items-center justify-around">
           <Link
             to="/authority/dashboard"
@@ -46,7 +47,7 @@ export default function BottomNav() {
             }`}
           >
             <ListFilter className="w-5 h-5 mb-0.5" />
-            <span>Queue</span>
+            <span>Verify Queue</span>
           </Link>
 
           <Link
@@ -57,6 +58,47 @@ export default function BottomNav() {
           >
             <MapPin className="w-5 h-5 mb-0.5" />
             <span>Disaster Map</span>
+          </Link>
+
+          <Link
+            to="/login"
+            className="flex flex-col items-center py-1 px-3 text-[10px] font-semibold text-slate-500 hover:text-slate-900"
+          >
+            <LogOut className="w-5 h-5 mb-0.5" />
+            <span>Switch Role</span>
+          </Link>
+        </div>
+      ) : isNGO ? (
+        /* NGO Bottom Navigation (Volunteer service & Donations) */
+        <div className="flex items-center justify-around">
+          <Link
+            to="/ngo/dashboard"
+            className={`flex flex-col items-center py-1 px-3 text-[10px] font-semibold transition-colors ${
+              isActive('/ngo/dashboard') ? 'text-emerald-600 font-bold' : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            <HeartHandshake className="w-5 h-5 mb-0.5" />
+            <span>Relief Ops</span>
+          </Link>
+
+          <Link
+            to="/map"
+            className={`flex flex-col items-center py-1 px-3 text-[10px] font-semibold transition-colors ${
+              isActive('/map') ? 'text-emerald-600 font-bold' : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            <MapPin className="w-5 h-5 mb-0.5" />
+            <span>Map</span>
+          </Link>
+
+          <Link
+            to="/requests"
+            className={`flex flex-col items-center py-1 px-3 text-[10px] font-semibold transition-colors ${
+              isActive('/requests') ? 'text-emerald-600 font-bold' : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            <Clock className="w-5 h-5 mb-0.5" />
+            <span>Feed</span>
           </Link>
 
           <Link

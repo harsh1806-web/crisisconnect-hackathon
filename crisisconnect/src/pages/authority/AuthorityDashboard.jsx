@@ -7,6 +7,7 @@ import {
   ListFilter,
   LogOut,
   MapPin,
+  Eye,
 } from 'lucide-react';
 import { useCrisis } from '../../context/CrisisContext';
 import { useAuth } from '../../context/AuthContext';
@@ -19,7 +20,7 @@ export default function AuthorityDashboard() {
   const activeSOS = requests.filter((r) => r.urgency === 'critical' && r.status !== 'resolved');
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-5 space-y-6 pb-24 animate-fade-in">
+    <div className="max-w-4xl mx-auto px-4 py-5 space-y-5 pb-24 animate-fade-in">
       {/* Top Official Command Header */}
       <div className="bg-slate-900 text-white rounded-3xl p-5 border border-slate-800 shadow-xl space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -33,7 +34,7 @@ export default function AuthorityDashboard() {
                   {currentUser?.department || 'Disaster Operations EOC'}
                 </span>
                 <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
-                  Online
+                  Surveillance Active
                 </span>
               </div>
               <h1 className="text-lg font-black text-white">
@@ -50,7 +51,7 @@ export default function AuthorityDashboard() {
               to="/authority/requests"
               className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors shadow-xs"
             >
-              Request Feed
+              Verify Queue ({pendingRequests.length})
             </Link>
             <button
               onClick={logout}
@@ -62,26 +63,36 @@ export default function AuthorityDashboard() {
           </div>
         </div>
 
-        {/* Action notification strip */}
+        {/* RESTRICTION NOTICE: Authorities cannot post emergencies */}
+        <div className="p-3 bg-blue-950/60 border border-blue-800/60 rounded-2xl flex items-center justify-between text-xs text-blue-200">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-blue-400 shrink-0" />
+            <span>
+              <strong>Authority Command Mode:</strong> Emergency creation is restricted to citizens. Your role is to verify incidents, deploy NGOs, and keep tabs on ground rescue operations.
+            </span>
+          </div>
+        </div>
+
+        {/* Action alert if pending verification */}
         {pendingRequests.length > 0 ? (
           <div className="p-3 bg-amber-500/15 border border-amber-500/30 rounded-2xl flex items-center justify-between text-xs text-amber-200">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
               <span>
-                <strong>{pendingRequests.length} Emergency Requests</strong> awaiting Authority Verification.
+                <strong>{pendingRequests.length} Emergency Incidents</strong> awaiting Authority Verification.
               </span>
             </div>
             <Link
               to="/authority/requests?status=pending_verification"
               className="font-bold underline text-amber-300 hover:text-white"
             >
-              Review Now →
+              Verify Now →
             </Link>
           </div>
         ) : (
           <div className="p-2.5 bg-slate-800/60 rounded-xl text-xs text-slate-400 flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span>All incoming citizen requests have been reviewed and verified.</span>
+            <span>All incoming citizen emergency reports have been reviewed and verified.</span>
           </div>
         )}
       </div>
@@ -101,7 +112,7 @@ export default function AuthorityDashboard() {
             Pending Verify
           </span>
           <p className="text-2xl font-black text-amber-900 mt-1">{pendingRequests.length}</p>
-          <span className="text-[10px] text-amber-700 font-semibold">Requires clearance</span>
+          <span className="text-[10px] text-amber-700 font-semibold">Action required</span>
         </div>
 
         <div className="p-4 bg-blue-50/70 rounded-2xl border border-blue-200 shadow-xs">
@@ -111,7 +122,7 @@ export default function AuthorityDashboard() {
           <p className="text-2xl font-black text-blue-900 mt-1">
             {crisisInfo.stats.assignedMissions}
           </p>
-          <span className="text-[10px] text-blue-700 font-semibold">NGOs deployed</span>
+          <span className="text-[10px] text-blue-700 font-semibold">NGO squads on site</span>
         </div>
 
         <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200 shadow-xs">
@@ -125,61 +136,53 @@ export default function AuthorityDashboard() {
         </div>
       </div>
 
-      {/* Flow Action Callout: View Emergency Requests */}
-      <div className="p-5 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-3xl shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="space-y-1 text-center sm:text-left">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300">
-            Operational Step 2 & 3
-          </span>
-          <h2 className="text-lg font-black">View & Manage Emergency Requests</h2>
-          <p className="text-xs text-slate-300 max-w-md">
-            Verify legitimate incidents, reject false alarms, assign registered NGOs, and update rescue statuses.
-          </p>
-        </div>
-
-        <Link
-          to="/authority/requests"
-          className="px-5 py-3 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs flex items-center gap-2 shadow-md transition-all shrink-0 cursor-pointer"
-        >
-          <ListFilter className="w-4 h-4 text-blue-600" />
-          <span>OPEN REQUESTS QUEUE</span>
-          <ArrowRight className="w-4 h-4" />
-        </Link>
-      </div>
-
-      {/* Urgent Critical SOS Queue */}
-      <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-xs space-y-3">
+      {/* Emergency & SOS Situation Hub Header */}
+      <div className="bg-white rounded-3xl border border-red-200 p-5 shadow-xs space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping" />
-            Immediate Critical SOS Stream ({activeSOS.length})
-          </h3>
+          <div>
+            <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping" />
+              Live SOS & High-Urgency Situation Monitor ({activeSOS.length})
+            </h2>
+            <p className="text-xs text-slate-500">
+              Keep tabs on ongoing critical rescues, water rise, and squad assignments in real time
+            </p>
+          </div>
           <Link
             to="/authority/requests"
-            className="text-xs font-bold text-red-600 hover:underline"
+            className="text-xs font-bold text-blue-600 hover:underline"
           >
-            All Requests →
+            All Incidents →
           </Link>
         </div>
 
-        <div className="space-y-2.5">
-          {activeSOS.slice(0, 3).map((req) => (
+        <div className="space-y-3">
+          {activeSOS.map((req) => (
             <div
               key={req.id}
-              className="p-3.5 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors"
+              className="p-4 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors"
             >
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono font-bold bg-red-100 text-red-700 px-2 py-0.5 rounded">
+                  <span className="text-[10px] font-mono font-black bg-red-100 text-red-700 px-2 py-0.5 rounded">
                     {req.trackingCode || req.id}
                   </span>
                   <span className="text-xs font-bold text-slate-900">{req.title}</span>
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                    {req.status.replace('_', ' ')}
+                  </span>
                 </div>
-                <p className="text-xs text-slate-500 flex items-center gap-2">
+                <p className="text-xs text-slate-600">{req.description}</p>
+                <p className="text-[11px] text-slate-400 flex items-center gap-2">
                   <MapPin className="w-3.5 h-3.5 text-slate-400" />
                   <span>{req.locationName}</span>
                   <span>•</span>
-                  <span>{req.contactName} ({req.contactPhone})</span>
+                  <span>{req.peopleCount} people in danger</span>
+                  {req.assignedNGO && (
+                    <span className="font-bold text-blue-700">
+                      • Deployed: {req.assignedNGO.name}
+                    </span>
+                  )}
                 </p>
               </div>
 
@@ -189,19 +192,41 @@ export default function AuthorityDashboard() {
                     onClick={() => verifyRequest(req.id, currentUser?.name)}
                     className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer"
                   >
-                    Verify
+                    Verify Incident
                   </button>
                 )}
                 <Link
                   to="/authority/requests"
-                  className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold"
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1"
                 >
-                  Manage
+                  <Eye className="w-3.5 h-3.5" /> Keep Tabs
                 </Link>
               </div>
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Primary Action Button: Open Incident Queue */}
+      <div className="p-5 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-3xl shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="space-y-1 text-center sm:text-left">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300">
+            Official EOC Operations
+          </span>
+          <h2 className="text-lg font-black">Verify Incidents & Deploy NGOs</h2>
+          <p className="text-xs text-slate-300 max-w-md">
+            Review incoming citizen requests, filter false alarms, deploy registered disaster response units, and update rescue status.
+          </p>
+        </div>
+
+        <Link
+          to="/authority/requests"
+          className="px-5 py-3 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs flex items-center gap-2 shadow-md transition-all shrink-0 cursor-pointer"
+        >
+          <ListFilter className="w-4 h-4 text-blue-600" />
+          <span>OPEN INCIDENT QUEUE</span>
+          <ArrowRight className="w-4 h-4" />
+        </Link>
       </div>
 
       {/* Registered Disaster NGOs Ready for Deployment */}
