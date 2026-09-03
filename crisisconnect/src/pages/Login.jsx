@@ -6,10 +6,8 @@ import {
   HeartHandshake,
   Building2,
   Phone,
-  ShieldCheck,
-  ArrowRight,
-  Sparkles,
   PhoneCall,
+  ArrowRight,
   KeyRound,
   IdCard,
   UserPlus,
@@ -151,21 +149,6 @@ export default function Login() {
     navigate('/authority/dashboard');
   };
 
-  const handleDemoCitizen = () => {
-    loginAsCitizen();
-    navigate('/user/dashboard');
-  };
-
-  const handleDemoNGO = () => {
-    loginAsNGO();
-    navigate('/ngo/dashboard');
-  };
-
-  const handleDemoAuthority = () => {
-    loginAsAuthority();
-    navigate('/authority/dashboard');
-  };
-
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-8 animate-fade-in">
       <div className="w-full max-w-md bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
@@ -267,34 +250,7 @@ export default function Login() {
                 </Link>
               </div>
 
-              {/* 1-Click Demo */}
-              <button
-                type="button"
-                onClick={handleDemoCitizen}
-                className="w-full p-3 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-100 flex items-center justify-between text-left transition-all cursor-pointer group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold text-xs">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-900 group-hover:text-red-700">
-                      ⚡ 1-Click Demo as Citizen (Alex Taylor)
-                    </p>
-                    <p className="text-[10px] text-slate-500">Pre-seeded registered profile in Database</p>
-                  </div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-red-500 group-hover:translate-x-1 transition-transform" />
-              </button>
-
-              <div className="relative flex items-center justify-center my-2">
-                <span className="absolute inset-x-0 border-t border-slate-200" />
-                <span className="relative bg-white px-2 text-[10px] uppercase font-bold text-slate-400">
-                  Or sign in with registered phone
-                </span>
-              </div>
-
-              <form onSubmit={handleCitizenSubmit} className="space-y-3">
+              <form onSubmit={handleCitizenSubmit} className="space-y-3 pt-1">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Registered Mobile Phone
@@ -305,7 +261,7 @@ export default function Login() {
                       type="tel"
                       value={userPhone}
                       onChange={(e) => setUserPhone(e.target.value)}
-                      placeholder="+1-555-0145"
+                      placeholder="Enter 10-digit mobile number (e.g. 9850422491)"
                       className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium"
                       required
                     />
@@ -349,34 +305,7 @@ export default function Login() {
                 </p>
               </div>
 
-              {/* 1-Click Demo */}
-              <button
-                type="button"
-                onClick={handleDemoNGO}
-                className="w-full p-3 rounded-2xl border-2 border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100 flex items-center justify-between text-left transition-all cursor-pointer group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-900 group-hover:text-emerald-700">
-                      ⚡ 1-Click Demo as Red Cross NGO
-                    </p>
-                    <p className="text-[10px] text-slate-500">Dr. Ananya Sen • 14 Active Field Squads</p>
-                  </div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-emerald-600 group-hover:translate-x-1 transition-transform" />
-              </button>
-
-              <div className="relative flex items-center justify-center my-3">
-                <span className="absolute inset-x-0 border-t border-slate-200" />
-                <span className="relative bg-white px-2 text-[10px] uppercase font-bold text-slate-400">
-                  Or choose registered NGO
-                </span>
-              </div>
-
-              <form onSubmit={handleNGOSubmit} className="space-y-3">
+              <form onSubmit={handleNGOSubmit} className="space-y-3 pt-1">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Registered Relief Organization
@@ -430,34 +359,7 @@ export default function Login() {
                 🔒 <strong>Official Role Notice:</strong> Authorities manage and verify relief responses. Emergency posting is restricted to citizens.
               </div>
 
-              {/* 1-Click Demo */}
-              <button
-                type="button"
-                onClick={handleDemoAuthority}
-                className="w-full p-3 rounded-2xl border-2 border-blue-200 bg-blue-50/70 hover:bg-blue-100 flex items-center justify-between text-left transition-all cursor-pointer group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
-                    <ShieldCheck className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-900 group-hover:text-blue-700">
-                      ⚡ 1-Click Demo as Commander Rathore
-                    </p>
-                    <p className="text-[10px] text-slate-500">NDMA Incident Operations Commander</p>
-                  </div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-blue-500 group-hover:translate-x-1 transition-transform" />
-              </button>
-
-              <div className="relative flex items-center justify-center my-3">
-                <span className="absolute inset-x-0 border-t border-slate-200" />
-                <span className="relative bg-white px-2 text-[10px] uppercase font-bold text-slate-400">
-                  Or official credentials
-                </span>
-              </div>
-
-              <form onSubmit={handleAuthoritySubmit} className="space-y-3">
+              <form onSubmit={handleAuthoritySubmit} className="space-y-3 pt-1">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Department / Agency

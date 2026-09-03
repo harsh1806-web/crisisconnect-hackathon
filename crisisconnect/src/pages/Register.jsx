@@ -22,7 +22,7 @@ export default function Register() {
   const { signup } = useAuth();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [age, setAge] = useState('26');
+  const [age, setAge] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
@@ -155,7 +155,7 @@ export default function Register() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Sharvari Chavan"
+                  placeholder="Enter your full name"
                   className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
                   required
                 />
@@ -172,7 +172,7 @@ export default function Register() {
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+1-555-0199"
+                  placeholder="Enter mobile number (e.g. 9850422491)"
                   className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
                   required
                 />
@@ -190,7 +190,7 @@ export default function Register() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="e.g. name@example.com"
+                  placeholder="name@example.com"
                   className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
               </div>
@@ -205,7 +205,7 @@ export default function Register() {
                   type="number"
                   value={age}
                   onChange={(e) => setAge(e.target.value)}
-                  placeholder="26"
+                  placeholder="e.g. 25"
                   min="1"
                   max="120"
                   className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
