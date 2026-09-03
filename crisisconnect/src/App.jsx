@@ -67,7 +67,7 @@ function AppRoutes() {
       <div className="w-full sm:max-w-4xl min-h-screen bg-slate-50 flex flex-col relative sm:shadow-xl sm:border-x sm:border-slate-200">
         <Navbar />
 
-        <main className="flex-1 pb-36">
+        <main className="flex-1 pb-16">
           <Routes>
             {/* Landing: Always show Login page first on localhost */}
             <Route path="/" element={<Navigate to="/login" replace />} />
