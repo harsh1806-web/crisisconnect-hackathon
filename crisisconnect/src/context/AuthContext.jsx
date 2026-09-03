@@ -109,7 +109,14 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    await logoutUser();
+    try {
+      await logoutUser();
+    } catch (e) {}
+    try {
+      localStorage.removeItem('crisisconnect_session_v3');
+      localStorage.removeItem('crisisconnect_current_user');
+      sessionStorage.clear();
+    } catch (e) {}
     setCurrentUser(null);
     setUserProfile(null);
     setSession(null);
@@ -156,6 +163,9 @@ export function AuthProvider({ children }) {
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(userData.name || 'Citizen')}`,
       ...userData,
     };
+    try {
+      localStorage.setItem('crisisconnect_session_v3', JSON.stringify(s));
+    } catch (e) {}
     setSession(s);
     setUserProfile(s);
     registerActiveDeviceSession(s);
@@ -168,6 +178,9 @@ export function AuthProvider({ children }) {
       ...(DEMO_PROFILES?.ngo || {}),
       ...ngoData,
     };
+    try {
+      localStorage.setItem('crisisconnect_session_v3', JSON.stringify(s));
+    } catch (e) {}
     setSession(s);
     setUserProfile(s);
     registerActiveDeviceSession(s);
@@ -180,6 +193,9 @@ export function AuthProvider({ children }) {
       ...(DEMO_PROFILES?.authority || {}),
       ...authData,
     };
+    try {
+      localStorage.setItem('crisisconnect_session_v3', JSON.stringify(s));
+    } catch (e) {}
     setSession(s);
     setUserProfile(s);
     registerActiveDeviceSession(s);

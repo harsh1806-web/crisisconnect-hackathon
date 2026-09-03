@@ -5,16 +5,31 @@ export default function ProtectedRoute({ children, allowedRoles }) {
   const { session } = useAuth();
   const location = useLocation();
 
-  if (!session) {
-    // User is logged out: kick back to login and replace history entry so back button cannot re-enter
+  // Check React session state or synchronous localStorage fallback to eliminate any async race conditions
+  let activeSession = session;
+  if (!activeSession) {
+    try {
+      const saved = localStorage.getItem('crisisconnect_session_v3');
+      if (saved) {
+        activeSession = JSON.parse(saved);
+      }
+    } catch (e) {}
+  }
+
+  if (!activeSession) {
+    // User is logged out: kick back to login and replace history entry
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(session.type)) {
-    // User is logged in under a different role: send them to their own dashboard
-    if (session.type === 'authority') return <Navigate to="/authority/dashboard" replace />;
-    if (session.type === 'ngo') return <Navigate to="/ngo/dashboard" replace />;
-    return <Navigate to="/user/dashboard" replace />;
+  const roleType = (activeSession.type || activeSession.role || '').toLowerCase();
+
+  if (allowedRoles && allowedRoles.length > 0) {
+    const isAllowed = allowedRoles.some((r) => r.toLowerCase() === roleType);
+    if (!isAllowed) {
+      if (roleType === 'authority') return <Navigate to="/authority/dashboard" replace />;
+      if (roleType === 'ngo') return <Navigate to="/ngo/dashboard" replace />;
+      return <Navigate to="/user/dashboard" replace />;
+    }
   }
 
   return children;
