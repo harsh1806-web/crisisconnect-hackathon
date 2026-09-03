@@ -175,20 +175,28 @@ export function CrisisProvider({ children }) {
     setRequests((prev) => [newReq, ...prev]);
     toast.success(`Request ${trackingCode} submitted! Authorities alerted.`);
 
-    // Persist to backend Firestore and broadcast notification
+    // Persist to Supabase and broadcast notification
     try {
       createCrisisRequest({
         title: newReq.title,
         description: newReq.description,
         category: (newReq.category || 'OTHER').toUpperCase(),
-        urgency: (newReq.urgency || 'MEDIUM').toUpperCase(),
-        mobileNo: newReq.contactPhone,
+        urgency: (newReq.urgency || 'HIGH').toUpperCase(),
+        contactName: newReq.contactName,
+        contactPhone: newReq.contactPhone,
         peopleCount: newReq.peopleCount,
         location: {
           lat: newReq.lat,
           lng: newReq.lng,
           address: newReq.locationName,
         },
+        vulnerabilities: newReq.vulnerabilities,
+      }).then((saved) => {
+        if (saved?.id) {
+          setRequests((prev) =>
+            prev.map((r) => (r.id === newReq.id ? { ...r, id: saved.id, trackingCode: saved.trackingCode || r.trackingCode } : r))
+          );
+        }
       }).catch(() => {});
       triggerDeviceNotification(`🚨 NEW EMERGENCY: ${newReq.category}`, {
         body: `${newReq.title} at ${newReq.locationName}`,
@@ -202,8 +210,8 @@ export function CrisisProvider({ children }) {
 
   // Citizen Action: SOS Trigger
   const triggerSOS = (coords, customDetails = {}) => {
-    const lat = coords?.lat || 13.0835 + (Math.random() - 0.5) * 0.015;
-    const lng = coords?.lng || 80.2725 + (Math.random() - 0.5) * 0.015;
+    const lat = coords?.lat || 19.0760 + (Math.random() - 0.5) * 0.015;
+    const lng = coords?.lng || 72.8777 + (Math.random() - 0.5) * 0.015;
     const trackingCode = `SOS-${Math.floor(100 + Math.random() * 900)}`;
 
     const sosReq = {
@@ -223,7 +231,7 @@ export function CrisisProvider({ children }) {
       peopleCount: customDetails.peopleCount || 1,
       vulnerabilities: ['Immediate Distress', 'Life Hazard'],
       contactName: customDetails.contactName || 'Emergency Victim',
-      contactPhone: customDetails.contactPhone || '+1-555-URGENT',
+      contactPhone: customDetails.contactPhone || '+91 99999 00000',
       createdAt: new Date().toISOString(),
       isSOS: true,
       assignedNGO: null,
@@ -239,20 +247,28 @@ export function CrisisProvider({ children }) {
 
     setRequests((prev) => [sosReq, ...prev]);
 
-    // Persist to backend Firestore and broadcast audio siren
+    // Persist to Supabase and broadcast audio siren
     try {
       createCrisisRequest({
         title: sosReq.title,
         description: sosReq.description,
         category: 'RESCUE',
         urgency: 'CRITICAL',
-        mobileNo: sosReq.contactPhone,
+        contactName: sosReq.contactName,
+        contactPhone: sosReq.contactPhone,
         peopleCount: sosReq.peopleCount,
         location: {
           lat: sosReq.lat,
           lng: sosReq.lng,
           address: sosReq.locationName,
         },
+        vulnerabilities: sosReq.vulnerabilities,
+      }).then((saved) => {
+        if (saved?.id) {
+          setRequests((prev) =>
+            prev.map((r) => (r.id === sosReq.id ? { ...r, id: saved.id, trackingCode: saved.trackingCode || r.trackingCode } : r))
+          );
+        }
       }).catch(() => {});
       triggerDeviceNotification('🚨 CRITICAL SOS BEACON BROADCASTED', {
         body: `Immediate rescue required at ${sosReq.locationName}`,
