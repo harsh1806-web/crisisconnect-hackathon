@@ -121,6 +121,27 @@ export default function AuthorityDashboard() {
   const [notifyIncident, setNotifyIncident] = useState(null);
   const [notifyMessage, setNotifyMessage] = useState('');
 
+  // Background Notification Permission state
+  const [showNotificationBanner, setShowNotificationBanner] = useState(() => {
+    return typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted';
+  });
+
+  const handleEnableNotifications = async () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      try {
+        const perm = await Notification.requestPermission();
+        if (perm === 'granted') {
+          setShowNotificationBanner(false);
+          toast.success('🔔 Background alerts enabled! Dispatch popups will trigger for your department.');
+        } else {
+          toast.error('Notifications blocked in browser settings. Please allow in browser permissions.');
+        }
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+  };
+
   const pendingVolunteersCount = (volunteerTasks || [])
     .flatMap((t) => t.roster || [])
     .filter((v) => v.attendanceStatus === 'PENDING').length;
@@ -347,6 +368,25 @@ export default function AuthorityDashboard() {
             </button>
           </div>
         </div>
+
+        {/* Background Notification Enable Banner */}
+        {showNotificationBanner && (
+          <div className="p-3 bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-2xl flex items-center justify-between gap-3 shadow-lg border border-blue-700 animate-fade-in">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="text-xl">🔔</span>
+              <div>
+                <p className="text-xs font-black leading-tight">Enable Live Background Dispatch Pop-ups</p>
+                <p className="text-[10px] text-blue-200 mt-0.5">Receive audio alerts & popups for your department even when app is minimized</p>
+              </div>
+            </div>
+            <button
+              onClick={handleEnableNotifications}
+              className="px-3 py-1.5 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-black text-xs shrink-0 shadow-md cursor-pointer transition-all"
+            >
+              Enable Now
+            </button>
+          </div>
+        )}
 
         {/* Real-time Alert Banner: Pulsing notification if pending or SOS requests exist */}
         {requests.length > 0 && (

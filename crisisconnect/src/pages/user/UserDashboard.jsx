@@ -53,6 +53,27 @@ export default function UserDashboard() {
   const [isRewardsOpen, setIsRewardsOpen] = useState(false);
   const [isOfflineSmsOpen, setIsOfflineSmsOpen] = useState(false);
 
+  // Background Notification Permission state
+  const [showNotificationBanner, setShowNotificationBanner] = useState(() => {
+    return typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted';
+  });
+
+  const handleEnableNotifications = async () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      try {
+        const perm = await Notification.requestPermission();
+        if (perm === 'granted') {
+          setShowNotificationBanner(false);
+          toast.success('🔔 Background alerts enabled! You will receive pop-ups for critical emergencies.');
+        } else {
+          toast.error('Notifications blocked in browser settings. Please allow in browser permissions.');
+        }
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+  };
+
   // Device GPS for sorting volunteer tasks by proximity to user
   const [userCoords, setUserCoords] = useState(null);
   useEffect(() => {
@@ -197,6 +218,25 @@ export default function UserDashboard() {
           </button>
         </div>
       </div>
+
+      {/* Background Notification Enable Banner */}
+      {showNotificationBanner && (
+        <div className="p-3 bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-2xl flex items-center justify-between gap-3 shadow-lg border border-blue-700 animate-fade-in">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="text-xl">🔔</span>
+            <div>
+              <p className="text-xs font-black leading-tight">Enable Live Background Pop-up Alerts</p>
+              <p className="text-[10px] text-blue-200 mt-0.5">Receive audio sirens & alerts even when app is minimized</p>
+            </div>
+          </div>
+          <button
+            onClick={handleEnableNotifications}
+            className="px-3 py-1.5 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-black text-xs shrink-0 shadow-md cursor-pointer transition-all"
+          >
+            Enable Now
+          </button>
+        </div>
+      )}
 
       {/* Dual Hub Switcher: Emergency Services vs Volunteering Opportunities */}
       <div className="grid grid-cols-2 p-1 bg-slate-200/80 rounded-2xl gap-1">

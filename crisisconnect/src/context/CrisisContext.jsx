@@ -92,11 +92,15 @@ export function CrisisProvider({ children }) {
     }
   });
 
-  const updateKarmaPoints = (newPts) => {
-    setKarmaPoints(newPts);
-    try {
-      localStorage.setItem('crisisconnect_karma_pts_v2', String(newPts));
-    } catch {}
+  const updateKarmaPoints = (newPtsOrFn) => {
+    setKarmaPoints((prev) => {
+      const nextPts = typeof newPtsOrFn === 'function' ? newPtsOrFn(prev) : Number(newPtsOrFn) || 0;
+      const safePts = Math.max(0, nextPts);
+      try {
+        localStorage.setItem('crisisconnect_karma_pts_v2', String(safePts));
+      } catch {}
+      return safePts;
+    });
   };
 
   // Real-time Emergency Requests - initialized strictly from live database, no demo data
@@ -111,6 +115,58 @@ export function CrisisProvider({ children }) {
     localStorage.removeItem('crisisconnect_voltasks_v1');
     localStorage.removeItem('crisisconnect_karma_pts');
 
+    const knownIdsRef = new Set();
+    let isInitialLoad = true;
+
+    // Centralized notification dispatcher matching user role and authority department
+    const dispatchTargetedAlert = (r, aiResult) => {
+      const activeUser = sessionRef.current;
+      if (!activeUser) return;
+
+      if (activeUser.type === 'authority') {
+        const targetAgency = aiResult?.targetAuthority?.agencyType;
+        const myAgency =
+          activeUser.agencyType ||
+          (activeUser.badgeId?.toLowerCase().startsWith('police')
+            ? 'police'
+            : activeUser.badgeId?.toLowerCase().startsWith('fire')
+            ? 'fire'
+            : activeUser.badgeId?.toLowerCase().startsWith('hosp')
+            ? 'hospital'
+            : activeUser.badgeId?.toLowerCase().startsWith('ndrf')
+            ? 'ndrf'
+            : activeUser.badgeId?.toLowerCase().startsWith('usar')
+            ? 'usar'
+            : 'all');
+
+        const isGeneralCoordinator =
+          activeUser.badgeId === 'ADMIN-1' || activeUser.badgeId === 'USAR-112' || myAgency === 'all';
+
+        // Authority only receives alerts for their department unless general coordinator
+        if (myAgency === targetAgency || isGeneralCoordinator) {
+          triggerDeviceNotification(
+            `🚨 [${(aiResult?.targetAuthority?.shortName || activeUser.department || 'AUTHORITY').toUpperCase()} DISPATCH]`,
+            {
+              body: `${r.category || 'Emergency'}: ${r.title} at ${r.location_name || r.locationName || 'Sector'}. Priority: ${(r.urgency || 'HIGH').toUpperCase()}`,
+            }
+          );
+        }
+      } else if (activeUser.type === 'citizen') {
+        // Citizens receive alert for critical disasters, SOS beacons, and local hazards
+        const isCritical =
+          (r.urgency || '').toLowerCase() === 'critical' ||
+          (r.category || '').toUpperCase() === 'RESCUE' ||
+          (r.title || '').toUpperCase().includes('SOS') ||
+          (r.title || '').toUpperCase().includes('CRITICAL');
+
+        if (isCritical) {
+          triggerDeviceNotification('🚨 CRITICAL EMERGENCY ALERT IN YOUR SECTOR', {
+            body: `${r.category || 'Rescue'}: ${r.title} at ${r.location_name || r.locationName || 'Disaster Area'}. Avoid hazard zone.`,
+          });
+        }
+      }
+    };
+
     const fetchSupabaseRequests = async () => {
       try {
         const { data, error } = await supabase
@@ -119,6 +175,26 @@ export function CrisisProvider({ children }) {
           .order('created_at', { ascending: false });
 
         if (!error && data) {
+          // Detect brand new requests during background polling and fire notifications
+          if (!isInitialLoad) {
+            data.forEach((r) => {
+              if (!knownIdsRef.has(r.id)) {
+                knownIdsRef.add(r.id);
+                const aiResult = classifyDisaster({
+                  title: r.title,
+                  description: r.description,
+                  category: r.category,
+                  urgency: r.urgency,
+                  peopleCount: r.people_count,
+                });
+                dispatchTargetedAlert(r, aiResult);
+              }
+            });
+          } else {
+            data.forEach((r) => knownIdsRef.add(r.id));
+            isInitialLoad = false;
+          }
+
           setRequests((prev) => {
             return data.map((r) => {
               const existing = prev.find(
@@ -189,6 +265,8 @@ export function CrisisProvider({ children }) {
         (payload) => {
           if (payload.eventType === 'INSERT') {
             const r = payload.new;
+            knownIdsRef.add(r.id);
+
             const aiResult = classifyDisaster({
               title: r.title,
               description: r.description,
@@ -227,39 +305,8 @@ export function CrisisProvider({ children }) {
             };
             setRequests((prev) => [newReq, ...prev.filter((item) => item.id !== newReq.id && item.trackingCode !== newReq.trackingCode)]);
 
-            // Targeted Notification Routing based on Active Device Session
-            const activeUser = sessionRef.current;
-            if (activeUser) {
-              if (activeUser.type === 'authority') {
-                const targetAgency = aiResult.targetAuthority?.agencyType;
-                const myAgency =
-                  activeUser.agencyType ||
-                  (activeUser.badgeId?.toLowerCase().startsWith('police')
-                    ? 'police'
-                    : activeUser.badgeId?.toLowerCase().startsWith('fire')
-                    ? 'fire'
-                    : activeUser.badgeId?.toLowerCase().startsWith('hosp')
-                    ? 'hospital'
-                    : activeUser.badgeId?.toLowerCase().startsWith('ndrf')
-                    ? 'ndrf'
-                    : activeUser.badgeId?.toLowerCase().startsWith('usar')
-                    ? 'usar'
-                    : 'all');
-
-                const isGeneralCoordinator =
-                  activeUser.badgeId === 'ADMIN-1' || activeUser.badgeId === 'USAR-112';
-
-                if (myAgency === targetAgency || myAgency === 'all' || isGeneralCoordinator) {
-                  triggerDeviceNotification(
-                    `🚨 [${(aiResult.targetAuthority?.shortName || 'AUTHORITY').toUpperCase()} DISPATCH]`,
-                    {
-                      body: `${newReq.category}: ${newReq.title} at ${newReq.locationName}. Reporter: ${newReq.contactName} (${newReq.contactPhone})`,
-                    }
-                  );
-                }
-              }
-            }
-
+            // Dispatch targeted alert
+            dispatchTargetedAlert(newReq, aiResult);
             broadcastDisasterToNearbyUsers(newReq, 5);
           } else if (payload.eventType === 'UPDATE') {
             const r = payload.new;
