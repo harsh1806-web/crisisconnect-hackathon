@@ -21,8 +21,8 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-2xs">
-      {/* Top Status Bar */}
-      <div className="bg-slate-950 text-white text-[11px] px-3 py-1 flex items-center justify-between">
+      {/* Top Status Bar with iPhone Notch Safe Area */}
+      <div className="bg-slate-950 text-white text-[11px] px-3 pt-[calc(env(safe-area-inset-top,0px)+0.25rem)] pb-1 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="flex h-2 w-2 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -34,8 +34,8 @@ export default function UserCreateRequest() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [locationName, setLocationName] = useState('');
-  const [lat, setLat] = useState(13.0827);
-  const [lng, setLng] = useState(80.2707);
+  const [lat, setLat] = useState(() => currentUser?.location?.lat || 19.0760);
+  const [lng, setLng] = useState(() => currentUser?.location?.lng || 72.8777);
   const [locating, setLocating] = useState(false);
   const [gpsLocked, setGpsLocked] = useState(false);
   const [peopleCount, setPeopleCount] = useState(1);
@@ -44,6 +44,21 @@ export default function UserCreateRequest() {
   const [vulnerabilities, setVulnerabilities] = useState([]);
   const [duplicateWarning, setDuplicateWarning] = useState(null);
   const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
+
+  // Auto-acquire phone GPS coordinates on mobile load
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setLat(pos.coords.latitude);
+          setLng(pos.coords.longitude);
+          setGpsLocked(true);
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    }
+  }, []);
 
   const categoryOptions = [
     { name: 'Rescue', icon: LifeBuoy, desc: 'Trapped, rising water, evacuation' },

@@ -2,9 +2,17 @@
 @import "leaflet/dist/leaflet.css";
 
 @layer base {
-  body {
+  html, body {
     @apply bg-slate-50 text-slate-900 min-h-screen antialiased selection:bg-rose-500 selection:text-white;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  button, a, input, select, textarea {
+    touch-action: manipulation;
   }
 }
 
