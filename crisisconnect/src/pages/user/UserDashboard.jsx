@@ -429,14 +429,26 @@ export default function UserDashboard() {
                       key={task.id}
                       className="p-4 bg-white rounded-3xl border-2 border-emerald-500 shadow-md space-y-3 relative overflow-hidden"
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
                         <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
                           {task.sector}
                         </span>
-                        <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                          {t('ready_for_duty')}
-                        </span>
+                        {task.userAttendanceStatus === 'ATTENDED' ? (
+                          <span className="text-[11px] font-black text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                            <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                            Attended (+100 Pts in Wallet)
+                          </span>
+                        ) : task.userAttendanceStatus === 'NO_SHOW' ? (
+                          <span className="text-[11px] font-black text-rose-800 bg-rose-100 border border-rose-300 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                            <AlertOctagon className="w-3.5 h-3.5 text-rose-600" />
+                            Did Not Come / No-Show (0 Pts)
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5 text-amber-600" />
+                            Pending Verification (100 Pts On-Site)
+                          </span>
+                        )}
                       </div>
 
                       <div>
@@ -576,11 +588,11 @@ export default function UserDashboard() {
                         </span>
 
                         <button
-                          onClick={() => signUpForVolunteerTask(task.id, currentUser?.name)}
+                          onClick={() => signUpForVolunteerTask(task.id, currentUser?.name, currentUser?.phone)}
                           className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl cursor-pointer transition-colors shadow-2xs flex items-center gap-1"
                         >
                           <HeartHandshake className="w-3.5 h-3.5" />
-                          <span>Sign Up to Help (+100 pts)</span>
+                          <span>Sign Up to Help (+100 on verify)</span>
                         </button>
                       </div>
                     </div>

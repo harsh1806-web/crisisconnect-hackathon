@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, ShieldCheck, HeartHandshake, Phone, MapPin, Download, CheckCircle2 } from 'lucide-react';
+import { X, ShieldCheck, HeartHandshake, Phone, MapPin, Download, CheckCircle2, XCircle, Clock } from 'lucide-react';
 
 export default function VolunteerPassModal({ task, user, onClose }) {
   if (!task) return null;
@@ -89,6 +89,31 @@ export default function VolunteerPassModal({ task, user, onClose }) {
                 <Phone className="w-3 h-3" /> {task.coordinatorPhone}
               </a>
             </div>
+          </div>
+
+          {/* Attendance & Points Status */}
+          <div className="p-3 rounded-2xl border text-xs flex items-center justify-between gap-2 bg-white/5 border-white/10">
+            <div>
+              <span className="text-[10px] text-slate-400 font-bold uppercase block">Attendance Status:</span>
+              <div className="font-black text-xs text-white mt-0.5">
+                {task.userAttendanceStatus === 'ATTENDED' ? (
+                  <span className="text-emerald-400 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Verified Attended (+100 Pts in Wallet)
+                  </span>
+                ) : task.userAttendanceStatus === 'NO_SHOW' ? (
+                  <span className="text-rose-400 flex items-center gap-1">
+                    <XCircle className="w-3.5 h-3.5" /> Did Not Come / No-Show (0 Pts)
+                  </span>
+                ) : (
+                  <span className="text-amber-400 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" /> Pending On-Site Check-in (+100 Pts)
+                  </span>
+                )}
+              </div>
+            </div>
+            <span className="text-[9px] px-2 py-1 rounded bg-white/10 text-slate-300 font-mono text-center">
+              Scan QR<br/>At Post
+            </span>
           </div>
 
           {/* Verifiable QR Code & Security Stamp */}

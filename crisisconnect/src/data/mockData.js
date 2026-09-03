@@ -68,6 +68,36 @@ export const INITIAL_CITIZEN_VOLUNTEER_TASKS = [
     coordinatorPhone: "+91 98201 12345",
     userRegistered: false,
     requirements: "Able to lift 10kg crates • High ground relief camp",
+    roster: [
+      {
+        id: "vol-mock-1",
+        citizenName: "Rahul Sharma",
+        citizenPhone: "+91 98201 11223",
+        signedUpAt: "2 hours ago",
+        attendanceStatus: "PENDING",
+        pointsAwarded: 0,
+      },
+      {
+        id: "vol-mock-2",
+        citizenName: "Pooja Mehta",
+        citizenPhone: "+91 98201 44556",
+        signedUpAt: "3 hours ago",
+        attendanceStatus: "ATTENDED",
+        pointsAwarded: 100,
+        verifiedBy: "Insp. R. Deshmukh",
+        verifiedAt: "1 hour ago",
+      },
+      {
+        id: "vol-mock-3",
+        citizenName: "Vikram Joshi",
+        citizenPhone: "+91 98201 77889",
+        signedUpAt: "4 hours ago",
+        attendanceStatus: "NO_SHOW",
+        pointsAwarded: 0,
+        verifiedBy: "Insp. R. Deshmukh",
+        verifiedAt: "1 hour ago",
+      },
+    ],
   },
   {
     id: "task-vol-2",
@@ -85,6 +115,16 @@ export const INITIAL_CITIZEN_VOLUNTEER_TASKS = [
     coordinatorPhone: "108",
     userRegistered: false,
     requirements: "Basic first aid awareness • Mask & gloves provided",
+    roster: [
+      {
+        id: "vol-mock-4",
+        citizenName: "Dr. Ananya Roy",
+        citizenPhone: "+91 98201 33221",
+        signedUpAt: "1 hour ago",
+        attendanceStatus: "PENDING",
+        pointsAwarded: 0,
+      },
+    ],
   },
   {
     id: "task-vol-3",
@@ -102,6 +142,18 @@ export const INITIAL_CITIZEN_VOLUNTEER_TASKS = [
     coordinatorPhone: "1077",
     userRegistered: false,
     requirements: "Patience and physical mobility • Rain boots advised",
+    roster: [
+      {
+        id: "vol-mock-5",
+        citizenName: "Sameer Patil",
+        citizenPhone: "+91 98201 88990",
+        signedUpAt: "3 hours ago",
+        attendanceStatus: "ATTENDED",
+        pointsAwarded: 100,
+        verifiedBy: "NDRF Squad Lead",
+        verifiedAt: "2 hours ago",
+      },
+    ],
   },
   {
     id: "task-vol-4",
@@ -119,6 +171,7 @@ export const INITIAL_CITIZEN_VOLUNTEER_TASKS = [
     coordinatorPhone: "112",
     userRegistered: false,
     requirements: "Good communication skills • Basic phone operating skills",
+    roster: [],
   },
 ];
 

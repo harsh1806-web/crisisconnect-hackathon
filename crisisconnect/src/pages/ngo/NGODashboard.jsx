@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useCrisis } from '../../context/CrisisContext';
 import { useAuth } from '../../context/AuthContext';
+import VolunteerAttendanceModal from '../../components/VolunteerAttendanceModal';
 import toast from 'react-hot-toast';
 
 export default function NGODashboard() {
@@ -21,6 +22,7 @@ export default function NGODashboard() {
   const { currentUser, logout } = useAuth();
 
   const [activeTab, setActiveTab] = useState('missions'); // 'missions' | 'donations'
+  const [isAttendanceOpen, setIsAttendanceOpen] = useState(false);
 
   // Donation form state
   const [donorName, setDonorName] = useState('');
@@ -180,9 +182,19 @@ export default function NGODashboard() {
                     Local residents registered to assist with food distribution, first aid, and evacuations
                   </p>
                 </div>
-                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  {volunteerTasks.reduce((acc, t) => acc + (t.volunteersSignedUp || 0), 0)} Volunteers Active
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {volunteerTasks.reduce((acc, t) => acc + (t.volunteersSignedUp || 0), 0)} Volunteers Active
+                  </span>
+                  <button
+                    onClick={() => setIsAttendanceOpen(true)}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs cursor-pointer transition-colors"
+                    title="Verify on-site volunteer attendance or mark No-Show"
+                  >
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    <span>Verify Attendance</span>
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
@@ -497,6 +509,11 @@ export default function NGODashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Volunteer Attendance Modal */}
+      {isAttendanceOpen && (
+        <VolunteerAttendanceModal onClose={() => setIsAttendanceOpen(false)} />
       )}
     </div>
   );

@@ -26,6 +26,7 @@ import { useAuth } from '../../context/AuthContext';
 import { playEmergencyAlertSound } from '../../services/notificationService';
 import AuthorityMobilizeVolunteersModal from '../../components/AuthorityMobilizeVolunteersModal';
 import IncidentVerificationModal from '../../components/IncidentVerificationModal';
+import VolunteerAttendanceModal from '../../components/VolunteerAttendanceModal';
 import toast from 'react-hot-toast';
 
 // Custom Map Pins for Leaflet
@@ -97,7 +98,9 @@ export default function AuthorityDashboard() {
     verifyRequest,
     updateRequestStatus,
     addRequest,
+    broadcasts,
     publishAuthorityVolunteerTask,
+    volunteerTasks,
   } = useCrisis();
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
@@ -110,7 +113,12 @@ export default function AuthorityDashboard() {
   const [mapZoom, setMapZoom] = useState(12);
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [isMobilizeOpen, setIsMobilizeOpen] = useState(false);
+  const [isAttendanceOpen, setIsAttendanceOpen] = useState(false);
   const [verifyModalIncident, setVerifyModalIncident] = useState(null);
+
+  const pendingVolunteersCount = (volunteerTasks || [])
+    .flatMap((t) => t.roster || [])
+    .filter((v) => v.attendanceStatus === 'PENDING').length;
 
   const handleSendTestAlert = async () => {
     setIsSendingTest(true);
@@ -278,7 +286,21 @@ export default function AuthorityDashboard() {
               title="Mobilize Civilian Volunteers in Real Time"
             >
               <Users className="w-3.5 h-3.5" />
-              <span>Mobilize Volunteers</span>
+              <span>Mobilize</span>
+            </button>
+
+            <button
+              onClick={() => setIsAttendanceOpen(true)}
+              className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/30 flex items-center gap-1.5 transition-all cursor-pointer relative"
+              title="Verify Volunteer On-Site Attendance & Wallet Points"
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Volunteer Roster</span>
+              {pendingVolunteersCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-900 font-black text-[10px] animate-pulse">
+                  {pendingVolunteersCount}
+                </span>
+              )}
             </button>
 
             <Link
@@ -883,6 +905,11 @@ export default function AuthorityDashboard() {
           onPublish={publishAuthorityVolunteerTask}
           onClose={() => setIsMobilizeOpen(false)}
         />
+      )}
+
+      {/* Volunteer Attendance & Verification Modal */}
+      {isAttendanceOpen && (
+        <VolunteerAttendanceModal onClose={() => setIsAttendanceOpen(false)} />
       )}
     </div>
   );

@@ -553,22 +553,95 @@ export function CrisisProvider({ children }) {
   };
 
   // Citizen Action: Sign up for local community volunteer task
-  const signUpForVolunteerTask = (taskId, citizenName = 'Local Volunteer') => {
+  const signUpForVolunteerTask = (taskId, citizenName = 'Local Volunteer', citizenPhone = '') => {
+    const signupId = `vol-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+
     setVolunteerTasks((prev) =>
       prev.map((t) => {
         if (t.id === taskId) {
+          const newRoster = [
+            ...(t.roster || []),
+            {
+              id: signupId,
+              citizenName: citizenName,
+              citizenPhone: citizenPhone || (sessionRef.current?.phone || '+91 98201 55667'),
+              signedUpAt: 'Just now',
+              attendanceStatus: 'PENDING',
+              pointsAwarded: 0,
+            },
+          ];
           return {
             ...t,
-            volunteersSignedUp: t.volunteersSignedUp + 1,
+            volunteersSignedUp: (t.volunteersSignedUp || 0) + 1,
             userRegistered: true,
+            userAttendanceStatus: 'PENDING',
+            roster: newRoster,
           };
         }
         return t;
       })
     );
-    // Award citizen with +100 Karma Points
-    updateKarmaPoints(karmaPoints + 100);
-    toast.success(`🎉 ${citizenName} registered! +100 Karma Points added to your profile!`);
+
+    // CRITICAL: Notice we do NOT add +100 points immediately!
+    // Points are only awarded once the Authority / NGO verifies on-site attendance!
+    toast.success(
+      `🎉 ${citizenName} registered! Points will be credited once Authority verifies your on-site attendance.`,
+      { duration: 4500 }
+    );
+  };
+
+  // Authority & NGO Action: Verify attendance or mark No-Show / Did Not Come
+  const updateVolunteerAttendance = (taskId, volunteerId, status, officerName = 'Authority Field Lead') => {
+    let affectedVolunteer = null;
+    let pointsDifference = 0;
+
+    setVolunteerTasks((prev) =>
+      prev.map((t) => {
+        if (t.id === taskId) {
+          const updatedRoster = (t.roster || []).map((vol) => {
+            if (vol.id === volunteerId || vol.citizenName === volunteerId) {
+              affectedVolunteer = vol;
+              const prevPoints = vol.pointsAwarded || 0;
+              const newPoints = status === 'ATTENDED' ? 100 : 0;
+              pointsDifference = newPoints - prevPoints;
+
+              return {
+                ...vol,
+                attendanceStatus: status, // 'ATTENDED' | 'NO_SHOW'
+                pointsAwarded: newPoints,
+                verifiedBy: officerName,
+                verifiedAt: new Date().toISOString(),
+              };
+            }
+            return vol;
+          });
+
+          // Check if current user is this volunteer
+          const isUser =
+            (sessionRef.current?.name &&
+              affectedVolunteer?.citizenName &&
+              sessionRef.current.name.toLowerCase() === affectedVolunteer.citizenName.toLowerCase()) ||
+            t.userRegistered;
+
+          return {
+            ...t,
+            roster: updatedRoster,
+            userAttendanceStatus: isUser ? status : t.userAttendanceStatus,
+          };
+        }
+        return t;
+      })
+    );
+
+    if (pointsDifference !== 0) {
+      updateKarmaPoints(Math.max(0, karmaPoints + pointsDifference));
+    }
+
+    if (status === 'ATTENDED') {
+      toast.success(`✅ Attendance verified for ${affectedVolunteer?.citizenName || 'Volunteer'}. +100 Karma Points added to wallet!`);
+    } else if (status === 'NO_SHOW') {
+      toast.error(`❌ Marked ${affectedVolunteer?.citizenName || 'Volunteer'} as "Did Not Come" (No-Show). 0 Points added.`);
+    }
   };
 
   // Authority Action: Mobilize and publish new volunteer requirement to citizens & Supabase
@@ -840,6 +913,7 @@ export function CrisisProvider({ children }) {
         addRequest,
         triggerSOS,
         signUpForVolunteerTask,
+        updateVolunteerAttendance,
         recordDonation,
         updateNGOMission,
         verifyRequest,
