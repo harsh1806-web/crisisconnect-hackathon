@@ -1,56 +1,68 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { DEMO_USERS } from '../data/mockData';
+import { DEMO_PROFILES } from '../data/mockData';
 import toast from 'react-hot-toast';
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(() => {
-    const saved = localStorage.getItem('crisisconnect_user');
+  const [session, setSession] = useState(() => {
+    const saved = localStorage.getItem('crisisconnect_session');
     if (saved) {
       try {
         return JSON.parse(saved);
       } catch {
-        return DEMO_USERS.citizen;
+        return { type: 'user', ...DEMO_PROFILES.user };
       }
     }
-    return DEMO_USERS.citizen;
+    // Default to user demo so testing works out of the box
+    return { type: 'user', ...DEMO_PROFILES.user };
   });
 
   useEffect(() => {
-    localStorage.setItem('crisisconnect_user', JSON.stringify(currentUser));
-  }, [currentUser]);
-
-  const switchRole = (roleKey) => {
-    if (DEMO_USERS[roleKey]) {
-      setCurrentUser(DEMO_USERS[roleKey]);
-      toast.success(`Switched role to ${DEMO_USERS[roleKey].roleLabel}`);
+    if (session) {
+      localStorage.setItem('crisisconnect_session', JSON.stringify(session));
+    } else {
+      localStorage.removeItem('crisisconnect_session');
     }
+  }, [session]);
+
+  const loginAsUser = (userData = {}) => {
+    const userSession = {
+      type: 'user',
+      ...DEMO_PROFILES.user,
+      ...userData,
+    };
+    setSession(userSession);
+    toast.success(`Welcome, ${userSession.name}!`);
+    return userSession;
   };
 
-  const loginAs = (roleKey) => {
-    if (DEMO_USERS[roleKey]) {
-      setCurrentUser(DEMO_USERS[roleKey]);
-      toast.success(`Signed in as ${DEMO_USERS[roleKey].name}`);
-    }
+  const loginAsAuthority = (authData = {}) => {
+    const authSession = {
+      type: 'authority',
+      ...DEMO_PROFILES.authority,
+      ...authData,
+    };
+    setSession(authSession);
+    toast.success(`Authority Portal: Signed in as ${authSession.rank}`);
+    return authSession;
   };
 
   const logout = () => {
-    // Reverts to citizen guest
-    setCurrentUser(DEMO_USERS.citizen);
-    toast('Logged out to default guest view', { icon: 'ℹ️' });
+    setSession(null);
+    toast('Logged out of CrisisConnect', { icon: '🚪' });
   };
 
   return (
     <AuthContext.Provider
       value={{
-        currentUser,
-        switchRole,
-        loginAs,
+        session,
+        currentUser: session,
+        isUser: session?.type === 'user',
+        isAuthority: session?.type === 'authority',
+        loginAsUser,
+        loginAsAuthority,
         logout,
-        isVolunteer: currentUser?.role === 'volunteer',
-        isCoordinator: currentUser?.role === 'coordinator',
-        isCitizen: currentUser?.role === 'citizen',
       }}
     >
       {children}

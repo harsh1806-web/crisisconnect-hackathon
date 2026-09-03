@@ -4,6 +4,7 @@ import {
   INITIAL_BROADCASTS,
   INITIAL_REQUESTS,
   INITIAL_SHELTERS,
+  REGISTERED_NGOS,
 } from '../data/mockData';
 import toast from 'react-hot-toast';
 
@@ -11,8 +12,11 @@ const CrisisContext = createContext(null);
 
 export function CrisisProvider({ children }) {
   const [baseCrisisInfo] = useState(INITIAL_CRISIS_INFO);
+  const [shelters] = useState(INITIAL_SHELTERS);
+  const [ngos] = useState(REGISTERED_NGOS);
+
   const [broadcasts, setBroadcasts] = useState(() => {
-    const saved = localStorage.getItem('crisisconnect_broadcasts');
+    const saved = localStorage.getItem('crisisconnect_broadcasts_v2');
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -23,10 +27,8 @@ export function CrisisProvider({ children }) {
     return INITIAL_BROADCASTS;
   });
 
-  const [shelters] = useState(INITIAL_SHELTERS);
-
   const [requests, setRequests] = useState(() => {
-    const saved = localStorage.getItem('crisisconnect_requests');
+    const saved = localStorage.getItem('crisisconnect_requests_v2');
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -37,96 +39,108 @@ export function CrisisProvider({ children }) {
     return INITIAL_REQUESTS;
   });
 
-  // Save changes to localStorage for persistent hackathon demo experience
   useEffect(() => {
-    localStorage.setItem('crisisconnect_requests', JSON.stringify(requests));
+    localStorage.setItem('crisisconnect_requests_v2', JSON.stringify(requests));
   }, [requests]);
 
   useEffect(() => {
-    localStorage.setItem('crisisconnect_broadcasts', JSON.stringify(broadcasts));
+    localStorage.setItem('crisisconnect_broadcasts_v2', JSON.stringify(broadcasts));
   }, [broadcasts]);
 
-  // Recalculate stats dynamically based on current requests as derived state
+  // Derived statistics for Authorities & Dashboard
   const crisisInfo = useMemo(() => {
-    const activeReqs = requests.filter((r) => r.status !== 'resolved').length;
-    const criticalReqs = requests.filter((r) => r.urgency === 'critical' && r.status !== 'resolved').length;
-    const resolvedReqs = requests.filter((r) => r.status === 'resolved').length;
+    const total = requests.length;
+    const pending = requests.filter((r) => r.verificationStatus === 'pending').length;
+    const verified = requests.filter(
+      (r) => r.verificationStatus === 'verified' && r.status !== 'resolved'
+    ).length;
+    const assigned = requests.filter(
+      (r) => r.status === 'assigned' || r.status === 'in_progress'
+    ).length;
+    const resolved = requests.filter((r) => r.status === 'resolved').length;
 
     return {
       ...baseCrisisInfo,
       stats: {
-        ...baseCrisisInfo.stats,
-        activeRequests: activeReqs,
-        criticalSOS: criticalReqs,
-        rescuesCompleted: 60 + resolvedReqs,
+        totalRequests: total,
+        pendingVerification: pending,
+        verifiedActive: verified,
+        assignedMissions: assigned,
+        rescuesCompleted: 60 + resolved,
       },
     };
   }, [baseCrisisInfo, requests]);
 
-  // Add a new request (from CreateRequest form)
-  const addRequest = (newRequestData) => {
+  // 1. Citizen Action: Create Emergency Request
+  const addRequest = (requestData) => {
+    const codeNum = Math.floor(100 + Math.random() * 900);
+    const trackingCode = `CRISIS-${codeNum}`;
+
     const newReq = {
       id: `req-${Date.now()}`,
-      title: newRequestData.title || 'Emergency Assistance Requested',
-      category: newRequestData.category || 'General',
-      urgency: newRequestData.urgency || 'high',
-      status: 'open',
-      description: newRequestData.description || '',
-      locationName: newRequestData.locationName || 'Near Sector Coordinates',
-      lat: newRequestData.lat || 13.0827 + (Math.random() - 0.5) * 0.02,
-      lng: newRequestData.lng || 80.2707 + (Math.random() - 0.5) * 0.02,
-      peopleCount: Number(newRequestData.peopleCount) || 1,
-      vulnerabilities: newRequestData.vulnerabilities || [],
-      contactName: newRequestData.contactName || 'Anonymous Citizen',
-      contactPhone: newRequestData.contactPhone || '+1-555-0100',
+      trackingCode,
+      title: requestData.title || 'Immediate Emergency Assistance',
+      category: requestData.category || 'Rescue',
+      urgency: requestData.urgency || 'high',
+      verificationStatus: 'pending',
+      status: 'pending_verification',
+      description: requestData.description || '',
+      locationName: requestData.locationName || 'GPS Location Tagged',
+      lat: requestData.lat || 13.0827 + (Math.random() - 0.5) * 0.02,
+      lng: requestData.lng || 80.2707 + (Math.random() - 0.5) * 0.02,
+      peopleCount: Number(requestData.peopleCount) || 1,
+      vulnerabilities: requestData.vulnerabilities || [],
+      contactName: requestData.contactName || 'Citizen in Need',
+      contactPhone: requestData.contactPhone || '+1-555-0100',
       createdAt: new Date().toISOString(),
-      assignedVolunteer: null,
+      assignedNGO: null,
       updates: [
         {
           id: `up-${Date.now()}`,
-          author: newRequestData.contactName || 'Requester',
-          text: 'Request logged into CrisisConnect system. Responders alerted.',
+          author: 'Emergency System',
+          text: `Request logged under Reference ${trackingCode}. Dispatched to Authority Queue for verification.`,
           timestamp: 'Just now',
         },
       ],
     };
 
     setRequests((prev) => [newReq, ...prev]);
-    toast.success('Emergency request broadcasted to all nearby responders!', {
-      duration: 5000,
-    });
+    toast.success(`Request ${trackingCode} submitted! Authorities alerted.`);
     return newReq;
   };
 
-  // One-Touch SOS Quick Dispatch
+  // 2. Citizen Action: SOS Trigger
   const triggerSOS = (coords, customDetails = {}) => {
     const lat = coords?.lat || 13.0835 + (Math.random() - 0.5) * 0.015;
     const lng = coords?.lng || 80.2725 + (Math.random() - 0.5) * 0.015;
+    const trackingCode = `SOS-${Math.floor(100 + Math.random() * 900)}`;
 
     const sosReq = {
       id: `sos-${Date.now()}`,
-      title: '🚨 CRITICAL SOS: Immediate Life-Threatening Emergency',
+      trackingCode,
+      title: '🚨 CRITICAL LIFE-THREATENING SOS BEACON',
       category: 'Rescue',
       urgency: 'critical',
-      status: 'open',
+      verificationStatus: 'verified', // SOS is auto-verified priority
+      status: 'verified',
       description:
         customDetails.description ||
-        'Automated SOS beacon activated. User reported immediate distress. Real-time GPS coordinates recorded.',
-      locationName: customDetails.locationName || `GPS Beacon: [${lat.toFixed(4)}, ${lng.toFixed(4)}]`,
+        'Citizen triggered immediate red emergency panic beacon. Immediate evacuation / life hazard reported.',
+      locationName: customDetails.locationName || `GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
       lat,
       lng,
       peopleCount: customDetails.peopleCount || 1,
-      vulnerabilities: ['Urgent SOS', 'Immediate Threat'],
-      contactName: customDetails.contactName || 'Distressed Citizen',
-      contactPhone: customDetails.contactPhone || '+1-555-EMERGENCY',
+      vulnerabilities: ['Immediate Distress', 'Life Hazard'],
+      contactName: customDetails.contactName || 'Emergency Victim',
+      contactPhone: customDetails.contactPhone || '+1-555-URGENT',
       createdAt: new Date().toISOString(),
       isSOS: true,
-      assignedVolunteer: null,
+      assignedNGO: null,
       updates: [
         {
-          id: `up-sos-${Date.now()}`,
-          author: 'CrisisConnect SOS Dispatch',
-          text: 'High-priority SOS signal transmitted to EOC and nearest mobile units.',
+          id: `up-${Date.now()}`,
+          author: 'Emergency EOC Relay',
+          text: 'Critical SOS beacon transmitted on priority channel to Response Authorities.',
           timestamp: 'Just now',
         },
       ],
@@ -134,13 +148,12 @@ export function CrisisProvider({ children }) {
 
     setRequests((prev) => [sosReq, ...prev]);
 
-    // Audio beep simulation via Web Audio API for sensory feedback
     try {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.3);
       gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
@@ -149,65 +162,111 @@ export function CrisisProvider({ children }) {
       osc.start();
       osc.stop(audioCtx.currentTime + 0.35);
     } catch {
-      // Audio context might be restricted before interaction
+      // Audio context may be restricted
     }
 
-    toast.error('🚨 CRITICAL SOS BROADCASTED! First responders notified.', {
-      duration: 6000,
-      icon: '🚨',
+    toast.error('🚨 Critical SOS Dispatched to Emergency Operations Command!', {
+      duration: 5000,
     });
-
     return sosReq;
   };
 
-  // Claim a request as a volunteer
-  const claimRequest = (requestId, volunteer) => {
+  // 3. Authority Action: Verify Request
+  const verifyRequest = (requestId, authorityName = 'Authority EOC') => {
     setRequests((prev) =>
-      prev.map((req) => {
-        if (req.id === requestId) {
-          const updated = {
-            ...req,
-            status: 'in_progress',
-            assignedVolunteer: {
-              id: volunteer.id,
-              name: volunteer.name,
-              role: volunteer.roleLabel || 'Volunteer Responder',
-              phone: volunteer.phone,
-              eta: 'En Route',
-            },
+      prev.map((r) => {
+        if (r.id === requestId) {
+          return {
+            ...r,
+            verificationStatus: 'verified',
+            status: 'verified',
             updates: [
-              ...req.updates,
+              ...r.updates,
               {
                 id: `up-${Date.now()}`,
-                author: volunteer.name,
-                text: `${volunteer.name} accepted this mission and is en route.`,
+                author: authorityName,
+                text: 'Incident details verified by Disaster Management Authority. Ready for NGO / Squad assignment.',
                 timestamp: 'Just now',
               },
             ],
           };
-          return updated;
         }
-        return req;
+        return r;
       })
     );
-    toast.success('Mission accepted! Requester updated that you are on the way.');
+    toast.success('Incident verified & cleared for NGO deployment!');
   };
 
-  // Update status (e.g. resolve)
-  const updateRequestStatus = (requestId, newStatus, authorName = 'Coordinator') => {
+  // 4. Authority Action: Reject Request
+  const rejectRequest = (requestId, reason, authorityName = 'Authority EOC') => {
     setRequests((prev) =>
-      prev.map((req) => {
-        if (req.id === requestId) {
-          const statusLabels = {
-            open: 'Reopened request for responders',
-            in_progress: 'Marked in progress',
-            resolved: 'Mission marked as Completed / Aid Delivered',
-          };
+      prev.map((r) => {
+        if (r.id === requestId) {
           return {
-            ...req,
+            ...r,
+            verificationStatus: 'rejected',
+            status: 'rejected',
+            rejectionReason: reason || 'Information could not be validated / duplicate alert.',
+            updates: [
+              ...r.updates,
+              {
+                id: `up-${Date.now()}`,
+                author: authorityName,
+                text: `Request rejected by Authority: ${reason || 'Duplicate or invalid incident report.'}`,
+                timestamp: 'Just now',
+              },
+            ],
+          };
+        }
+        return r;
+      })
+    );
+    toast.error('Request marked as Rejected.');
+  };
+
+  // 5. Authority Action: Assign Volunteer / NGO
+  const assignNGO = (requestId, ngoData, authorityName = 'Authority EOC') => {
+    setRequests((prev) =>
+      prev.map((r) => {
+        if (r.id === requestId) {
+          return {
+            ...r,
+            status: 'assigned',
+            assignedNGO: ngoData,
+            updates: [
+              ...r.updates,
+              {
+                id: `up-${Date.now()}`,
+                author: authorityName,
+                text: `Disaster Authority officially assigned mission to ${ngoData.name}. Unit contact: ${ngoData.phone}`,
+                timestamp: 'Just now',
+              },
+            ],
+          };
+        }
+        return r;
+      })
+    );
+    toast.success(`Mission assigned to ${ngoData.name}!`);
+  };
+
+  // 6. Authority Action: Update Status (e.g. En Route / Resolved)
+  const updateRequestStatus = (requestId, newStatus, authorName = 'Authority EOC') => {
+    const statusLabels = {
+      verified: 'Verified by Response Authorities',
+      assigned: 'Volunteer / NGO Unit Dispatched',
+      in_progress: 'Rescue Team En Route to Site',
+      resolved: 'Mission Completed — Citizens Safely Rescued / Relieved',
+    };
+
+    setRequests((prev) =>
+      prev.map((r) => {
+        if (r.id === requestId) {
+          return {
+            ...r,
             status: newStatus,
             updates: [
-              ...req.updates,
+              ...r.updates,
               {
                 id: `up-${Date.now()}`,
                 author: authorName,
@@ -217,22 +276,22 @@ export function CrisisProvider({ children }) {
             ],
           };
         }
-        return req;
+        return r;
       })
     );
-    toast.success(`Request status updated to ${newStatus.replace('_', ' ').toUpperCase()}`);
+    toast.success(`Status updated: ${newStatus.replace('_', ' ').toUpperCase()}`);
   };
 
-  // Add comment / timeline update
+  // Add real-time comment / update
   const addUpdateToRequest = (requestId, text, authorName) => {
     if (!text.trim()) return;
     setRequests((prev) =>
-      prev.map((req) => {
-        if (req.id === requestId) {
+      prev.map((r) => {
+        if (r.id === requestId) {
           return {
-            ...req,
+            ...r,
             updates: [
-              ...req.updates,
+              ...r.updates,
               {
                 id: `up-${Date.now()}`,
                 author: authorName || 'Responder',
@@ -242,38 +301,18 @@ export function CrisisProvider({ children }) {
             ],
           };
         }
-        return req;
+        return r;
       })
     );
-    toast.success('Update logged to request timeline.');
+    toast.success('Live update logged to timeline.');
   };
 
-  // Dismiss a broadcast alert
-  const dismissBroadcast = (broadcastId) => {
-    setBroadcasts((prev) => prev.filter((b) => b.id !== broadcastId));
-    toast('Broadcast alert dismissed', { icon: 'ℹ️' });
-  };
-
-  // Broadcast a new emergency advisory (Coordinator role)
-  const createBroadcast = (title, message, severity = 'critical') => {
-    const newBroadcast = {
-      id: `alert-${Date.now()}`,
-      severity,
-      title,
-      message,
-      timestamp: 'Just now',
-    };
-    setBroadcasts((prev) => [newBroadcast, ...prev]);
-    toast.success('Emergency Broadcast published across the network!');
-  };
-
-  // Reset demo data helper for testing
   const resetDemoData = () => {
-    localStorage.removeItem('crisisconnect_requests');
-    localStorage.removeItem('crisisconnect_broadcasts');
+    localStorage.removeItem('crisisconnect_requests_v2');
+    localStorage.removeItem('crisisconnect_broadcasts_v2');
     setRequests(INITIAL_REQUESTS);
     setBroadcasts(INITIAL_BROADCASTS);
-    toast.success('Demo data restored to default scenario.');
+    toast.success('Restored default demo scenario.');
   };
 
   return (
@@ -283,13 +322,14 @@ export function CrisisProvider({ children }) {
         broadcasts,
         shelters,
         requests,
+        ngos,
         addRequest,
         triggerSOS,
-        claimRequest,
+        verifyRequest,
+        rejectRequest,
+        assignNGO,
         updateRequestStatus,
         addUpdateToRequest,
-        dismissBroadcast,
-        createBroadcast,
         resetDemoData,
       }}
     >

@@ -1,86 +1,107 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { CrisisProvider } from './context/CrisisContext';
 
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 
-import Dashboard from './pages/Dashboard';
+import Login from './pages/Login';
+
+// User Portal Pages (Flow: Login -> Dashboard -> Create Emergency Request -> Request Submitted -> Track Status -> Receive Updates)
+import UserDashboard from './pages/user/UserDashboard';
+import UserCreateRequest from './pages/user/UserCreateRequest';
+import UserRequestSubmitted from './pages/user/UserRequestSubmitted';
+import UserTrackStatus from './pages/user/UserTrackStatus';
+
+// Authority Portal Pages (Flow: Authority Login -> Authority Dashboard -> View Emergency Requests -> Verify/Reject -> Assign NGO -> Update Status -> Mark Resolved)
+import AuthorityDashboard from './pages/authority/AuthorityDashboard';
+import AuthorityRequests from './pages/authority/AuthorityRequests';
+
+// Shared Pages
 import Requests from './pages/Requests';
 import RequestDetails from './pages/RequestDetails';
-import CreateRequest from './pages/CreateRequest';
 import MapView from './pages/MapView';
-import Login from './pages/Login';
 import Profile from './pages/Profile';
-import { ShieldAlert, Radio } from 'lucide-react';
+
+function AppRoutes() {
+  const { isAuthority, isUser } = useAuth();
+
+  return (
+    <div className="min-h-screen bg-slate-100 flex flex-col items-center antialiased">
+      {/* Toast notifications */}
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 3500,
+          style: {
+            background: '#0f172a',
+            color: '#fff',
+            fontSize: '12px',
+            fontWeight: '600',
+            borderRadius: '16px',
+            padding: '10px 16px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+          },
+        }}
+      />
+
+      {/* Main Mobile App Shell */}
+      <div className="w-full sm:max-w-4xl min-h-screen bg-slate-50 flex flex-col relative sm:shadow-xl sm:border-x sm:border-slate-200">
+        <Navbar />
+
+        <main className="flex-1">
+          <Routes>
+            {/* Landing: Redirect based on role */}
+            <Route
+              path="/"
+              element={
+                isAuthority ? (
+                  <Navigate to="/authority/dashboard" replace />
+                ) : isUser ? (
+                  <Navigate to="/user/dashboard" replace />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+
+            {/* Gateway Authentication */}
+            <Route path="/login" element={<Login />} />
+
+            {/* USER PORTAL WORKFLOW */}
+            <Route path="/user/dashboard" element={<UserDashboard />} />
+            <Route path="/user/create" element={<UserCreateRequest />} />
+            <Route path="/user/submitted/:id" element={<UserRequestSubmitted />} />
+            <Route path="/user/track/:id" element={<UserTrackStatus />} />
+
+            {/* AUTHORITY PORTAL WORKFLOW */}
+            <Route path="/authority/dashboard" element={<AuthorityDashboard />} />
+            <Route path="/authority/requests" element={<AuthorityRequests />} />
+
+            {/* SHARED EMERGENCY MODULES */}
+            <Route path="/requests" element={<Requests />} />
+            <Route path="/requests/:id" element={<RequestDetails />} />
+            <Route path="/map" element={<MapView />} />
+            <Route path="/profile" element={<Profile />} />
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+
+        <BottomNav />
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   return (
     <Router>
       <AuthProvider>
         <CrisisProvider>
-          <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col antialiased">
-            {/* Notification Toast container */}
-            <Toaster
-              position="top-center"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: '#0f172a',
-                  color: '#fff',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  borderRadius: '12px',
-                  padding: '12px 16px',
-                },
-              }}
-            />
-
-            {/* Global Top Navigation */}
-            <Navbar />
-
-            {/* Main Application Routes */}
-            <main className="flex-1">
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/requests" element={<Requests />} />
-                <Route path="/requests/:id" element={<RequestDetails />} />
-                <Route path="/create" element={<CreateRequest />} />
-                <Route path="/map" element={<MapView />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="*" element={<Dashboard />} />
-              </Routes>
-            </main>
-
-            {/* Global Footer (desktop) */}
-            <footer className="hidden md:block bg-white border-t border-slate-200 py-6 text-xs text-slate-500">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-md bg-red-600 text-white flex items-center justify-center">
-                    <ShieldAlert className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="font-bold text-slate-900">CrisisConnect</span>
-                  <span>— Open Disaster Relief & Citizen Rescue Network</span>
-                </div>
-                <div className="flex items-center gap-4 text-slate-600 font-medium">
-                  <span className="flex items-center gap-1 text-emerald-600 font-semibold">
-                    <Radio className="w-3.5 h-3.5 animate-pulse" /> EOC Nodes Online
-                  </span>
-                  <span>•</span>
-                  <Link to="/map" className="hover:text-red-600">Disaster Map</Link>
-                  <span>•</span>
-                  <Link to="/requests" className="hover:text-red-600">Requests Feed</Link>
-                  <span>•</span>
-                  <Link to="/login" className="hover:text-red-600">Demo Role Switch</Link>
-                </div>
-              </div>
-            </footer>
-
-            {/* Mobile Bottom Navigation */}
-            <BottomNav />
-          </div>
+          <AppRoutes />
         </CrisisProvider>
       </AuthProvider>
     </Router>
