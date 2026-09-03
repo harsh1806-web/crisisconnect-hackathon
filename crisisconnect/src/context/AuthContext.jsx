@@ -140,12 +140,23 @@ export function AuthProvider({ children }) {
   const loginAsCitizen = (userData = {}) => {
     const s = {
       type: 'citizen',
-      ...(DEMO_PROFILES?.citizen || {}),
+      role: 'citizen',
+      roleLabel: 'CITIZEN / AFFECTED RESIDENT',
+      name: userData.name || 'Citizen User',
+      phone: userData.phone || '',
+      email: userData.email || '',
+      bloodGroup: userData.bloodGroup || userData.blood_group || 'O+',
+      allergies: userData.allergies || 'None Reported',
+      address: userData.address || '',
+      emergencyContact: userData.emergencyContact || {
+        name: userData.ice_name || userData.emergencyContactName || 'Primary Contact',
+        phone: userData.ice_phone || userData.emergencyContactPhone || userData.phone || '+91 99999 00000',
+      },
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(userData.name || 'Citizen')}`,
       ...userData,
     };
     setSession(s);
     setUserProfile(s);
-    toast.success(`Welcome Citizen: ${s.name || 'Citizen'}!`);
     return s;
   };
 

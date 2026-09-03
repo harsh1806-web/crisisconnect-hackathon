@@ -48,7 +48,7 @@ export default function Register() {
     setIsSubmitting(true);
 
     // 1. Save citizen into local/offline Database
-    const res = citizenDB.register({
+    citizenDB.register({
       name,
       phone,
       email,
@@ -82,7 +82,7 @@ export default function Register() {
         }).catch(() => {});
       }
 
-      // 3. Persist to Supabase Database
+      // 3. Persist directly to Supabase Database
       await registerCitizenInSupabase({
         name,
         phone,
@@ -95,17 +95,16 @@ export default function Register() {
         emergencyContactPhone: icePhone,
         lat: 19.0760,
         lng: 72.8777,
-      }).catch(() => {});
-    } catch {
-      // Offline fallback
-    }
+      });
 
-    toast.success(
-      res.isUpdate
-        ? 'Citizen profile updated in Database! Redirecting to Login...'
-        : 'Registered successfully in Disaster Database! Redirecting to Login...',
-      { duration: 3000 }
-    );
+      toast.success('Citizen profile saved to Supabase Database! Redirecting to Login...', {
+        duration: 3000,
+      });
+    } catch (err) {
+      toast.error('Registration failed: ' + (err.message || 'Database error'));
+      setIsSubmitting(false);
+      return;
+    }
 
     // Redirect to login after 1.2s with prefilled phone
     setTimeout(() => {

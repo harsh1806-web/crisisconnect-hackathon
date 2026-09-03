@@ -2,13 +2,13 @@ import { createClient } from '@supabase/supabase-js';
 
 const env = (typeof import.meta !== 'undefined' && import.meta?.env) || {};
 
-const SUPABASE_URL = env.VITE_SUPABASE_URL || 'https://xyzcompany.supabase.co';
-const SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy_anon_key';
+const SUPABASE_URL = env.VITE_SUPABASE_URL || 'https://nuepesuwqeixnsjpuvfj.supabase.co';
+const SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_2LAhxzhoSGibhq_YCCNbeg_OVRqbfnG';
 
 export const isSupabaseConfigured = Boolean(
-  env.VITE_SUPABASE_URL && 
-  env.VITE_SUPABASE_ANON_KEY && 
-  !env.VITE_SUPABASE_URL.includes('xyzcompany')
+  SUPABASE_URL && 
+  SUPABASE_ANON_KEY && 
+  !SUPABASE_URL.includes('xyzcompany')
 );
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
