@@ -119,7 +119,7 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start px-4 pt-4 pb-16 animate-fade-in">
+    <div className="min-h-[calc(100vh-2rem)] flex flex-col justify-center items-center px-4 py-4 animate-fade-in">
       <div className="w-full max-w-md bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
         {/* Top Header */}
         <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-red-950 text-white p-6 relative overflow-hidden">
