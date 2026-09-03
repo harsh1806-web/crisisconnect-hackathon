@@ -11,7 +11,7 @@ import {
   KeyRound,
   IdCard,
   UserPlus,
-  Database,
+  ShieldCheck,
   Lock,
   AlertOctagon,
 } from 'lucide-react';
@@ -377,7 +377,7 @@ export default function Login() {
           <div className="mt-4 flex items-center justify-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
             <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
-              Disaster Database Online
+              Response Network Active
             </span>
           </div>
         </div>
@@ -459,7 +459,7 @@ export default function Login() {
               {/* REGISTER FIRST CTA BANNER */}
               <div className="p-3.5 bg-red-50/90 rounded-2xl border-2 border-dashed border-red-300 text-center space-y-1.5">
                 <div className="flex items-center justify-center gap-1.5 text-red-700 font-bold text-xs">
-                  <Database className="w-4 h-4 text-red-600" />
+                  <ShieldCheck className="w-4 h-4 text-red-600" />
                   <span>{t('new_citizen_prompt')}</span>
                 </div>
                 <p className="text-[11px] text-slate-600">

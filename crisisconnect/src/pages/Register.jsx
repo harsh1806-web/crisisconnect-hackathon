@@ -148,11 +148,11 @@ export default function Register() {
         lng: 72.8777,
       });
 
-      toast.success('Citizen profile saved to Supabase Database! Redirecting to Login...', {
+      toast.success('Profile verified and registered! Redirecting to Login...', {
         duration: 3000,
       });
     } catch (err) {
-      toast.error('Registration failed: ' + (err.message || 'Database error'));
+      toast.error('Registration failed: ' + (err.message || 'Verification error'));
       setIsSubmitting(false);
       return;
     }
@@ -182,7 +182,7 @@ export default function Register() {
             <div>
               <h1 className="text-xl font-black text-white">Citizen Registration</h1>
               <p className="text-xs text-slate-300">
-                Create emergency profile & save to Disaster Relief Database
+                Create verified emergency profile & register
               </p>
             </div>
           </div>
@@ -386,11 +386,11 @@ export default function Register() {
             className="w-full py-3.5 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-bold text-xs rounded-2xl shadow-lg shadow-red-500/30 flex items-center justify-center gap-2 cursor-pointer transition-all mt-3"
           >
             {isSubmitting ? (
-              <span>Saving to Disaster Database...</span>
+              <span>Verifying & Registering...</span>
             ) : (
               <>
                 <CheckCircle className="w-4 h-4" />
-                <span>SAVE TO DATABASE & CONTINUE TO LOGIN</span>
+                <span>REGISTER & CONTINUE TO LOGIN</span>
               </>
             )}
           </button>
@@ -398,7 +398,7 @@ export default function Register() {
           {/* Already have an account */}
           <div className="text-center pt-2">
             <p className="text-xs text-slate-500">
-              Already registered in the database?{' '}
+              Already registered?{' '}
               <Link to="/login" className="font-bold text-red-600 hover:underline">
                 Log In Directly
               </Link>

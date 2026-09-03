@@ -66,7 +66,7 @@ export default function ForgotPasswordModal({ role = 'citizen', initialPhone = '
         }
 
         if (!citizen) {
-          toast.error(`Phone ${cleanPhone} is not registered in our disaster database.`);
+          toast.error(`Phone ${cleanPhone} is not registered in our emergency directory.`);
           setIsProcessing(false);
           return;
         }
@@ -128,7 +128,7 @@ export default function ForgotPasswordModal({ role = 'citizen', initialPhone = '
           .update({ password_hash: newPassword.trim(), updated_at: new Date().toISOString() })
           .eq('phone', cleanPhone);
 
-        toast.success('🎉 Password changed successfully in database!');
+        toast.success('🎉 Password updated successfully!');
         onPasswordResetSuccess(cleanPhone, newPassword.trim());
       } else {
         toast.success('Credentials updated successfully!');
@@ -340,7 +340,7 @@ export default function ForgotPasswordModal({ role = 'citizen', initialPhone = '
                   className="w-full py-3 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer mt-1"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>{isProcessing ? 'Updating Database...' : 'Save New Password & Log In'}</span>
+                  <span>{isProcessing ? 'Verifying & Updating...' : 'Save New Password & Log In'}</span>
                 </button>
               </form>
 

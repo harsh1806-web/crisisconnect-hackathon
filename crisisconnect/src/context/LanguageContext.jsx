@@ -16,7 +16,7 @@ const TRANSLATIONS = {
     app_name: 'CrisisConnect',
     tagline: 'Emergency Response & Relief Management Platform',
     select_language: 'Select Language / भाषा चुनें',
-    database_online: 'Disaster Database Online',
+    database_online: 'Emergency Response Network Active',
     toll_free_hotline: 'Toll-Free Emergency Hotline: 112',
     surveillance_active: 'Surveillance Active: CrisisConnect Rapid Response Network',
     view_map: 'View on Map',
@@ -55,7 +55,7 @@ const TRANSLATIONS = {
 
     // Citizen Login Tab
     citizen_login_title: 'Citizen Login',
-    citizen_login_subtitle: 'Register in database first or login with registered phone',
+    citizen_login_subtitle: 'Register profile first or login with verified phone',
     new_citizen_prompt: 'New Citizen? Register in Database First:',
     new_citizen_desc: 'Save your name, medical notes & ICE emergency contact to the disaster registry.',
     btn_register_first: 'REGISTER CITIZEN INFO FIRST',
@@ -65,7 +65,7 @@ const TRANSLATIONS = {
     password_placeholder: 'Enter your password',
     keep_signed_in: 'Keep me signed in',
     forgot_password: 'Forgot Password?',
-    btn_login: 'Verify from Database & Enter Dashboard',
+    btn_login: 'Verify User & Enter Dashboard',
     verifying_login: 'Verifying with Database...',
     demo_badge: 'Demo Account',
     demo_note: 'Tap to auto-fill credentials for',
