@@ -11,6 +11,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useCrisis } from '../context/CrisisContext';
 import LanguageSwitcher from './LanguageSwitcher';
+import logoImg from '../assets/logo.png';
 
 export default function Navbar() {
   const location = useLocation();
@@ -60,7 +61,7 @@ export default function Navbar() {
           className="flex items-center gap-2"
         >
           <img
-            src="/logo.png"
+            src={logoImg}
             alt="CrisisConnect"
             className="w-8 h-8 rounded-xl object-contain bg-white shadow-xs p-0.5 border border-slate-200"
           />
@@ -79,7 +80,7 @@ export default function Navbar() {
           <div className="flex items-center gap-2">
             {isAuthority ? (
               <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
-                <Building2 className="w-3 h-3" /> Authority EOC
+                <Building2 className="w-3 h-3" /> Authority Dashboard
               </span>
             ) : isNGO ? (
               <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">

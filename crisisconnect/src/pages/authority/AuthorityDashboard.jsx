@@ -21,6 +21,7 @@ import {
   Users,
   Search,
   Send,
+  ListFilter,
   X,
 } from 'lucide-react';
 import { useCrisis } from '../../context/CrisisContext';
@@ -351,100 +352,59 @@ export default function AuthorityDashboard() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-5 space-y-5 pb-28 animate-fade-in">
       {/* Top Official Command Header */}
-      <div className="bg-slate-900 text-white rounded-3xl p-5 border border-slate-800 shadow-xl space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-bold shadow-md shadow-blue-500/30 shrink-0">
-              <Building2 className="w-6 h-6" />
+      <div className="bg-slate-900 text-white rounded-3xl p-5 sm:p-6 border border-slate-800 shadow-xl space-y-5">
+        {/* Officer Identity & Control Bar */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800/80">
+          <div className="flex items-center gap-3.5">
+            <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-bold shadow-lg shadow-blue-500/25 shrink-0 border border-blue-400/30">
+              <span className="text-2xl">{deptInfo?.icon || '🏛️'}</span>
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-black uppercase tracking-wider text-blue-400">
-                  {currentUser?.department || 'Disaster Operations EOC Command'}
+                  {currentUser?.department || 'Disaster Operations Command'}
                 </span>
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2.5 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Live Satellite & Radar Stream
+                  Live Satellite & Radar
                 </span>
               </div>
-              <h1 className="text-lg font-black text-white">
+              <h1 className="text-xl font-black text-white mt-0.5">
                 {currentUser?.name || 'Commander Vikram Rathore'}
               </h1>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-400 mt-0.5">
                 Official Badge: <span className="font-mono text-slate-200 font-bold">{currentUser?.badgeId || 'NDMA-8821'}</span> • {currentUser?.rank || 'Senior Incident Controller'}
               </p>
             </div>
           </div>
 
-          {/* Quick Authority Controls */}
-          <div className="flex flex-wrap items-center gap-2 self-start sm:self-center mt-2 sm:mt-0">
+          {/* Utility Controls */}
+          <div className="flex items-center gap-2 self-end sm:self-center">
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
-              className={`p-2.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-colors ${
+              className={`px-3 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 soundEnabled
                   ? 'bg-red-500/20 text-red-300 border-red-500/40 hover:bg-red-500/30'
                   : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
               }`}
-              title={soundEnabled ? 'Siren Audio Alerts: Active' : 'Siren Audio: Muted'}
+              title={soundEnabled ? 'Alert Sounds: Active' : 'Alert Sounds: Muted'}
             >
               {soundEnabled ? <Volume2 className="w-4 h-4 text-red-400" /> : <VolumeX className="w-4 h-4" />}
-              <span className="hidden sm:inline">{soundEnabled ? 'Siren ON' : 'Muted'}</span>
+              <span>{soundEnabled ? 'Sound ON' : 'Muted'}</span>
             </button>
 
             <button
               onClick={handleTestSiren}
-              className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-semibold transition-colors"
-              title="Test Audio Siren"
+              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+              title="Test Audio Siren Alert"
             >
-              Test Siren
+              <Volume2 className="w-3.5 h-3.5 text-amber-400" />
+              <span>Test Alert</span>
             </button>
-
-            <button
-              onClick={handleSendTestAlert}
-              disabled={isSendingTest}
-              className="px-3 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md shadow-red-600/30 flex items-center gap-1.5 transition-all cursor-pointer"
-              title="Broadcast Live Test Emergency Alert"
-            >
-              <Radio className={`w-3.5 h-3.5 ${isSendingTest ? 'animate-spin' : 'animate-pulse'}`} />
-              <span>{isSendingTest ? 'Sending...' : 'Send Test Alert'}</span>
-            </button>
-
-            <button
-              onClick={() => setIsMobilizeOpen(true)}
-              className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/30 flex items-center gap-1.5 transition-all cursor-pointer"
-              title="Mobilize Civilian Volunteers in Real Time"
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>Mobilize</span>
-            </button>
-
-            <button
-              onClick={() => setIsAttendanceOpen(true)}
-              className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/30 flex items-center gap-1.5 transition-all cursor-pointer relative"
-              title="Verify Volunteer On-Site Attendance & Wallet Points"
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>Volunteer Roster</span>
-              {pendingVolunteersCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-900 font-black text-[10px] animate-pulse">
-                  {pendingVolunteersCount}
-                </span>
-              )}
-            </button>
-
-            <Link
-              to="/authority/requests"
-              className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors border border-slate-700 flex items-center gap-1"
-            >
-              <span>Verify Queue</span>
-              <span className="px-1.5 py-0.2 rounded-full bg-white/20 text-[10px] ml-1">
-                {pendingRequests.length}
-              </span>
-            </Link>
 
             <button
               onClick={logout}
-              className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
+              className="p-2 rounded-xl bg-slate-800 hover:bg-red-950/60 hover:text-red-400 text-slate-400 border border-slate-700 transition-all cursor-pointer"
               title="Sign Out"
             >
               <LogOut className="w-4 h-4" />
@@ -452,9 +412,107 @@ export default function AuthorityDashboard() {
           </div>
         </div>
 
+        {/* Structured Primary Actions Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* 1. Incoming Requests */}
+          <Link
+            to="/authority/requests"
+            className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-800/95 to-slate-850/90 hover:from-slate-750 hover:to-slate-800 border border-slate-700/80 hover:border-blue-500/50 transition-all group flex items-center justify-between shadow-xs cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <ListFilter className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-xs font-black text-white block group-hover:text-blue-300 transition-colors">
+                  Incoming Requests
+                </span>
+                <span className="text-[11px] text-slate-400 block">
+                  {pendingRequests.length} awaiting verification
+                </span>
+              </div>
+            </div>
+            {pendingRequests.length > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-xs shadow-xs animate-pulse">
+                {pendingRequests.length}
+              </span>
+            )}
+          </Link>
+
+          {/* 2. Send Help */}
+          <button
+            onClick={() => setIsMobilizeOpen(true)}
+            className="p-3.5 rounded-2xl bg-gradient-to-br from-blue-950/70 to-blue-900/40 hover:from-blue-900/70 hover:to-blue-850/50 border border-blue-600/40 hover:border-blue-400 text-left transition-all group flex items-center justify-between shadow-xs cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-600/30 group-hover:scale-105 transition-transform">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-xs font-black text-white block group-hover:text-blue-200 transition-colors">
+                  Send Help
+                </span>
+                <span className="text-[11px] text-blue-200/70 block">
+                  Mobilize squads & volunteers
+                </span>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-blue-400 group-hover:translate-x-1 transition-transform" />
+          </button>
+
+          {/* 3. Available Volunteers */}
+          <button
+            onClick={() => setIsAttendanceOpen(true)}
+            className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-950/70 to-emerald-900/40 hover:from-emerald-900/70 hover:to-emerald-850/50 border border-emerald-600/40 hover:border-emerald-400 text-left transition-all group flex items-center justify-between shadow-xs cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-600/30 group-hover:scale-105 transition-transform">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-xs font-black text-white block group-hover:text-emerald-200 transition-colors">
+                  Available Volunteers
+                </span>
+                <span className="text-[11px] text-emerald-200/70 block">
+                  {pendingVolunteersCount > 0 ? `${pendingVolunteersCount} awaiting check-in` : 'View active roster'}
+                </span>
+              </div>
+            </div>
+            {pendingVolunteersCount > 0 ? (
+              <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-xs animate-pulse">
+                {pendingVolunteersCount}
+              </span>
+            ) : (
+              <ArrowRight className="w-4 h-4 text-emerald-400 group-hover:translate-x-1 transition-transform" />
+            )}
+          </button>
+
+          {/* 4. Send Test Notification */}
+          <button
+            onClick={handleSendTestAlert}
+            disabled={isSendingTest}
+            className="p-3.5 rounded-2xl bg-gradient-to-br from-red-950/70 to-red-900/40 hover:from-red-900/70 hover:to-red-850/50 border border-red-600/40 hover:border-red-400 text-left transition-all group flex items-center justify-between shadow-xs cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-red-600/30 group-hover:scale-105 transition-transform">
+                <Radio className={`w-5 h-5 ${isSendingTest ? 'animate-spin' : 'animate-pulse'}`} />
+              </div>
+              <div>
+                <span className="text-xs font-black text-white block group-hover:text-red-200 transition-colors">
+                  {isSendingTest ? 'Sending...' : 'Send Test Notification'}
+                </span>
+                <span className="text-[11px] text-red-200/70 block">
+                  Broadcast test alert
+                </span>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-red-400 group-hover:translate-x-1 transition-transform" />
+          </button>
+        </div>
+
         {/* Background Notification Enable Banner */}
         {showNotificationBanner && (
-          <div className="p-3 bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-2xl flex items-center justify-between gap-3 shadow-lg border border-blue-700 animate-fade-in">
+          <div className="p-3.5 bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-2xl flex items-center justify-between gap-3 shadow-lg border border-blue-700 animate-fade-in">
             <div className="flex items-center gap-2.5 min-w-0">
               <span className="text-xl">🔔</span>
               <div>
@@ -473,27 +531,27 @@ export default function AuthorityDashboard() {
 
         {/* Real-time Alert Banner: Pulsing notification if pending or SOS requests exist */}
         {requests.length > 0 && (
-          <div className="p-3 bg-red-950/70 border border-red-500/50 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-red-200">
-            <div className="flex items-center gap-2.5">
+          <div className="p-3.5 bg-red-950/70 border border-red-500/50 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-red-200">
+            <div className="flex items-center gap-2.5 min-w-0">
               <span className="w-3 h-3 rounded-full bg-red-500 animate-ping shrink-0" />
-              <div>
+              <div className="truncate">
                 <strong className="text-white">Active Incident: </strong>
-                <span>{requests[0].title}</span> • Caller: <span className="text-amber-300 font-bold">{requests[0].contactName}</span> ({requests[0].contactPhone})
+                <span className="font-semibold">{requests[0].title}</span> • Caller: <span className="text-amber-300 font-bold">{requests[0].contactName}</span> ({requests[0].contactPhone})
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
               <a
                 href={`tel:${requests[0].contactPhone}`}
-                className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold flex items-center gap-1 text-[11px]"
+                className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold flex items-center gap-1.5 text-xs shadow-xs"
               >
-                <Phone className="w-3 h-3" /> Call Citizen
+                <Phone className="w-3.5 h-3.5" /> Call Citizen
               </a>
               <button
                 onClick={() => handleFlyToIncident(requests[0])}
-                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold flex items-center gap-1 text-[11px]"
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold flex items-center gap-1.5 text-xs border border-slate-700 shadow-xs cursor-pointer"
               >
-                <Crosshair className="w-3 h-3" /> Focus on Map
+                <Crosshair className="w-3.5 h-3.5 text-blue-400" /> View on Map
               </button>
             </div>
           </div>

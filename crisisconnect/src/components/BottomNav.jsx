@@ -50,7 +50,7 @@ export default function BottomNav() {
             }`}
           >
             <ListFilter className="w-5 h-5 mb-0.5" />
-            <span>Verify Queue</span>
+            <span>Incoming Requests</span>
           </Link>
 
           <Link

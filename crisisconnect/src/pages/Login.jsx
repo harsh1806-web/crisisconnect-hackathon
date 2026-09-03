@@ -27,6 +27,7 @@ import PublicEmergencySOSModal from '../components/PublicEmergencySOSModal';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { useLanguage } from '../context/LanguageContext';
 import { openNativeSms, generateSmsSosPayload } from '../services/smsSosService';
+import logoImg from '../assets/logo.png';
 import toast from 'react-hot-toast';
 
 export const AUTHORITY_AGENCIES = [
@@ -480,7 +481,7 @@ export default function Login() {
           </div>
 
           <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center mx-auto mb-3 shadow-lg shadow-black/40 border border-white/20 p-2">
-            <img src="/logo.png" alt="CrisisConnect Logo" className="w-full h-full object-contain" />
+            <img src={logoImg} alt="CrisisConnect Logo" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-2xl font-black tracking-tight text-white">
             Crisis<span className="text-red-500">Connect</span>
