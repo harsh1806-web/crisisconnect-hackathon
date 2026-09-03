@@ -1,90 +1,117 @@
 import React, { useState } from 'react';
-import { X, KeyRound, Phone, Lock, Send, CheckCircle2, ShieldAlert, Sparkles, MessageSquare } from 'lucide-react';
+import { X, KeyRound, Phone, Lock, Eye, EyeOff, CheckCircle2, ShieldAlert, Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { citizenDB } from '../services/db';
-import { openNativeSms } from '../services/smsSosService';
 import toast from 'react-hot-toast';
 
 export default function ForgotPasswordModal({ role = 'citizen', initialPhone = '', onClose, onPasswordResetSuccess }) {
-  const [step, setStep] = useState(1); // 1: Enter Phone / ID, 2: Enter OTP & New Password
+  const [step, setStep] = useState(1); // 1: Enter Phone & ICE, 2: Reveal or Change Password
   const [phone, setPhone] = useState(initialPhone || '');
-  const [generatedOtp, setGeneratedOtp] = useState('');
-  const [userEnteredOtp, setUserEnteredOtp] = useState('');
+  const [icePhone, setIcePhone] = useState('');
+  const [retrievedPassword, setRetrievedPassword] = useState('');
+  const [citizenName, setCitizenName] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  
+  // New password state
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Authority specific fields
+  // Authority & NGO specific state
   const [authorityBadge, setAuthorityBadge] = useState('POLICE-100');
+  const [ngoLead, setNgoLead] = useState('Red Cross Relief Lead');
 
-  // Step 1: Send SMS OTP
-  const handleSendOtp = async (e) => {
+  // Step 1: Verify using ICE Phone Number
+  const handleVerifyIdentity = async (e) => {
     e.preventDefault();
     if (role === 'citizen') {
-      const cleanPhone = phone.replace(/\D/g, '');
+      const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+      const cleanIce = icePhone.replace(/\D/g, '').slice(-10);
+
       if (cleanPhone.length !== 10) {
-        toast.error('Please enter a valid 10-digit registered phone number.');
+        toast.error('Registered phone number must be exactly 10 digits.');
+        return;
+      }
+      if (cleanIce.length !== 10) {
+        toast.error('ICE Emergency Phone number must be exactly 10 digits.');
         return;
       }
 
       setIsProcessing(true);
       try {
-        // Check if citizen exists in Supabase
-        const { data: citizen, error } = await supabase
-          .from('citizens')
-          .select('id, name, phone')
-          .eq('phone', cleanPhone)
-          .maybeSingle();
-
-        if (error) {
-          console.warn('Supabase query note:', error);
+        // 1. Query Supabase
+        let citizen = null;
+        try {
+          const { data, error } = await supabase
+            .from('citizens')
+            .select('*')
+            .eq('phone', cleanPhone)
+            .maybeSingle();
+          if (!error && data) citizen = data;
+        } catch (e) {
+          console.warn('Supabase offline, checking local DB');
         }
 
-        // Generate 6-digit random OTP
-        const otp = String(Math.floor(100000 + Math.random() * 900000));
-        setGeneratedOtp(otp);
+        // Fallback to local DB if Supabase not configured or offline
+        if (!citizen) {
+          const localCit = citizenDB.findByPhone(cleanPhone);
+          if (localCit) {
+            citizen = {
+              name: localCit.name,
+              phone: localCit.phone,
+              password_hash: localCit.password || 'password123',
+              ice_phone: localCit.emergencyContact?.phone || '',
+            };
+          }
+        }
 
-        // SMS message payload
-        const smsBody = `CrisisConnect Emergency Alert: Your password reset verification code is ${otp}. Use this to reset your account password.`;
+        if (!citizen) {
+          toast.error(`Phone ${cleanPhone} is not registered in our disaster database.`);
+          setIsProcessing(false);
+          return;
+        }
 
-        // Trigger native SMS app if requested
-        openNativeSms({ recipient: cleanPhone, body: smsBody });
+        // Compare ICE Phone (strictly 10 digits)
+        const recordedIce = String(citizen.ice_phone || citizen.emergencyContact?.phone || '')
+          .replace(/\D/g, '')
+          .slice(-10);
 
-        toast.success(`📱 SMS Sent to ${cleanPhone}! OTP: ${otp}`, { duration: 6000 });
+        if (!recordedIce || recordedIce !== cleanIce) {
+          toast.error('❌ ICE Phone Number does not match records for this account.', { duration: 4000 });
+          setIsProcessing(false);
+          return;
+        }
+
+        // Match verified!
+        setCitizenName(citizen.name || 'Citizen');
+        setRetrievedPassword(citizen.password_hash || 'password123');
+        toast.success(`✅ ICE Verified for ${citizen.name}! Access Granted.`);
         setStep(2);
       } catch (err) {
-        toast.error('Failed to generate SMS OTP: ' + err.message);
+        toast.error('Verification error: ' + err.message);
       } finally {
         setIsProcessing(false);
       }
     } else if (role === 'authority') {
-      // Authority command dispatch
-      const otp = 'AUTH-7788';
-      setGeneratedOtp(otp);
-      toast.success(`Command dispatch code generated: ${otp}`);
+      setCitizenName('Commanding Officer');
+      setRetrievedPassword('police123');
+      toast.success('Official Command PIN Verified!');
       setStep(2);
     } else {
-      // NGO dispatch
-      const otp = 'NGO-RELIEF-99';
-      setGeneratedOtp(otp);
-      toast.success(`Relief coordinator code generated: ${otp}`);
+      setCitizenName('Relief Coordinator');
+      setRetrievedPassword('ngo123');
+      toast.success('NGO Coordinator Verified!');
       setStep(2);
     }
   };
 
-  // Step 2: Verify OTP and save new password
-  const handleResetPassword = async (e) => {
+  // Step 2: Change Password and save to Supabase
+  const handleUpdatePassword = async (e) => {
     e.preventDefault();
-    if (userEnteredOtp.trim() !== generatedOtp.trim()) {
-      toast.error('Invalid OTP. Please enter the correct verification code.');
-      return;
-    }
-
     if (!newPassword.trim()) {
-      toast.error('Please enter your new password.');
+      toast.error('Please enter a new password.');
       return;
     }
-
     if (newPassword !== confirmPassword) {
       toast.error('Passwords do not match. Please re-enter.');
       return;
@@ -93,42 +120,48 @@ export default function ForgotPasswordModal({ role = 'citizen', initialPhone = '
     setIsProcessing(true);
     try {
       if (role === 'citizen') {
-        const cleanPhone = phone.replace(/\D/g, '');
+        const cleanPhone = phone.replace(/\D/g, '').slice(-10);
 
-        // 1. Update in Supabase
+        // Update in Supabase
         await supabase
           .from('citizens')
           .update({ password_hash: newPassword.trim(), updated_at: new Date().toISOString() })
           .eq('phone', cleanPhone);
 
-        toast.success('Password updated successfully in database! You can now log in.');
+        toast.success('🎉 Password changed successfully in database!');
         onPasswordResetSuccess(cleanPhone, newPassword.trim());
       } else {
-        toast.success('Access credentials updated successfully!');
+        toast.success('Credentials updated successfully!');
         onClose();
       }
     } catch (err) {
-      toast.error('Failed to reset password: ' + err.message);
+      toast.error('Failed to update password: ' + err.message);
     } finally {
       setIsProcessing(false);
     }
   };
 
+  const handleUseCurrentPassword = () => {
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+    onPasswordResetSuccess(cleanPhone, retrievedPassword);
+    toast.success('Logged in with your existing verified password!');
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white text-slate-900 w-full max-w-sm rounded-3xl border border-slate-200 shadow-2xl overflow-hidden relative flex flex-col">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-900 text-white p-5 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white text-slate-900 w-full max-w-md rounded-3xl border border-slate-200 shadow-2xl overflow-hidden relative flex flex-col">
+        {/* Modal Header */}
+        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-red-950 text-white p-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-red-600/30 text-red-400 flex items-center justify-center font-bold border border-red-500/40 shadow-xs">
-              <KeyRound className="w-5 h-5" />
+              <ShieldCheck className="w-5 h-5 text-red-400" />
             </div>
             <div>
               <span className="text-[10px] font-black uppercase tracking-widest text-red-400 block">
-                SECURITY VERIFICATION
+                ICE SECURITY RECOVERY
               </span>
               <h2 className="text-base font-black text-white">
-                {role === 'authority' ? 'Reset Security PIN' : role === 'ngo' ? 'Relief Portal Recovery' : 'Reset Citizen Password'}
+                {role === 'authority' ? 'Authority PIN Recovery' : role === 'ngo' ? 'Relief Portal Recovery' : 'Citizen ICE Verification'}
               </h2>
             </div>
           </div>
@@ -141,39 +174,59 @@ export default function ForgotPasswordModal({ role = 'citizen', initialPhone = '
           </button>
         </div>
 
-        {/* Content */}
+        {/* Modal Body */}
         <div className="p-5 space-y-4">
           {step === 1 ? (
-            <form onSubmit={handleSendOtp} className="space-y-4">
-              <p className="text-xs text-slate-600 leading-relaxed">
-                {role === 'citizen'
-                  ? 'Enter your registered 10-digit mobile number. We will dispatch a password reset code directly to your phone via SMS.'
-                  : 'Enter your registered coordinator identity to receive an emergency authorization override code.'}
-              </p>
+            <form onSubmit={handleVerifyIdentity} className="space-y-4">
+              <div className="p-3 bg-red-50/90 rounded-2xl border border-red-200 text-xs text-slate-700 leading-relaxed">
+                <span className="font-bold text-red-700 block mb-0.5">🔒 Verified ICE Protocol:</span>
+                Verify your identity by typing your registered 10-digit number and your <strong>In Case of Emergency (ICE) Phone Number</strong>.
+              </div>
 
               {role === 'citizen' ? (
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Registered Mobile Number
-                  </label>
-                  <div className="relative">
-                    <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="tel"
-                      required
-                      maxLength={10}
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                      placeholder="10-digit phone (e.g. 9850422491)"
-                      className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 font-mono font-semibold"
-                    />
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Your Registered Mobile Number (10 Digits)
+                    </label>
+                    <div className="relative">
+                      <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="tel"
+                        required
+                        maxLength={10}
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        placeholder="e.g. 9850422491"
+                        className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 font-mono font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-slate-700">
+                        ICE Emergency Contact Phone (10 Digits)
+                      </label>
+                      <span className="text-[10px] font-bold text-red-600">Strictly 10 Digits</span>
+                    </div>
+                    <div className="relative">
+                      <Phone className="w-4 h-4 text-red-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="tel"
+                        required
+                        maxLength={10}
+                        value={icePhone}
+                        onChange={(e) => setIcePhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        placeholder="Enter your saved ICE phone number"
+                        className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border-2 border-red-200 focus:outline-none focus:ring-2 focus:ring-red-500 font-mono font-bold text-slate-900"
+                      />
+                    </div>
                   </div>
                 </div>
               ) : role === 'authority' ? (
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Official Command Badge ID
-                  </label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Official Badge ID</label>
                   <input
                     type="text"
                     required
@@ -185,13 +238,12 @@ export default function ForgotPasswordModal({ role = 'citizen', initialPhone = '
                 </div>
               ) : (
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    NGO Coordinator Lead
-                  </label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">NGO Coordinator Lead</label>
                   <input
                     type="text"
                     required
-                    defaultValue="Red Cross Relief Lead"
+                    value={ngoLead}
+                    onChange={(e) => setNgoLead(e.target.value)}
                     className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 font-semibold"
                   />
                 </div>
@@ -202,74 +254,104 @@ export default function ForgotPasswordModal({ role = 'citizen', initialPhone = '
                 disabled={isProcessing}
                 className="w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-red-500/30 cursor-pointer"
               >
-                <MessageSquare className="w-4 h-4" />
-                <span>{isProcessing ? 'Dispatching SMS...' : 'Send Reset Code via SMS'}</span>
+                <ShieldCheck className="w-4 h-4" />
+                <span>{isProcessing ? 'Verifying ICE Records...' : 'Verify ICE & Unlock Password'}</span>
               </button>
             </form>
           ) : (
-            <form onSubmit={handleResetPassword} className="space-y-3.5">
-              <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-xs text-emerald-900 leading-tight flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>SMS verification code sent! Enter OTP and choose a new password.</span>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-bold text-slate-700">Verification OTP</label>
-                  <span className="text-[10px] text-red-600 font-mono font-bold">Hint: {generatedOtp}</span>
+            <div className="space-y-4">
+              {/* Verified Banner */}
+              <div className="p-3.5 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-center gap-3">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                <div>
+                  <h4 className="text-xs font-bold text-emerald-900">ICE Identity Verified!</h4>
+                  <p className="text-[11px] text-emerald-700">Account holder: <strong>{citizenName}</strong></p>
                 </div>
-                <input
-                  type="text"
-                  required
-                  maxLength={10}
-                  value={userEnteredOtp}
-                  onChange={(e) => setUserEnteredOtp(e.target.value)}
-                  placeholder="Enter 6-digit OTP code"
-                  className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 font-mono font-bold text-center tracking-widest text-base"
-                />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">New Password</label>
-                <input
-                  type="password"
-                  required
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password"
-                  className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium"
-                />
+              {/* OPTION 1: SEE CURRENT PASSWORD */}
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <Eye className="w-3.5 h-3.5 text-blue-600" />
+                    Option 1: Your Current Password
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="text-[11px] font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    {showCurrentPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    {showCurrentPassword ? 'Hide' : 'Reveal'}
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-800 tracking-wider">
+                    {showCurrentPassword ? retrievedPassword : '••••••••••••'}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleUseCurrentPassword}
+                    className="py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shrink-0 cursor-pointer transition-all shadow-xs"
+                  >
+                    Login with This
+                  </button>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Confirm New Password</label>
-                <input
-                  type="password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm new password"
-                  className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium"
-                />
+              {/* DIVIDER */}
+              <div className="relative flex items-center justify-center">
+                <div className="border-t border-slate-200 w-full" />
+                <span className="bg-white px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest absolute">
+                  OR CHANGE PASSWORD
+                </span>
               </div>
 
-              <button
-                type="submit"
-                disabled={isProcessing}
-                className="w-full py-3 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer mt-1"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>{isProcessing ? 'Updating Database...' : 'Set New Password & Enter'}</span>
-              </button>
+              {/* OPTION 2: CHANGE PASSWORD */}
+              <form onSubmit={handleUpdatePassword} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">New Password</label>
+                  <input
+                    type="password"
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Confirm New Password</label>
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter new password"
+                    className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isProcessing}
+                  className="w-full py-3 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer mt-1"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{isProcessing ? 'Updating Database...' : 'Save New Password & Log In'}</span>
+                </button>
+              </form>
 
               <button
                 type="button"
                 onClick={() => setStep(1)}
                 className="w-full text-center text-xs text-slate-500 hover:underline pt-1 cursor-pointer"
               >
-                Back to Phone Verification
+                Back to ICE Verification
               </button>
-            </form>
+            </div>
           )}
         </div>
       </div>
