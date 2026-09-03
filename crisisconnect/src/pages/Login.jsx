@@ -92,6 +92,74 @@ export const AUTHORITY_AGENCIES = [
   },
 ];
 
+export const NGO_ORGANIZATIONS = [
+  {
+    id: 'ngo-redcross',
+    name: 'Indian Red Cross Society Disaster Relief Corps',
+    shortName: 'Red Cross Disaster Relief',
+    regId: 'NGO-RC-2024',
+    officer: 'Dr. Ananya Sen',
+    role: 'Trauma & Disaster Relief Chief',
+    hotline: '011-23716441',
+    icon: '🏥',
+    focus: 'Mobile Medical Vans, Blood Units (O+, AB-), Trauma First Aid, CPR Training',
+    squadCount: 14,
+    theme: 'border-red-500/40 bg-red-50/70 text-red-900',
+  },
+  {
+    id: 'ngo-goonj',
+    name: 'Goonj Rahat Disaster Emergency & Clothing Drive',
+    shortName: 'Goonj Rahat Relief',
+    regId: 'NGO-GJ-508',
+    officer: 'Sunita Mehra',
+    role: 'Emergency Materials Coordinator',
+    hotline: '011-26972351',
+    icon: '📦',
+    focus: 'Family Survival Kits, Dry Rations, Tarpaulin Sheets, Dignity Packs',
+    squadCount: 22,
+    theme: 'border-amber-500/40 bg-amber-50/70 text-amber-900',
+  },
+  {
+    id: 'ngo-akshaya',
+    name: 'Akshaya Patra Emergency Community Kitchens',
+    shortName: 'Akshaya Patra Relief Kitchens',
+    regId: 'NGO-AP-108',
+    officer: 'Chef Madhavan Iyer',
+    role: 'Central Kitchen Relief Director',
+    hotline: '1800-425-8622',
+    icon: '🍲',
+    focus: 'Fresh Hot Meals, Portable Water Pouches (50,000 packets/day), Baby Food Kits',
+    squadCount: 18,
+    theme: 'border-orange-500/40 bg-orange-50/70 text-orange-900',
+  },
+  {
+    id: 'ngo-coastal',
+    name: 'Coastal Fishermen Lifeboat & Water Rescue Guild',
+    shortName: 'Coastal Fishermen Lifeboats',
+    regId: 'NGO-FL-99',
+    officer: 'Capt. Tariq Khan',
+    role: 'Fleet Rescue Commander',
+    hotline: '1093',
+    icon: '🚤',
+    focus: 'Trained Swimmers, Motorized Fishing Boats, Flood Extraction, Lifebuoys',
+    squadCount: 30,
+    theme: 'border-sky-500/40 bg-sky-50/70 text-sky-900',
+  },
+  {
+    id: 'ngo-habitat',
+    name: 'Habitat for Humanity Emergency Shelters Taskforce',
+    shortName: 'Habitat Disaster Shelter Taskforce',
+    regId: 'NGO-HFH-77',
+    officer: 'Arjun Nambiar',
+    role: 'Shelter Operations Lead',
+    hotline: '022-67846868',
+    icon: '🏕️',
+    focus: 'Emergency Weatherproof Tents, Sleeping Mats, Solar Lamps, Clean Sanitation',
+    squadCount: 12,
+    theme: 'border-emerald-500/40 bg-emerald-50/70 text-emerald-900',
+  },
+];
+
 export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -122,9 +190,10 @@ export default function Login() {
   const [userPassword, setUserPassword] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
 
-  // NGO form
-  const [ngoName, setNgoName] = useState('Red Cross Disaster Relief Corps');
-  const [ngoOfficer, setNgoOfficer] = useState('');
+  // NGO form - specialized by registered organization
+  const [selectedNgoId, setSelectedNgoId] = useState('ngo-redcross');
+  const [ngoRegCode, setNgoRegCode] = useState('NGO-RC-2024');
+  const [ngoOfficer, setNgoOfficer] = useState('Dr. Ananya Sen');
 
   // Keep me signed in toggle
   const [keepSignedIn, setKeepSignedIn] = useState(true);
@@ -233,12 +302,28 @@ export default function Login() {
     }
   };
 
+  const handleSelectNGO = (ngo) => {
+    setSelectedNgoId(ngo.id);
+    setNgoRegCode(ngo.regId);
+    setNgoOfficer(ngo.officer);
+  };
+
   const handleNGOSubmit = (e) => {
     e.preventDefault();
+    const currentNGO = NGO_ORGANIZATIONS.find((n) => n.id === selectedNgoId) || NGO_ORGANIZATIONS[0];
     loginAsNGO({
-      ngoName,
-      name: ngoOfficer || 'Field Lead',
+      ngoId: currentNGO.id,
+      ngoName: currentNGO.name,
+      shortName: currentNGO.shortName,
+      name: ngoOfficer || currentNGO.officer,
+      officerRole: currentNGO.role,
+      regId: ngoRegCode || currentNGO.regId,
+      hotline: currentNGO.hotline,
+      icon: currentNGO.icon,
+      focus: currentNGO.focus,
+      squadCount: currentNGO.squadCount,
     });
+    toast.success(`Logged in as ${currentNGO.shortName} (${ngoRegCode || currentNGO.regId})`);
     navigate('/ngo/dashboard', { replace: true });
   };
 
@@ -472,21 +557,88 @@ export default function Login() {
                 </p>
               </div>
 
+              <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-[11px] text-emerald-950 leading-tight">
+                🤝 <strong>NGO & Relief Network:</strong> Coordinate field squads, mobilize area volunteers, manage ration inventories, and verify on-site citizen service attendance.
+              </div>
+
+              {/* NGO Organization Dropdown Selector */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-700">
+                  Select Disaster Relief Organization
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedNgoId}
+                    onChange={(e) => {
+                      const ngo = NGO_ORGANIZATIONS.find((n) => n.id === e.target.value);
+                      if (ngo) handleSelectNGO(ngo);
+                    }}
+                    className="w-full text-xs font-bold px-3.5 py-3 rounded-2xl border-2 border-emerald-500/30 bg-emerald-50/50 hover:bg-emerald-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer appearance-none pr-9 shadow-2xs"
+                  >
+                    {NGO_ORGANIZATIONS.map((ngo) => (
+                      <option key={ngo.id} value={ngo.id}>
+                        {ngo.icon} {ngo.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 font-bold text-xs">
+                    ▼
+                  </div>
+                </div>
+              </div>
+
+              {/* Active Selected NGO Preview Card */}
+              {(() => {
+                const currentNGO = NGO_ORGANIZATIONS.find((n) => n.id === selectedNgoId) || NGO_ORGANIZATIONS[0];
+                return (
+                  <div className={`p-3.5 rounded-2xl border ${currentNGO.theme} space-y-2 transition-all`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl p-1.5 rounded-xl bg-white/80 shadow-xs">
+                          {currentNGO.icon}
+                        </span>
+                        <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h4 className="font-black text-xs text-slate-900">{currentNGO.shortName}</h4>
+                            <span className="font-mono text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-white/90 border border-emerald-500/30 text-emerald-800">
+                              {currentNGO.regId}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 font-semibold">
+                            Lead: {currentNGO.officer} • <span className="text-emerald-700">{currentNGO.role}</span>
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-600 text-white shrink-0">
+                        {currentNGO.squadCount} Squads
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-700 leading-snug border-t border-emerald-900/10 pt-1.5 font-medium">
+                      🎯 <strong className="text-slate-900">Relief Focus:</strong> {currentNGO.focus}
+                    </p>
+
+                    <div className="text-[10px] text-slate-500 flex items-center justify-between pt-0.5">
+                      <span>Official Hotline: <strong className="text-slate-800 font-mono">{currentNGO.hotline}</strong></span>
+                      <span className="text-emerald-700 font-bold">✓ Ready for Field Dispatch</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
               <form onSubmit={handleNGOSubmit} className="space-y-3 pt-1">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    {t('ngo_org_label')}
+                    NGO Registration / Field Clearance ID
                   </label>
-                  <select
-                    value={ngoName}
-                    onChange={(e) => setNgoName(e.target.value)}
-                    className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold"
-                  >
-                    <option>Red Cross Disaster Relief Corps</option>
-                    <option>National Disaster Response Force (NDRF)</option>
-                    <option>Coastal Volunteer Boat Lifeline</option>
-                    <option>Food & Shelter Relief Alliance</option>
-                  </select>
+                  <input
+                    type="text"
+                    value={ngoRegCode}
+                    onChange={(e) => setNgoRegCode(e.target.value)}
+                    placeholder="e.g. NGO-RC-2024"
+                    required
+                    className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
                 </div>
 
                 <div>
@@ -497,7 +649,7 @@ export default function Login() {
                     type="text"
                     value={ngoOfficer}
                     onChange={(e) => setNgoOfficer(e.target.value)}
-                    placeholder="e.g. Capt. Tariq Khan"
+                    placeholder="e.g. Dr. Ananya Sen"
                     className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
