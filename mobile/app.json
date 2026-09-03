@@ -3,6 +3,7 @@
     "name": "CrisisConnect",
     "slug": "crisisconnect",
     "scheme": "crisisconnect",
+    "owner": "harshhackathon",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
