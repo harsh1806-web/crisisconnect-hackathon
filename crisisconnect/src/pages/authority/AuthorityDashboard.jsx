@@ -473,16 +473,29 @@ export default function AuthorityDashboard() {
 
               return (
                 <React.Fragment key={req.id}>
-                  {(req.urgency === 'critical' || req.isSOS) && (
+                  {/* High Alert (Red) vs Moderate Alert (Yellow) Area Circles */}
+                  {req.urgency === 'critical' || req.isSOS || req.urgency === 'high' ? (
                     <Circle
                       center={[req.lat, req.lng]}
-                      radius={500}
+                      radius={750}
                       pathOptions={{
                         color: '#dc2626',
                         fillColor: '#ef4444',
-                        fillOpacity: 0.18,
+                        fillOpacity: 0.22,
                         weight: 2,
-                        dashArray: '4, 8',
+                        dashArray: '5, 8',
+                      }}
+                    />
+                  ) : (
+                    <Circle
+                      center={[req.lat, req.lng]}
+                      radius={480}
+                      pathOptions={{
+                        color: '#ca8a04',
+                        fillColor: '#eab308',
+                        fillOpacity: 0.20,
+                        weight: 1.5,
+                        dashArray: '3, 6',
                       }}
                     />
                   )}

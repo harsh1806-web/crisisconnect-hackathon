@@ -82,10 +82,31 @@ export default function MapView() {
   const [mapCenter, setMapCenter] = useState(defaultCenter);
   const [mapZoom, setMapZoom] = useState(13);
 
+  const [alertZoneFilter, setAlertZoneFilter] = useState('ALL'); // 'ALL' | 'HIGH' | 'MODERATE'
+
+  const isHighAlert = (r) => {
+    const urg = (r.urgency || '').toLowerCase();
+    const cat = (r.category || '').toUpperCase();
+    return (
+      urg === 'critical' ||
+      urg === 'high' ||
+      r.isSOS ||
+      cat === 'RESCUE' ||
+      (r.title || '').toUpperCase().includes('SOS') ||
+      (r.title || '').toUpperCase().includes('CRITICAL') ||
+      Number(r.peopleCount) >= 4
+    );
+  };
+
+  const highAlertsCount = requests.filter(isHighAlert).length;
+  const moderateAlertsCount = requests.filter((r) => !isHighAlert(r)).length;
+
   // Filter requests
   const visibleRequests = requests.filter((r) => {
     if (!showRequests) return false;
-    if (criticalOnly) return r.urgency === 'critical';
+    if (criticalOnly && !isHighAlert(r)) return false;
+    if (alertZoneFilter === 'HIGH' && !isHighAlert(r)) return false;
+    if (alertZoneFilter === 'MODERATE' && isHighAlert(r)) return false;
     return true;
   });
 
@@ -311,22 +332,55 @@ export default function MapView() {
             </>
           )}
 
-          {/* 500-Meter Duplicate / Hazard Zones */}
+          {/* HIGH ALERT AREAS (RED) & MODERATE ALERT AREAS (YELLOW) */}
           {showRadiuses &&
-            visibleRequests.map((req) => (
-              <Circle
-                key={`circ-500-${req.id}`}
-                center={[req.lat, req.lng]}
-                radius={500}
-                pathOptions={{
-                  color: req.urgency === 'critical' ? '#dc2626' : '#ea580c',
-                  fillColor: req.urgency === 'critical' ? '#dc2626' : '#ea580c',
-                  fillOpacity: 0.12,
-                  weight: 1.5,
-                  dashArray: '4, 6',
-                }}
-              />
-            ))}
+            visibleRequests.map((req) => {
+              const isHigh = isHighAlert(req);
+              if (isHigh) {
+                // 🔴 HIGH ALERT AREA (RED): Dual circle with outer hazard & inner impact zone
+                return (
+                  <React.Fragment key={`alert-zone-${req.id}`}>
+                    <Circle
+                      center={[req.lat, req.lng]}
+                      radius={800}
+                      pathOptions={{
+                        color: '#dc2626',
+                        fillColor: '#ef4444',
+                        fillOpacity: 0.20,
+                        weight: 2,
+                        dashArray: '6, 8',
+                      }}
+                    />
+                    <Circle
+                      center={[req.lat, req.lng]}
+                      radius={350}
+                      pathOptions={{
+                        color: '#991b1b',
+                        fillColor: '#dc2626',
+                        fillOpacity: 0.35,
+                        weight: 2.5,
+                      }}
+                    />
+                  </React.Fragment>
+                );
+              } else {
+                // 🟡 MODERATE ALERT AREA (YELLOW): Cautionary amber/yellow zone
+                return (
+                  <Circle
+                    key={`alert-zone-${req.id}`}
+                    center={[req.lat, req.lng]}
+                    radius={550}
+                    pathOptions={{
+                      color: '#ca8a04',
+                      fillColor: '#eab308',
+                      fillOpacity: 0.22,
+                      weight: 2,
+                      dashArray: '4, 6',
+                    }}
+                  />
+                );
+              }
+            })}
 
           {/* 5km Immediate Volunteer Response Perimeter around selected emergency */}
           {showRadiuses && selectedRequest && (
@@ -345,16 +399,15 @@ export default function MapView() {
 
           {/* Crisis Requests Pins */}
           {visibleRequests.map((req) => {
-            const isCritical = req.urgency === 'critical';
+            const isHigh = isHighAlert(req);
             const color =
               req.status === 'resolved'
                 ? '#94a3b8'
-                : isCritical
-                ? '#dc2626'
-                : req.status === 'in_progress'
-                ? '#2563eb'
-                : '#ea580c';
-            const iconSymbol = isCritical ? '⚠️' : req.category === 'Medical' ? '⚕️' : '📍';
+                : isHigh
+                ? '#dc2626' // Red for High Alert
+                : '#eab308'; // Yellow for Moderate Alert
+
+            const iconSymbol = isHigh ? '🔴' : '🟡';
 
             return (
               <Marker
@@ -366,11 +419,19 @@ export default function MapView() {
                 }}
               >
                 <Popup className="custom-popup">
-                  <div className="w-64 p-1 space-y-2 text-xs font-sans">
+                  <div className="w-68 p-1 space-y-2 text-xs font-sans">
+                    {/* Alert Level Pill */}
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-[10px] font-bold bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded">
-                        {req.trackingCode || req.id}
-                      </span>
+                      {isHigh ? (
+                        <span className="text-[10px] font-black uppercase tracking-wider text-red-800 bg-red-100 border border-red-300 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs animate-pulse">
+                          🔴 High Alert Area
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                          🟡 Moderate Alert Area
+                        </span>
+                      )}
+
                       {req.verificationStatus === 'verified' ? (
                         <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-0.5">
                           <ShieldCheck className="w-3 h-3" /> Verified
@@ -382,30 +443,26 @@ export default function MapView() {
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold uppercase text-[10px] text-red-600 tracking-wider">
-                        {req.urgency} • {req.category}
-                      </span>
-                      <span className="text-[10px] text-slate-400 capitalize">
-                        {req.status?.replace('_', ' ')}
-                      </span>
+                    <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                      <span>Ref: {req.trackingCode || req.id}</span>
+                      <span className="font-bold text-slate-700 uppercase">{req.category}</span>
                     </div>
 
-                    <h4 className="font-bold text-slate-900 text-sm leading-snug">
+                    <h4 className="font-black text-slate-900 text-sm leading-snug">
                       {req.title}
                     </h4>
 
-                    <p className="text-slate-600 text-[11px] line-clamp-2">
+                    <p className="text-slate-600 text-[11px] line-clamp-2 leading-relaxed">
                       {req.description}
                     </p>
 
-                    <p className="text-[10px] text-slate-400 truncate">
-                      📍 {req.locationName}
+                    <p className="text-[10px] text-slate-500 flex items-center gap-1">
+                      📍 <span className="truncate">{req.locationName}</span>
                     </p>
 
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px]">
-                      <span className="text-slate-500 flex items-center gap-1 font-semibold">
-                        <Users className="w-3.5 h-3.5 text-slate-400" /> {req.peopleCount} in distress
+                      <span className="text-slate-700 flex items-center gap-1 font-bold">
+                        <Users className="w-3.5 h-3.5 text-slate-500" /> {req.peopleCount} in sector
                       </span>
                       <Link
                         to={`/requests/${req.id}`}
@@ -451,30 +508,61 @@ export default function MapView() {
         </MapContainer>
       </div>
 
-      {/* Bottom Floating Legend */}
-      <div className="absolute bottom-6 left-4 z-20 hidden md:block bg-white/95 backdrop-blur-md rounded-2xl p-3.5 shadow-lg border border-slate-200 text-xs space-y-2 pointer-events-auto">
-        <p className="font-bold text-slate-900 text-[11px] uppercase tracking-wider mb-1">
-          Disaster Map Legend
-        </p>
-        <div className="flex items-center gap-2 text-slate-600">
-          <span className="w-3 h-3 rounded-full bg-red-600 inline-block" />
-          <span>Critical SOS Beacon</span>
-        </div>
-        <div className="flex items-center gap-2 text-slate-600">
-          <span className="w-3 h-3 rounded-full bg-orange-600 inline-block" />
-          <span>High Urgency Incident</span>
-        </div>
-        <div className="flex items-center gap-2 text-slate-600">
-          <span className="w-3 h-3 rounded-full border border-dashed border-red-500 bg-red-500/20 inline-block" />
-          <span>500m Duplicate Zone</span>
-        </div>
-        <div className="flex items-center gap-2 text-slate-600">
-          <span className="w-3 h-3 rounded-full border border-dashed border-emerald-500 bg-emerald-500/20 inline-block" />
-          <span>5km Responder Perimeter</span>
-        </div>
-        <div className="flex items-center gap-2 text-slate-600">
-          <span className="w-3 h-3 rounded-full bg-emerald-600 inline-block" />
-          <span>Safe Evacuation Shelter</span>
+      {/* Bottom Floating Alert Level Bar & Quick Filter (Responsive on Mobile & Desktop) */}
+      <div className="absolute bottom-4 left-4 right-4 z-20 pointer-events-none flex justify-center">
+        <div className="pointer-events-auto bg-slate-900/95 backdrop-blur-md text-white rounded-2xl p-2.5 sm:px-4 sm:py-2.5 shadow-2xl border border-slate-700 flex items-center gap-2.5 text-xs flex-wrap justify-center max-w-xl w-full">
+          <div className="flex items-center gap-1.5 mr-1">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+              Alert Zones:
+            </span>
+          </div>
+
+          <button
+            onClick={() => setAlertZoneFilter(alertZoneFilter === 'HIGH' ? 'ALL' : 'HIGH')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer border ${
+              alertZoneFilter === 'HIGH'
+                ? 'bg-red-600 text-white border-red-500 shadow-md ring-2 ring-red-400/50'
+                : 'bg-red-950/60 hover:bg-red-900 text-red-200 border-red-700/50'
+            }`}
+            title="Filter to areas having High Alerts (Red Zone)"
+          >
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping shrink-0" />
+            <span>🔴 High Alerts ({highAlertsCount})</span>
+          </button>
+
+          <button
+            onClick={() => setAlertZoneFilter(alertZoneFilter === 'MODERATE' ? 'ALL' : 'MODERATE')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer border ${
+              alertZoneFilter === 'MODERATE'
+                ? 'bg-yellow-500 text-slate-950 border-yellow-400 shadow-md ring-2 ring-yellow-400/50'
+                : 'bg-yellow-950/60 hover:bg-yellow-900 text-yellow-200 border-yellow-700/50'
+            }`}
+            title="Filter to areas having Moderate Alerts (Yellow Zone)"
+          >
+            <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 shrink-0" />
+            <span>🟡 Moderate Alerts ({moderateAlertsCount})</span>
+          </button>
+
+          <button
+            onClick={() => setShowShelters(!showShelters)}
+            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all cursor-pointer border ${
+              showShelters
+                ? 'bg-emerald-950/60 text-emerald-200 border-emerald-700/50'
+                : 'bg-slate-800 text-slate-400 border-slate-700'
+            }`}
+            title="Toggle Safe Shelters"
+          >
+            <span>🟢 Shelters ({shelters.length})</span>
+          </button>
+
+          {alertZoneFilter !== 'ALL' && (
+            <button
+              onClick={() => setAlertZoneFilter('ALL')}
+              className="text-[11px] text-slate-300 hover:text-white underline font-semibold cursor-pointer ml-1"
+            >
+              Reset
+            </button>
+          )}
         </div>
       </div>
     </div>
