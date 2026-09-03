@@ -17,6 +17,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import { registerActiveDeviceSession } from '../services/notificationService';
+import ForgotPasswordModal from '../components/ForgotPasswordModal';
 import toast from 'react-hot-toast';
 
 export const AUTHORITY_AGENCIES = [
@@ -120,6 +121,13 @@ export default function Login() {
   const [ngoName, setNgoName] = useState('Red Cross Disaster Relief Corps');
   const [ngoOfficer, setNgoOfficer] = useState('');
 
+  // Keep me signed in toggle
+  const [keepSignedIn, setKeepSignedIn] = useState(true);
+
+  // Forgot password modal state
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+  const [forgotModalRole, setForgotModalRole] = useState('citizen');
+
   // Authority form - specialized by emergency agency
   const [selectedAgencyId, setSelectedAgencyId] = useState('police');
   const [authDept, setAuthDept] = useState('State Police & Rapid Action Force (RAF)');
@@ -208,6 +216,15 @@ export default function Login() {
         },
       });
 
+      if (!keepSignedIn) {
+        setTimeout(() => {
+          try {
+            localStorage.removeItem('crisisconnect_session_v3');
+            localStorage.removeItem('crisisconnect_persisted_auth');
+          } catch {}
+        }, 50);
+      }
+
       toast.success(`Welcome, ${citizen.name}!`);
       navigate('/user/dashboard', { replace: true });
     } catch (err) {
@@ -223,6 +240,14 @@ export default function Login() {
       ngoName,
       name: ngoOfficer || 'Field Lead',
     });
+    if (!keepSignedIn) {
+      setTimeout(() => {
+        try {
+          localStorage.removeItem('crisisconnect_session_v3');
+          localStorage.removeItem('crisisconnect_persisted_auth');
+        } catch {}
+      }, 50);
+    }
     navigate('/ngo/dashboard', { replace: true });
   };
 
@@ -250,6 +275,14 @@ export default function Login() {
       hotline: currentAgency.hotline,
       icon: currentAgency.icon,
     });
+    if (!keepSignedIn) {
+      setTimeout(() => {
+        try {
+          localStorage.removeItem('crisisconnect_session_v3');
+          localStorage.removeItem('crisisconnect_persisted_auth');
+        } catch {}
+      }, 50);
+    }
     toast.success(`Logged in as ${currentAgency.shortName} (${badgeId.toUpperCase()})`);
     navigate('/authority/dashboard', { replace: true });
   };
@@ -392,6 +425,30 @@ export default function Login() {
                   </div>
                 </div>
 
+                {/* Keep me signed in & Forgot Password */}
+                <div className="flex items-center justify-between pt-1 text-xs">
+                  <label className="flex items-center gap-2 font-medium text-slate-700 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={keepSignedIn}
+                      onChange={(e) => setKeepSignedIn(e.target.checked)}
+                      className="w-4 h-4 rounded text-red-600 focus:ring-red-500 border-slate-300"
+                    />
+                    <span>Keep me signed in</span>
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotModalRole('citizen');
+                      setIsForgotModalOpen(true);
+                    }}
+                    className="text-xs font-bold text-red-600 hover:text-red-700 hover:underline cursor-pointer"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+
                 <button
                   type="submit"
                   disabled={isVerifying}
@@ -441,6 +498,30 @@ export default function Login() {
                     placeholder="e.g. Capt. Tariq Khan"
                     className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
+                </div>
+
+                {/* Keep me signed in & Forgot Access */}
+                <div className="flex items-center justify-between pt-1 text-xs">
+                  <label className="flex items-center gap-2 font-medium text-slate-700 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={keepSignedIn}
+                      onChange={(e) => setKeepSignedIn(e.target.checked)}
+                      className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300"
+                    />
+                    <span>Keep me signed in</span>
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotModalRole('ngo');
+                      setIsForgotModalOpen(true);
+                    }}
+                    className="text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
+                  >
+                    Forgot Access?
+                  </button>
                 </div>
 
                 <button
@@ -539,6 +620,30 @@ export default function Login() {
                   </div>
                 </div>
 
+                {/* Keep me signed in & Forgot Security PIN */}
+                <div className="flex items-center justify-between pt-1 text-xs">
+                  <label className="flex items-center gap-2 font-medium text-slate-700 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={keepSignedIn}
+                      onChange={(e) => setKeepSignedIn(e.target.checked)}
+                      className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
+                    />
+                    <span>Keep me signed in</span>
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotModalRole('authority');
+                      setIsForgotModalOpen(true);
+                    }}
+                    className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
+                  >
+                    Forgot Security PIN?
+                  </button>
+                </div>
+
                 <button
                   type="submit"
                   className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all cursor-pointer mt-1 flex items-center justify-center gap-1.5"
@@ -561,6 +666,20 @@ export default function Login() {
           </a>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {isForgotModalOpen && (
+        <ForgotPasswordModal
+          role={forgotModalRole}
+          initialPhone={userPhone}
+          onClose={() => setIsForgotModalOpen(false)}
+          onPasswordResetSuccess={(phone, newPass) => {
+            setUserPhone(phone);
+            setUserPassword(newPass);
+            setIsForgotModalOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
