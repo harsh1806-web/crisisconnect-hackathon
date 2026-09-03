@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   ShieldAlert,
   User,
@@ -12,18 +12,22 @@ import {
   PhoneCall,
   KeyRound,
   IdCard,
+  UserPlus,
+  Database,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { citizenDB } from '../services/db';
 import toast from 'react-hot-toast';
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { loginAsCitizen, loginAsNGO, loginAsAuthority } = useAuth();
   const [activeTab, setActiveTab] = useState('citizen'); // 'citizen' | 'ngo' | 'authority'
 
-  // Citizen form
-  const [userName, setUserName] = useState('');
-  const [userPhone, setUserPhone] = useState('');
+  // Citizen form - initialized directly from searchParams if redirected from registration
+  const [userName, setUserName] = useState(() => searchParams.get('name') || '');
+  const [userPhone, setUserPhone] = useState(() => searchParams.get('phone') || '');
 
   // NGO form
   const [ngoName, setNgoName] = useState('Red Cross Disaster Relief Corps');
@@ -36,11 +40,39 @@ export default function Login() {
 
   const handleCitizenSubmit = (e) => {
     e.preventDefault();
-    if (!userName.trim() || !userPhone.trim()) {
-      toast.error('Please enter your name and phone number.');
+    if (!userPhone.trim()) {
+      toast.error('Please enter your mobile phone number.');
       return;
     }
-    loginAsCitizen({ name: userName, phone: userPhone });
+
+    // Look up in persistent Citizen Database
+    const existing = citizenDB.findByPhone(userPhone);
+    if (existing) {
+      loginAsCitizen({
+        name: existing.name,
+        phone: existing.phone,
+        email: existing.email,
+        bloodGroup: existing.bloodGroup,
+        allergies: existing.allergies,
+        emergencyContact: existing.emergencyContact,
+        address: existing.address,
+      });
+      toast.success(`Verified from Database! Welcome, ${existing.name}.`);
+      navigate('/user/dashboard');
+      return;
+    }
+
+    // If not found in database, automatically save to database first
+    const registered = citizenDB.register({
+      name: userName.trim() || 'Citizen User',
+      phone: userPhone.trim(),
+    });
+
+    loginAsCitizen({
+      name: registered.citizen.name,
+      phone: registered.citizen.phone,
+    });
+    toast.success('Profile saved to Database! Entering Dashboard...');
     navigate('/user/dashboard');
   };
 
@@ -100,7 +132,7 @@ export default function Login() {
           <div className="mt-4 flex items-center justify-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
             <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
-              Network Online • 3 User Portals
+              Disaster Database Online
             </span>
           </div>
         </div>
@@ -157,18 +189,37 @@ export default function Login() {
           {/* TAB 1: CITIZEN */}
           {activeTab === 'citizen' && (
             <div className="space-y-4">
-              <div className="text-center mb-3">
-                <h2 className="text-base font-bold text-slate-900">Citizen / User Portal</h2>
+              <div className="text-center mb-2">
+                <h2 className="text-base font-bold text-slate-900">Citizen Login</h2>
                 <p className="text-xs text-slate-500">
-                  Request rescue, track emergencies & join local volunteer efforts
+                  Register in database first or login with registered phone
                 </p>
+              </div>
+
+              {/* REGISTER FIRST CTA BANNER */}
+              <div className="p-3.5 bg-red-50/90 rounded-2xl border-2 border-dashed border-red-300 text-center space-y-1.5">
+                <div className="flex items-center justify-center gap-1.5 text-red-700 font-bold text-xs">
+                  <Database className="w-4 h-4 text-red-600" />
+                  <span>New Citizen? Register in Database First:</span>
+                </div>
+                <p className="text-[11px] text-slate-600">
+                  Save your name, medical notes & ICE emergency contact to the disaster registry.
+                </p>
+                <Link
+                  to="/register"
+                  className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 px-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black transition-all shadow-xs cursor-pointer"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>REGISTER CITIZEN INFO FIRST</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
 
               {/* 1-Click Demo */}
               <button
                 type="button"
                 onClick={handleDemoCitizen}
-                className="w-full p-3 rounded-2xl border-2 border-red-200 bg-red-50/70 hover:bg-red-100 flex items-center justify-between text-left transition-all cursor-pointer group"
+                className="w-full p-3 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-100 flex items-center justify-between text-left transition-all cursor-pointer group"
               >
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold text-xs">
@@ -178,39 +229,23 @@ export default function Login() {
                     <p className="text-xs font-bold text-slate-900 group-hover:text-red-700">
                       ⚡ 1-Click Demo as Citizen (Alex Taylor)
                     </p>
-                    <p className="text-[10px] text-slate-500">Includes active emergencies & volunteer tasks</p>
+                    <p className="text-[10px] text-slate-500">Pre-seeded registered profile in Database</p>
                   </div>
                 </div>
                 <ArrowRight className="w-4 h-4 text-red-500 group-hover:translate-x-1 transition-transform" />
               </button>
 
-              <div className="relative flex items-center justify-center my-3">
+              <div className="relative flex items-center justify-center my-2">
                 <span className="absolute inset-x-0 border-t border-slate-200" />
                 <span className="relative bg-white px-2 text-[10px] uppercase font-bold text-slate-400">
-                  Or enter phone
+                  Or sign in with registered phone
                 </span>
               </div>
 
               <form onSubmit={handleCitizenSubmit} className="space-y-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Your Full Name
-                  </label>
-                  <div className="relative">
-                    <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={userName}
-                      onChange={(e) => setUserName(e.target.value)}
-                      placeholder="e.g. Sarah Jenkins"
-                      className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Mobile Phone Number
+                    Registered Mobile Phone
                   </label>
                   <div className="relative">
                     <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -218,7 +253,24 @@ export default function Login() {
                       type="tel"
                       value={userPhone}
                       onChange={(e) => setUserPhone(e.target.value)}
-                      placeholder="+1 (555) 019-9000"
+                      placeholder="+1-555-0145"
+                      className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Your Name (If not already saved)
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
+                      placeholder="e.g. Alex Taylor"
                       className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
                     />
                   </div>
@@ -226,9 +278,9 @@ export default function Login() {
 
                 <button
                   type="submit"
-                  className="w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md shadow-red-500/20 transition-all cursor-pointer mt-1"
+                  className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all cursor-pointer mt-1"
                 >
-                  Enter Citizen Dashboard
+                  Verify from Database & Enter Dashboard
                 </button>
               </form>
             </div>
@@ -321,7 +373,6 @@ export default function Login() {
                 </p>
               </div>
 
-              {/* Notice that authorities cannot post emergencies */}
               <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl text-[11px] text-blue-900 leading-tight">
                 🔒 <strong>Official Role Notice:</strong> Authorities manage and verify relief responses. Emergency posting is restricted to citizens.
               </div>
