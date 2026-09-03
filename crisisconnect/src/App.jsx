@@ -28,7 +28,22 @@ import RequestDetails from './pages/RequestDetails';
 import MapView from './pages/MapView';
 import Profile from './pages/Profile';
 
+import { useEffect } from 'react';
+
 function AppRoutes() {
+  useEffect(() => {
+    // Automatically smooth-scroll focused input into view above keypad
+    const handleFocusIn = (e) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName)) {
+        setTimeout(() => {
+          e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+      }
+    };
+    window.addEventListener('focusin', handleFocusIn);
+    return () => window.removeEventListener('focusin', handleFocusIn);
+  }, []);
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col items-center antialiased">
       {/* Toast notifications */}
@@ -52,7 +67,7 @@ function AppRoutes() {
       <div className="w-full sm:max-w-4xl min-h-screen bg-slate-50 flex flex-col relative sm:shadow-xl sm:border-x sm:border-slate-200">
         <Navbar />
 
-        <main className="flex-1">
+        <main className="flex-1 pb-36">
           <Routes>
             {/* Landing: Always show Login page first on localhost */}
             <Route path="/" element={<Navigate to="/login" replace />} />
