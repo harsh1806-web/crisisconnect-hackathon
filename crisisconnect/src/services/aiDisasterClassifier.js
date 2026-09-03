@@ -9,6 +9,7 @@
 export const DISASTER_AUTHORITIES = {
   NDRF_FLOOD: {
     id: 'auth_ndrf_flood',
+    agencyType: 'ndrf',
     name: 'National Disaster Response Force (NDRF - Water Wing)',
     shortName: 'NDRF Water Rescue',
     department: 'Ministry of Home Affairs / Disaster Operations',
@@ -27,6 +28,7 @@ export const DISASTER_AUTHORITIES = {
   },
   MEDICAL_TRAUMA: {
     id: 'auth_medical_108',
+    agencyType: 'hospital',
     name: 'Emergency Medical & Trauma Response (Ambulance 108 / Red Cross)',
     shortName: 'Medical Emergency 108',
     department: 'Department of Health & Emergency Trauma Care',
@@ -45,6 +47,7 @@ export const DISASTER_AUTHORITIES = {
   },
   FIRE_HAZMAT: {
     id: 'auth_fire_101',
+    agencyType: 'fire',
     name: 'Fire & Chemical Hazard Emergency Services (101)',
     shortName: 'Fire & HazMat Command',
     department: 'Directorate of Fire & Rescue Services',
@@ -63,6 +66,7 @@ export const DISASTER_AUTHORITIES = {
   },
   USAR_COLLAPSE: {
     id: 'auth_usar_collapse',
+    agencyType: 'usar',
     name: 'Urban Search & Rescue (USAR) & Civil Defense Taskforce',
     shortName: 'USAR Structural Rescue',
     department: 'State Disaster Management Authority (SDMA)',
@@ -81,6 +85,7 @@ export const DISASTER_AUTHORITIES = {
   },
   STORM_MUNICIPAL: {
     id: 'auth_storm_1070',
+    agencyType: 'police',
     name: 'State Disaster Emergency Cell & Municipal Rapid Action Team',
     shortName: 'Civil Defense & Storm Cell',
     department: 'Municipal Corporation & Revenue Dept',
@@ -236,6 +241,7 @@ export function classifyDisaster(input = {}) {
     matchedSignals: matchedKeywords.slice(0, 5),
     targetAuthority: {
       id: authority.id,
+      agencyType: authority.agencyType,
       name: authority.name,
       shortName: authority.shortName,
       department: authority.department,
