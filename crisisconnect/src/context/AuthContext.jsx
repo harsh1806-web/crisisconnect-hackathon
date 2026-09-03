@@ -23,13 +23,8 @@ import toast from 'react-hot-toast';
 export { AuthContext };
 
 export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [userProfile, setUserProfile] = useState(null);
-  const [deviceToken, setDeviceToken] = useState(() => getOrCreateDeviceToken());
-  const [loading, setLoading] = useState(() => isSupabaseConfigured);
-
-  // Local session for 3-role gateway with persistent device cache
-  const [session, setSession] = useState(() => {
+  // Synchronous restoration from persistent device storage
+  const getPersistedSession = () => {
     try {
       const saved =
         localStorage.getItem('crisisconnect_session_v3') ||
@@ -42,7 +37,14 @@ export function AuthProvider({ children }) {
       return null;
     }
     return null;
-  });
+  };
+
+  const initialSession = getPersistedSession();
+  const [currentUser, setCurrentUser] = useState(() => initialSession);
+  const [userProfile, setUserProfile] = useState(() => initialSession);
+  const [deviceToken, setDeviceToken] = useState(() => getOrCreateDeviceToken());
+  const [loading, setLoading] = useState(false);
+  const [session, setSession] = useState(() => initialSession);
 
   useEffect(() => {
     if (session) {
@@ -59,24 +61,29 @@ export function AuthProvider({ children }) {
   const fetchAndSetProfile = async (uid) => {
     try {
       const profile = await getUserProfile(uid);
-      setUserProfile(profile);
+      if (profile) {
+        setUserProfile(profile);
+        setCurrentUser(profile);
+      }
       return profile;
     } catch (err) {
       console.error('Failed to fetch user profile:', err);
-      setUserProfile(null);
       return null;
     }
   };
 
-  // Supabase Auth listener
+  // Supabase Auth listener (Do NOT wipe local session on app startup)
   useEffect(() => {
     if (isSupabaseConfigured) {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, authSession) => {
         if (authSession?.user) {
           setCurrentUser(authSession.user);
           await fetchAndSetProfile(authSession.user.id);
-        } else {
+        } else if (event === 'SIGNED_OUT') {
+          // Explicit logout only
           setCurrentUser(null);
+          setUserProfile(null);
+          setSession(null);
         }
         setLoading(false);
       });
@@ -84,6 +91,8 @@ export function AuthProvider({ children }) {
       return () => {
         subscription.unsubscribe();
       };
+    } else {
+      setLoading(false);
     }
   }, []);
 

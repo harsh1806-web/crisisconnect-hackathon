@@ -170,6 +170,7 @@ export default function App() {
           style={styles.webView}
           javaScriptEnabled={true}
           domStorageEnabled={true}
+          databaseEnabled={true}
           cacheEnabled={true}
           cacheMode="LOAD_DEFAULT"
           sharedCookiesEnabled={true}

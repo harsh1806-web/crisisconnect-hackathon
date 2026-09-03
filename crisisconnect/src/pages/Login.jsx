@@ -224,15 +224,6 @@ export default function Login() {
         },
       });
 
-      if (!keepSignedIn) {
-        setTimeout(() => {
-          try {
-            localStorage.removeItem('crisisconnect_session_v3');
-            localStorage.removeItem('crisisconnect_persisted_auth');
-          } catch {}
-        }, 50);
-      }
-
       toast.success(`Welcome, ${citizen.name}!`);
       navigate('/user/dashboard', { replace: true });
     } catch (err) {
@@ -248,14 +239,6 @@ export default function Login() {
       ngoName,
       name: ngoOfficer || 'Field Lead',
     });
-    if (!keepSignedIn) {
-      setTimeout(() => {
-        try {
-          localStorage.removeItem('crisisconnect_session_v3');
-          localStorage.removeItem('crisisconnect_persisted_auth');
-        } catch {}
-      }, 50);
-    }
     navigate('/ngo/dashboard', { replace: true });
   };
 
@@ -283,14 +266,6 @@ export default function Login() {
       hotline: currentAgency.hotline,
       icon: currentAgency.icon,
     });
-    if (!keepSignedIn) {
-      setTimeout(() => {
-        try {
-          localStorage.removeItem('crisisconnect_session_v3');
-          localStorage.removeItem('crisisconnect_persisted_auth');
-        } catch {}
-      }, 50);
-    }
     toast.success(`Logged in as ${currentAgency.shortName} (${badgeId.toUpperCase()})`);
     navigate('/authority/dashboard', { replace: true });
   };
