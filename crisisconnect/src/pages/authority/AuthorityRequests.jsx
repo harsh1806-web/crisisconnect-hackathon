@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Search,
@@ -20,9 +20,15 @@ export default function AuthorityRequests() {
   const { requests, ngos, verifyRequest, rejectRequest, assignNGO, updateRequestStatus } =
     useCrisis();
   const { currentUser } = useAuth();
+  const [searchParams] = useSearchParams();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState(() => {
+    const f = searchParams.get('filter');
+    if (f === 'pending' || f === 'pending_verification') return 'pending_verification';
+    if (f) return f;
+    return 'all';
+  });
 
   // Modals state
   const [rejectModalReq, setRejectModalReq] = useState(null);
