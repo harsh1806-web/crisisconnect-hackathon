@@ -87,6 +87,8 @@ export default function MapView() {
 
   const [mapCenter, setMapCenter] = useState(defaultCenter);
   const [mapZoom, setMapZoom] = useState(13);
+  const [currentZoom, setCurrentZoom] = useState(13);
+  const [activeMarkerId, setActiveMarkerId] = useState(null);
 
   const [alertZoneFilter, setAlertZoneFilter] = useState('ALL'); // 'ALL' | 'HIGH' | 'MODERATE'
 
@@ -311,7 +313,7 @@ export default function MapView() {
                   weight: 1.5,
                 }}
               />
-              <Marker position={userLocation} icon={userLocationIcon}>
+              <Marker position={userLocation} icon={getUserLocationIcon(currentZoom)}>
                 <Popup>
                   <div className="p-1.5 space-y-1.5 text-xs font-sans">
                     <div className="flex items-center gap-1.5 font-bold text-blue-600">
@@ -489,9 +491,19 @@ export default function MapView() {
               <Marker
                 key={ps.id}
                 position={[ps.lat, ps.lng]}
-                icon={createCustomPin('#1e40af', '🚓')}
+                icon={createCustomPin('#1e40af', '🚓', currentZoom, activeMarkerId === ps.id)}
+                eventHandlers={{
+                  click: () => setActiveMarkerId(ps.id),
+                }}
               >
-                <Popup>
+                <Popup
+                  autoClose={false}
+                  closeOnClick={false}
+                  keepInView={true}
+                  onClose={() => {
+                    if (activeMarkerId === ps.id) setActiveMarkerId(null);
+                  }}
+                >
                   <div className="w-68 p-1.5 space-y-2 text-xs font-sans">
                     <div className="flex items-center justify-between">
                       <span className="text-[9px] font-black uppercase tracking-wider text-blue-800 bg-blue-100 border border-blue-300 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -547,9 +559,19 @@ export default function MapView() {
               <Marker
                 key={hosp.id}
                 position={[hosp.lat, hosp.lng]}
-                icon={createCustomPin('#dc2626', '🏥')}
+                icon={createCustomPin('#dc2626', '🏥', currentZoom, activeMarkerId === hosp.id)}
+                eventHandlers={{
+                  click: () => setActiveMarkerId(hosp.id),
+                }}
               >
-                <Popup>
+                <Popup
+                  autoClose={false}
+                  closeOnClick={false}
+                  keepInView={true}
+                  onClose={() => {
+                    if (activeMarkerId === hosp.id) setActiveMarkerId(null);
+                  }}
+                >
                   <div className="w-68 p-1.5 space-y-2 text-xs font-sans">
                     <div className="flex items-center justify-between">
                       <span className="text-[9px] font-black uppercase tracking-wider text-rose-900 bg-rose-100 border border-rose-300 px-2 py-0.5 rounded-full flex items-center gap-1">
