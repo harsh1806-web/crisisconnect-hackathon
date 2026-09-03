@@ -21,7 +21,7 @@ export default function Navbar() {
   const isLoginPage = location.pathname === '/login' || location.pathname === '/register';
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-2xs w-full max-w-full overflow-hidden">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-2xs w-full max-w-full">
       {/* Top Status Bar */}
       <div className="bg-slate-950 text-white text-[11px] px-3 py-1.5 flex items-center justify-between w-full max-w-full">
         <div className="flex items-center gap-2 min-w-0 flex-1">

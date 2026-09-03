@@ -88,14 +88,14 @@ export default function UserDashboard() {
   );
 
   const categories = [
-    { name: 'Rescue', icon: LifeBuoy, color: 'bg-red-50 text-red-600 border-red-200' },
-    { name: 'Medical', icon: Activity, color: 'bg-rose-50 text-rose-600 border-rose-200' },
-    { name: 'Blood', icon: Droplets, color: 'bg-red-50 text-red-700 border-red-200' },
-    { name: 'Oxygen', icon: Wind, color: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
-    { name: 'Medicines', icon: Pill, color: 'bg-purple-50 text-purple-700 border-purple-200' },
-    { name: 'Water & Food', icon: Droplets, color: 'bg-blue-50 text-blue-600 border-blue-200' },
-    { name: 'Shelter', icon: Home, color: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
-    { name: 'Transportation', icon: Truck, color: 'bg-amber-50 text-amber-700 border-amber-200' },
+    { id: 'rescue', name: t('cat_rescue'), icon: LifeBuoy, color: 'bg-red-50 text-red-600 border-red-200' },
+    { id: 'medical', name: t('cat_medical'), icon: Activity, color: 'bg-rose-50 text-rose-600 border-rose-200' },
+    { id: 'blood', name: t('cat_blood'), icon: Droplets, color: 'bg-red-50 text-red-700 border-red-200' },
+    { id: 'oxygen', name: t('cat_oxygen'), icon: Wind, color: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
+    { id: 'medicines', name: t('cat_medicines'), icon: Pill, color: 'bg-purple-50 text-purple-700 border-purple-200' },
+    { id: 'food', name: t('cat_food'), icon: Droplets, color: 'bg-blue-50 text-blue-600 border-blue-200' },
+    { id: 'shelter', name: t('cat_shelter'), icon: Home, color: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
+    { id: 'transport', name: t('cat_transportation'), icon: Truck, color: 'bg-amber-50 text-amber-700 border-amber-200' },
   ];
 
   return (
@@ -107,7 +107,7 @@ export default function UserDashboard() {
             {currentUser?.name ? currentUser.name[0] : 'U'}
           </div>
           <div>
-            <p className="text-xs text-slate-400 font-semibold">Citizen Portal</p>
+            <p className="text-xs text-slate-400 font-semibold">{t('citizen_portal')}</p>
             <p className="text-sm font-bold text-slate-900 leading-tight">
               {currentUser?.name || 'Citizen User'}
             </p>
@@ -167,7 +167,7 @@ export default function UserDashboard() {
           }`}
         >
           <AlertOctagon className="w-3.5 h-3.5 text-red-600" />
-          <span>Emergency & Aid</span>
+          <span>{t('emergency_and_aid')}</span>
         </button>
 
         <button
@@ -180,7 +180,7 @@ export default function UserDashboard() {
           }`}
         >
           <HeartHandshake className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Volunteer to Help ({volunteerTasks.length})</span>
+          <span>{t('volunteer_to_help')} ({volunteerTasks.length})</span>
         </button>
       </div>
 
@@ -202,13 +202,13 @@ export default function UserDashboard() {
           <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-red-950 rounded-3xl p-6 text-center text-white shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-36 h-36 bg-red-600/20 rounded-full blur-2xl pointer-events-none" />
             <p className="text-xs font-bold uppercase tracking-widest text-red-400 mb-2">
-              Immediate Emergency Dispatch
+              {t('immediate_emergency_dispatch')}
             </p>
             <div className="py-2">
               <SOSButton variant="large" />
             </div>
             <p className="text-[11px] text-slate-300 max-w-xs mx-auto mt-2">
-              Transmits your exact GPS beacon directly to civil defense & nearby rescue squads.
+              {t('gps_transmit_notice')}
             </p>
           </div>
 
@@ -224,10 +224,10 @@ export default function UserDashboard() {
                 </div>
                 <div>
                   <h3 className="text-base font-black text-slate-900 group-hover:text-red-600 transition-colors">
-                    Create Emergency Request
+                    {t('create_emergency_request')}
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Request boat rescue, medical aid, drinking water or shelter
+                    {t('create_emergency_desc')}
                   </p>
                 </div>
               </div>
@@ -271,7 +271,7 @@ export default function UserDashboard() {
           {/* Quick Category Grid */}
           <div className="space-y-2">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider px-1">
-              Request Assistance by Category
+              {t('quick_categories')}
             </h3>
             <div className="grid grid-cols-2 gap-2">
               {categories.map((cat) => {
