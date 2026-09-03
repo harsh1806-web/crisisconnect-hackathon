@@ -828,6 +828,49 @@ export function CrisisProvider({ children }) {
     } catch {}
   };
 
+  // Authority Action: Send a live status notification / message to the citizen
+  const sendAuthorityNotification = (requestId, message, authorityName = 'Authority EOC') => {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+    setRequests((prev) =>
+      prev.map((r) => {
+        if (r.id === requestId || r.trackingCode === requestId) {
+          return {
+            ...r,
+            authorityLiveStatus: message,
+            authorityLiveStatusAt: now.toISOString(),
+            updates: [
+              ...(r.updates || []),
+              {
+                id: `up-notif-${Date.now()}`,
+                author: `🚔 ${authorityName}`,
+                text: message,
+                timestamp: timeStr,
+                isOfficial: true,
+                isLiveNotification: true,
+              },
+            ],
+          };
+        }
+        return r;
+      })
+    );
+
+    // Device notification for citizen
+    triggerDeviceNotification(`🚔 Authority Update: ${message}`, {
+      body: `From ${authorityName} at ${timeStr}`,
+      tag: `authority-notif-${requestId}`,
+    });
+
+    toast.success(`📨 Notification sent to citizen: "${message}"`);
+
+    // Persist to Supabase
+    try {
+      serviceUpdateRequestStatus(requestId, 'IN_PROGRESS', `[AUTHORITY NOTIFICATION] ${message} — ${authorityName} at ${timeStr}`).catch(() => {});
+    } catch {}
+  };
+
   const updateRequestStatus = (requestId, newStatus, authorName = 'Authority EOC') => {
     const statusLabels = {
       verified: 'Verified by Response Authorities',
@@ -933,6 +976,7 @@ export function CrisisProvider({ children }) {
         assignNGO,
         updateRequestStatus,
         addUpdateToRequest,
+        sendAuthorityNotification,
         resetDemoData,
       }}
     >

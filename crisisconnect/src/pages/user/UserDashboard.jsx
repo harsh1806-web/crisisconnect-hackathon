@@ -307,6 +307,29 @@ export default function UserDashboard() {
                 </p>
               </div>
 
+              {/* Authority Live Status Notification Banner */}
+              {myActiveRequest.authorityLiveStatus && (
+                <div className="p-3 rounded-2xl bg-gradient-to-r from-blue-50 to-blue-100/80 border border-blue-300 animate-pulse shadow-xs">
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-md">
+                      <Radio className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">
+                        🚔 Live Authority Update
+                      </p>
+                      <p className="text-xs font-black text-blue-900 mt-0.5 leading-snug">
+                        {myActiveRequest.authorityLiveStatus}
+                      </p>
+                      <p className="text-[10px] text-blue-500 mt-1 font-medium">
+                        {myActiveRequest.verificationOfficer && `From: ${myActiveRequest.verificationOfficer}`}
+                        {myActiveRequest.authorityLiveStatusAt && ` • ${new Date(myActiveRequest.authorityLiveStatusAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <Link
                 to={`/user/track/${myActiveRequest.id}`}
                 className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs"

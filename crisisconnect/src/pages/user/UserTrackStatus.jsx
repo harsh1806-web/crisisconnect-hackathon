@@ -259,12 +259,25 @@ export default function UserTrackStatus() {
         <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
           {request.updates && request.updates.length > 0 ? (
             request.updates.map((up) => (
-              <div key={up.id} className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs">
+              <div
+                key={up.id}
+                className={`p-2.5 rounded-xl border text-xs ${
+                  up.isLiveNotification
+                    ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-200'
+                    : up.isOfficial
+                    ? 'bg-amber-50 border-amber-200'
+                    : 'bg-slate-50 border-slate-100'
+                }`}
+              >
                 <div className="flex items-center justify-between mb-0.5">
-                  <span className="font-bold text-slate-900 text-[11px]">{up.author}</span>
+                  <span className={`font-bold text-[11px] ${up.isLiveNotification ? 'text-blue-900' : 'text-slate-900'}`}>
+                    {up.isLiveNotification && '📢 '}{up.author}
+                  </span>
                   <span className="text-[9px] text-slate-400">{up.timestamp}</span>
                 </div>
-                <p className="text-[11px] text-slate-700 leading-relaxed">{up.text}</p>
+                <p className={`text-[11px] leading-relaxed ${up.isLiveNotification ? 'text-blue-800 font-bold' : 'text-slate-700'}`}>
+                  {up.text}
+                </p>
               </div>
             ))
           ) : (

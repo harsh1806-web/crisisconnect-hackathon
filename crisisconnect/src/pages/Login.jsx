@@ -550,41 +550,62 @@ export default function Login() {
                 🔒 <strong>Official Role Notice:</strong> Authorities manage and verify relief responses. Emergency posting is restricted to citizens.
               </div>
 
-              {/* Department / Agency Selector */}
+              {/* Department / Agency Dropdown Selector */}
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-slate-700">
-                  Select Specialized Emergency Authority
+                  Select Emergency Response Authority
                 </label>
-                <div className="space-y-2">
-                  {AUTHORITY_AGENCIES.map((agency) => (
-                    <button
-                      key={agency.id}
-                      type="button"
-                      onClick={() => handleSelectAgency(agency)}
-                      className={`w-full text-left p-2.5 rounded-2xl border transition-all flex items-center justify-between gap-2.5 cursor-pointer ${
-                        selectedAgencyId === agency.id
-                          ? `${agency.theme} ring-2 ring-blue-500/30 shadow-xs font-bold`
-                          : 'border-slate-200 bg-slate-50/70 hover:bg-slate-100 text-slate-700'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-xl shrink-0">{agency.icon}</span>
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-bold">{agency.shortName}</span>
-                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-900 text-white">
-                              {agency.badge}
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-slate-500 line-clamp-1">{agency.desc}</p>
-                        </div>
-                      </div>
-                      <span className="text-[10px] font-bold text-slate-500 shrink-0">
-                        {agency.hotline}
-                      </span>
-                    </button>
-                  ))}
+                <div className="relative">
+                  <select
+                    value={selectedAgencyId}
+                    onChange={(e) => {
+                      const agency = AUTHORITY_AGENCIES.find((a) => a.id === e.target.value);
+                      if (agency) handleSelectAgency(agency);
+                    }}
+                    className="w-full text-xs font-bold px-3.5 py-3 rounded-2xl border-2 border-blue-500/30 bg-blue-50/50 hover:bg-blue-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none pr-9 shadow-2xs"
+                  >
+                    {AUTHORITY_AGENCIES.map((agency) => (
+                      <option key={agency.id} value={agency.id}>
+                        {agency.icon} {agency.name} ({agency.badge})
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-xs">
+                    ▼
+                  </div>
                 </div>
+
+                {/* Selected Authority Live Preview Card */}
+                {(() => {
+                  const currentAgency =
+                    AUTHORITY_AGENCIES.find((a) => a.id === selectedAgencyId) || AUTHORITY_AGENCIES[0];
+                  return (
+                    <div className="p-3 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/80 to-slate-50 space-y-1.5 shadow-2xs">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-2xl shrink-0">{currentAgency.icon}</span>
+                          <div>
+                            <p className="text-xs font-black text-slate-900 leading-tight">
+                              {currentAgency.name}
+                            </p>
+                            <p className="text-[10px] text-slate-500">
+                              Lead: <strong className="text-slate-700">{currentAgency.officer}</strong> • {currentAgency.rank}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-mono font-black px-2 py-0.5 rounded bg-slate-900 text-white shrink-0">
+                          {currentAgency.badge}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-blue-100 pt-1.5 text-[10px] text-slate-600">
+                        <span className="line-clamp-1">{currentAgency.desc}</span>
+                        <span className="font-bold text-blue-700 shrink-0 ml-2">
+                          Hotline: {currentAgency.hotline}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <form onSubmit={handleAuthoritySubmit} className="space-y-3 pt-2">
