@@ -13,6 +13,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
+import { WebView } from 'react-native-webview';
 
 // Configure system notification presentation for Android & iOS (safely for Expo Go)
 try {
