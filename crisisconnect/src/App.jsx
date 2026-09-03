@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import { CrisisProvider } from './context/CrisisContext';
 
 import Navbar from './components/Navbar';
@@ -28,8 +28,6 @@ import MapView from './pages/MapView';
 import Profile from './pages/Profile';
 
 function AppRoutes() {
-  const { isAuthority, isNGO, isCitizen } = useAuth();
-
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col items-center antialiased">
       {/* Toast notifications */}
@@ -55,21 +53,8 @@ function AppRoutes() {
 
         <main className="flex-1">
           <Routes>
-            {/* Landing: Redirect based on active role */}
-            <Route
-              path="/"
-              element={
-                isAuthority ? (
-                  <Navigate to="/authority/dashboard" replace />
-                ) : isNGO ? (
-                  <Navigate to="/ngo/dashboard" replace />
-                ) : isCitizen ? (
-                  <Navigate to="/user/dashboard" replace />
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
+            {/* Landing: Always show Login page first on localhost */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
 
             {/* 3-Role Gateway Authentication */}
             <Route path="/login" element={<Login />} />

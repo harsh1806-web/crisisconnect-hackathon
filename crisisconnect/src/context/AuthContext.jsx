@@ -11,10 +11,10 @@ export function AuthProvider({ children }) {
       try {
         return JSON.parse(saved);
       } catch {
-        return { type: 'citizen', ...DEMO_PROFILES.citizen };
+        return null;
       }
     }
-    return { type: 'citizen', ...DEMO_PROFILES.citizen };
+    return null;
   });
 
   useEffect(() => {
