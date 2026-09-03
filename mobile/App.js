@@ -127,12 +127,13 @@ export default function App() {
           injectedJavaScript={injectedCode}
           scalesPageToFit={false}
           contentMode="mobile"
-          bounces={false}
-          overScrollMode="never"
+          scrollEnabled={true}
+          nestedScrollEnabled={true}
+          overScrollMode="always"
+          showsVerticalScrollIndicator={true}
           showsHorizontalScrollIndicator={false}
-          automaticallyAdjustContentInsets={false}
           allowsBackForwardNavigationGestures={true}
-          pullToRefreshEnabled={true}
+          pullToRefreshEnabled={false}
           mediaPlaybackRequiresUserAction={false}
           allowsInlineMediaPlayback={true}
           onMessage={(event) => {
