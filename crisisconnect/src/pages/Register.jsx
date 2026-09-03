@@ -131,8 +131,8 @@ export default function Register() {
           </Link>
 
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-red-600 text-white flex items-center justify-center font-bold shadow-md shadow-red-500/30">
-              <ShieldAlert className="w-6 h-6" />
+            <div className="w-12 h-12 rounded-2xl bg-white text-slate-950 flex items-center justify-center p-1.5 shadow-md shadow-black/30">
+              <img src="/logo.png" alt="CrisisConnect Logo" className="w-full h-full object-contain" />
             </div>
             <div>
               <h1 className="text-xl font-black text-white">Citizen Registration</h1>

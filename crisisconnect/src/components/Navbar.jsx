@@ -55,9 +55,11 @@ export default function Navbar() {
           }
           className="flex items-center gap-2"
         >
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-red-600 to-rose-500 text-white flex items-center justify-center shadow-xs">
-            <ShieldAlert className="w-5 h-5" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="CrisisConnect"
+            className="w-8 h-8 rounded-xl object-contain bg-white shadow-xs p-0.5 border border-slate-200"
+          />
           <div>
             <span className="font-black text-slate-900 tracking-tight text-sm">
               Crisis<span className="text-red-600">Connect</span>

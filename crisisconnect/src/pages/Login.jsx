@@ -247,8 +247,8 @@ export default function Login() {
       <div className="w-full max-w-md bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
         {/* Top App Header */}
         <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-red-950 text-white p-6 text-center relative overflow-hidden">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-red-600 to-rose-500 flex items-center justify-center mx-auto mb-3 shadow-lg shadow-red-500/40 border border-white/20">
-            <ShieldAlert className="w-8 h-8 text-white" />
+          <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center mx-auto mb-3 shadow-lg shadow-black/40 border border-white/20 p-2">
+            <img src="/logo.png" alt="CrisisConnect Logo" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-2xl font-black tracking-tight text-white">
             Crisis<span className="text-red-500">Connect</span>
