@@ -1,4 +1,4 @@
-﻿export const sampleRequests = [
+export const sampleRequests = [
   {
     id: "emg_001",
     token: "CC-982410",
@@ -37,8 +37,8 @@
     status: "In Progress",
     statusHistory: [
       { status: "Submitted", updatedAt: "2026-09-03T13:00:00Z", updatedBy: "usr_citizen_01" },
-      { status: "Dispatched", updatedAt: "2026-09-03T13:05:00Z", updatedBy": "auth_fire_sf" },
-      { status: "In Progress", updatedAt: "2026-09-03T13:18:00Z", updatedBy": "auth_fire_sf" }
+      { status: "Dispatched", updatedAt: "2026-09-03T13:05:00Z", updatedBy: "auth_fire_sf" },
+      { status: "In Progress", updatedAt: "2026-09-03T13:18:00Z", updatedBy: "auth_fire_sf" }
     ],
     createdAt: "2026-09-03T13:00:00Z",
     updatedAt: "2026-09-03T13:18:00Z"
@@ -79,8 +79,8 @@
     status: "Resolved",
     statusHistory: [
       { status: "Submitted", updatedAt: "2026-09-02T09:15:00Z", updatedBy: "usr_citizen_01" },
-      { status: "Dispatched", updatedAt: "2026-09-02T09:20:00Z", updatedBy": "auth_ems_sf" },
-      { status: "Resolved", updatedAt: "2026-09-02T09:55:00Z", updatedBy": "auth_ems_sf" }
+      { status: "Dispatched", updatedAt: "2026-09-02T09:20:00Z", updatedBy: "auth_ems_sf" },
+      { status: "Resolved", updatedAt: "2026-09-02T09:55:00Z", updatedBy: "auth_ems_sf" }
     ],
     createdAt: "2026-09-02T09:15:00Z",
     updatedAt: "2026-09-02T09:55:00Z"
@@ -101,7 +101,7 @@
     status: "Acknowledged",
     statusHistory: [
       { status: "Submitted", updatedAt: "2026-09-03T16:00:00Z", updatedBy: "usr_volunteer_01" },
-      { status: "Acknowledged", updatedAt: "2026-09-03T16:05:00Z", updatedBy": "auth_fire_sf" }
+      { status: "Acknowledged", updatedAt: "2026-09-03T16:05:00Z", updatedBy: "auth_fire_sf" }
     ],
     createdAt: "2026-09-03T16:00:00Z",
     updatedAt: "2026-09-03T16:05:00Z"

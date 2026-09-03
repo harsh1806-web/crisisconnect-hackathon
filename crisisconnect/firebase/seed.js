@@ -73,7 +73,7 @@ const sampleData = {
       name: "San Francisco Fire Department Station 1",
       type: "Fire",
       contact: "+1-415-555-0119",
-      serviceArea": "Downtown Sector",
+      serviceArea: "Downtown Sector",
       location: { latitude: 37.7813, longitude: -122.4022 }
     },
     {
@@ -81,7 +81,7 @@ const sampleData = {
       name: "Bay Area Disaster Relief Taskforce",
       type: "Disaster Response",
       contact: "+1-415-555-0911",
-      serviceArea": "Greater Bay Area Region",
+      serviceArea: "Greater Bay Area Region",
       location: { latitude: 37.7749, longitude: -122.4194 }
     }
   ],
@@ -237,51 +237,51 @@ const sampleData = {
   donations: [
     {
       donorId: "usr_citizen_01",
-      causeId": "act_food_01",
-      donationType": "Food",
-      quantity": "50 Packaged Meals",
-      status": "Pledged",
+      causeId: "act_food_01",
+      donationType: "Food",
+      quantity: "50 Packaged Meals",
+      status: "Pledged",
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     },
     {
       donorId: "usr_volunteer_01",
-      causeId": "act_blood_01",
-      donationType": "Blood",
-      quantity": "1 Unit O-Positive",
-      status": "Pledged",
+      causeId: "act_blood_01",
+      donationType: "Blood",
+      quantity: "1 Unit O-Positive",
+      status: "Pledged",
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     },
     {
-      donorId": "usr_citizen_01",
-      causeId": "act_clean_01",
-      donationType": "Money",
-      quantity": "$250.00 USD",
-      status": "Collected",
+      donorId: "usr_citizen_01",
+      causeId: "act_clean_01",
+      donationType: "Money",
+      quantity: "$250.00 USD",
+      status: "Collected",
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     }
   ],
   notifications: [
     {
       userId: "usr_citizen_01",
-      emergencyId": "emg_001",
-      title": "Dispatch Alert",
-      message": "EMS Response team assigned to your emergency request (CC-982410).",
+      emergencyId: "emg_001",
+      title: "Dispatch Alert",
+      message: "EMS Response team assigned to your emergency request (CC-982410).",
       read: true,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     },
     {
       userId: "usr_citizen_01",
-      emergencyId": "emg_001",
-      title": "Responder En Route",
-      message": "Unit #4 dispatched to 4th St & Howard St. ETA 4 minutes.",
+      emergencyId: "emg_001",
+      title: "Responder En Route",
+      message: "Unit #4 dispatched to 4th St & Howard St. ETA 4 minutes.",
       read: false,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     },
     {
       userId: "usr_volunteer_01",
-      emergencyId": "emg_003",
-      title": "Volunteer Dispatch Request",
-      message": "Assistance requested for Flood Relief nearby in Mission District.",
+      emergencyId: "emg_003",
+      title: "Volunteer Dispatch Request",
+      message: "Assistance requested for Flood Relief nearby in Mission District.",
       read: false,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     }
