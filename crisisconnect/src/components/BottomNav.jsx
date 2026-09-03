@@ -120,53 +120,55 @@ export default function BottomNav() {
         </div>
       ) : (
         /* Citizen User Bottom Navigation */
-        <div className="flex items-center justify-around">
+        <div className="flex items-center justify-between">
           <Link
             to="/user/dashboard"
-            className={`flex flex-col items-center py-1 px-2 text-[10px] font-semibold transition-colors ${
+            className={`flex-1 flex flex-col items-center py-1 px-1 text-[10px] font-semibold transition-colors min-w-0 ${
               isActive('/user/dashboard') ? 'text-red-600 font-bold' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
-            <LayoutDashboard className="w-5 h-5 mb-0.5" />
-            <span>{t('nav_home')}</span>
+            <LayoutDashboard className="w-5 h-5 mb-0.5 shrink-0" />
+            <span className="truncate max-w-full">{t('nav_home')}</span>
           </Link>
 
           <Link
             to="/map"
-            className={`flex flex-col items-center py-1 px-2 text-[10px] font-semibold transition-colors ${
+            className={`flex-1 flex flex-col items-center py-1 px-1 text-[10px] font-semibold transition-colors min-w-0 ${
               isActive('/map') ? 'text-red-600 font-bold' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
-            <MapPin className="w-5 h-5 mb-0.5" />
-            <span>{t('nav_map')}</span>
+            <MapPin className="w-5 h-5 mb-0.5 shrink-0" />
+            <span className="truncate max-w-full">{t('nav_map')}</span>
           </Link>
 
           {/* Floating Center Request Action */}
-          <Link to="/user/create" className="flex flex-col items-center -mt-2.5">
+          <Link to="/user/create" className="flex-1 flex flex-col items-center -mt-3 shrink-0">
             <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-red-600 to-rose-500 text-white flex items-center justify-center shadow-lg shadow-red-500/40 border-2 border-white hover:scale-105 active:scale-95 transition-transform">
               <PlusCircle className="w-5 h-5" />
             </div>
-            <span className="text-[9px] font-bold text-red-600 mt-0.5">{t('request_aid')}</span>
+            <span className="text-[9px] font-bold text-red-600 mt-0.5 truncate max-w-full">
+              {t('nav_request_aid') || 'Request Aid'}
+            </span>
           </Link>
 
           <Link
             to="/requests"
-            className={`flex flex-col items-center py-1 px-2 text-[10px] font-semibold transition-colors ${
+            className={`flex-1 flex flex-col items-center py-1 px-1 text-[10px] font-semibold transition-colors min-w-0 ${
               isActive('/requests') ? 'text-red-600 font-bold' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
-            <Clock className="w-5 h-5 mb-0.5" />
-            <span>{t('nav_incidents')}</span>
+            <Clock className="w-5 h-5 mb-0.5 shrink-0" />
+            <span className="truncate max-w-full">{t('nav_incidents')}</span>
           </Link>
 
           <Link
             to="/profile"
-            className={`flex flex-col items-center py-1 px-2 text-[10px] font-semibold transition-colors ${
+            className={`flex-1 flex flex-col items-center py-1 px-1 text-[10px] font-semibold transition-colors min-w-0 ${
               isActive('/profile') ? 'text-red-600 font-bold' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
-            <User className="w-5 h-5 mb-0.5" />
-            <span>{t('nav_profile')}</span>
+            <User className="w-5 h-5 mb-0.5 shrink-0" />
+            <span className="truncate max-w-full">{t('nav_profile')}</span>
           </Link>
         </div>
       )}

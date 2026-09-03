@@ -19,6 +19,13 @@
 
   button, a, input, select, textarea {
     touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* GPU layer promotion for silky smooth 60fps mobile transitions */
+  nav, button, .leaflet-container {
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
 }
 

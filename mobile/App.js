@@ -222,8 +222,11 @@ export default function App() {
           contentMode="mobile"
           scrollEnabled={true}
           nestedScrollEnabled={true}
-          overScrollMode="always"
-          showsVerticalScrollIndicator={true}
+          overScrollMode="never"
+          androidHardwareAccelerationDisabled={false}
+          decelerationRate="normal"
+          bounces={false}
+          showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}
           allowsBackForwardNavigationGestures={true}
           pullToRefreshEnabled={true}
