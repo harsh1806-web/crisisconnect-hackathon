@@ -31,7 +31,45 @@ import RequestDetails from './pages/RequestDetails';
 import MapView from './pages/MapView';
 import Profile from './pages/Profile';
 
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, info) {
+    console.error('App ErrorBoundary caught error:', error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-slate-900 text-white p-6 flex flex-col items-center justify-center text-center space-y-4">
+          <div className="w-16 h-16 rounded-3xl bg-red-600/20 text-red-400 border border-red-500/30 flex items-center justify-center text-3xl">
+            ⚠️
+          </div>
+          <h2 className="text-xl font-black">Something went wrong</h2>
+          <p className="text-xs text-slate-400 max-w-sm">
+            {this.state.error?.message || 'An unexpected rendering error occurred.'}
+          </p>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false });
+              window.location.href = '/';
+            }}
+            className="px-5 py-2.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-lg transition-colors cursor-pointer"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function RootRedirect() {
   const { session } = useAuth();
@@ -137,7 +175,9 @@ export default function App() {
       <LanguageProvider>
         <AuthProvider>
           <CrisisProvider>
-            <AppRoutes />
+            <ErrorBoundary>
+              <AppRoutes />
+            </ErrorBoundary>
           </CrisisProvider>
         </AuthProvider>
       </LanguageProvider>

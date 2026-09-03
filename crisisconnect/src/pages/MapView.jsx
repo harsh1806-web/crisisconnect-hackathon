@@ -9,53 +9,63 @@ import { useCrisis } from '../context/CrisisContext';
 import toast from 'react-hot-toast';
 
 // Custom Marker generator using SVG & HTML
-const createCustomPin = (color, symbol) => {
+const createCustomPin = (color, symbol, zoom = 13, isSelected = false) => {
+  const baseSize = zoom >= 16 ? 44 : zoom >= 14 ? 38 : 32;
+  const size = isSelected ? Math.round(baseSize * 1.25) : baseSize;
+  const fontSize = size >= 40 ? 17 : size >= 36 ? 15 : 13;
+
   return L.divIcon({
     className: 'custom-map-icon',
     html: `
       <div style="
         background-color: ${color};
-        width: 32px;
-        height: 32px;
+        width: ${size}px;
+        height: ${size}px;
         border-radius: 50%;
-        border: 2.5px solid white;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+        border: ${isSelected ? '3.5px solid #f59e0b' : '2.5px solid white'};
+        box-shadow: ${isSelected ? '0 0 0 6px rgba(245, 158, 11, 0.45), 0 4px 14px rgba(0,0,0,0.45)' : '0 4px 12px rgba(0,0,0,0.35)'};
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 14px;
+        font-size: ${fontSize}px;
         color: white;
         cursor: pointer;
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
       ">
         ${symbol}
       </div>
     `,
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32],
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
   });
 };
 
-const userLocationIcon = L.divIcon({
-  className: 'user-loc-icon',
-  html: `
-    <div style="
-      background-color: #2563eb;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      border: 3px solid white;
-      box-shadow: 0 0 0 8px rgba(37,99,235,0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    ">
-      <div style="width: 8px; height: 8px; background: white; border-radius: 50%;"></div>
-    </div>
-  `,
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
-});
+const getUserLocationIcon = (zoom = 13) => {
+  const size = zoom >= 16 ? 28 : zoom >= 14 ? 24 : 20;
+  return L.divIcon({
+    className: 'user-loc-icon',
+    html: `
+      <div style="
+        background-color: #2563eb;
+        width: ${size}px;
+        height: ${size}px;
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 0 0 8px rgba(37,99,235,0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      ">
+        <div style="width: 8px; height: 8px; background: white; border-radius: 50%;"></div>
+      </div>
+    `,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+};
+
+const userLocationIcon = getUserLocationIcon(13);
 
 // Helper component to smoothly center map
 function MapController({ center, zoom }) {
