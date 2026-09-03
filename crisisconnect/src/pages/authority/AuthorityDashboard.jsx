@@ -223,8 +223,63 @@ export default function AuthorityDashboard() {
     previousCountRef.current = requests.length;
   }, [requests, soundEnabled]);
 
-  const pendingRequests = requests.filter((r) => r.verificationStatus === 'pending');
+  const isPending = (status) => {
+    const s = (status || '').toLowerCase();
+    return !s || s === 'pending' || s === 'unverified';
+  };
+
+  const myAgency =
+    currentUser?.agencyType ||
+    (currentUser?.badgeId?.toLowerCase().startsWith('police')
+      ? 'police'
+      : currentUser?.badgeId?.toLowerCase().startsWith('fire')
+      ? 'fire'
+      : currentUser?.badgeId?.toLowerCase().startsWith('hosp')
+      ? 'hospital'
+      : currentUser?.badgeId?.toLowerCase().startsWith('ndrf')
+      ? 'ndrf'
+      : currentUser?.badgeId?.toLowerCase().startsWith('usar')
+      ? 'usar'
+      : currentUser?.badgeId?.toLowerCase().startsWith('relief')
+      ? 'relief'
+      : null);
+
+  const isMedicalAuthority =
+    myAgency === 'hospital' ||
+    (currentUser?.name || '').toLowerCase().includes('medical') ||
+    (currentUser?.name || '').toLowerCase().includes('hospital') ||
+    (currentUser?.name || '').toLowerCase().includes('cmo') ||
+    (currentUser?.department || '').toLowerCase().includes('health') ||
+    (currentUser?.department || '').toLowerCase().includes('trauma');
+
+  const isReqForMyDept = (req) => {
+    if (isMedicalAuthority) {
+      const cat = (req.category || '').toUpperCase();
+      const title = (req.title || '').toLowerCase();
+      const desc = (req.description || '').toLowerCase();
+      return (
+        req.targetAuthority?.agencyType === 'hospital' ||
+        req.targetAuthority?.shortName?.toLowerCase().includes('medical') ||
+        ['MEDICAL', 'BLOOD', 'OXYGEN', 'MEDICINES', 'SURGERY'].includes(cat) ||
+        title.includes('surgery') ||
+        title.includes('medical') ||
+        title.includes('doctor') ||
+        title.includes('blood') ||
+        desc.includes('surgery') ||
+        desc.includes('doctor') ||
+        desc.includes('hospital') ||
+        desc.includes('operation')
+      );
+    }
+    if (myAgency && myAgency !== 'all') {
+      return req.targetAuthority?.agencyType === myAgency;
+    }
+    return true;
+  };
+
+  const pendingRequests = requests.filter((r) => isPending(r.verificationStatus));
   const activeSOS = requests.filter((r) => r.urgency === 'critical' && r.status !== 'resolved');
+  const myDeptRequests = requests.filter(isReqForMyDept);
 
   const filteredRequests = useMemo(() => {
     return requests.filter((req) => {
@@ -239,10 +294,12 @@ export default function AuthorityDashboard() {
       const matchCategory =
         filterCategory === 'ALL'
           ? true
+          : filterCategory === 'MY_DEPT'
+          ? isReqForMyDept(req)
           : filterCategory === 'SOS'
           ? req.urgency === 'critical' || req.isSOS
           : filterCategory === 'PENDING'
-          ? req.verificationStatus === 'pending'
+          ? isPending(req.verificationStatus)
           : filterCategory === 'ASSIGNED'
           ? req.status === 'assigned' || req.status === 'in_progress'
           : filterCategory === 'RESOLVED'
@@ -250,8 +307,17 @@ export default function AuthorityDashboard() {
           : true;
 
       return matchSearch && matchCategory;
+    }).sort((a, b) => {
+      // Prioritize department requests to the top
+      if (isMedicalAuthority) {
+        const aMed = isReqForMyDept(a);
+        const bMed = isReqForMyDept(b);
+        if (aMed && !bMed) return -1;
+        if (!aMed && bMed) return 1;
+      }
+      return 0;
     });
-  }, [requests, searchTerm, filterCategory]);
+  }, [requests, searchTerm, filterCategory, isMedicalAuthority, myAgency]);
 
   const handleFlyToIncident = (incident) => {
     setSelectedIncident(incident);
@@ -855,17 +921,22 @@ export default function AuthorityDashboard() {
 
           {/* Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto text-xs pb-1">
-            {['ALL', 'SOS', 'PENDING', 'ASSIGNED', 'RESOLVED'].map((tab) => (
+            {(isMedicalAuthority
+              ? ['ALL', 'MY_DEPT', 'SOS', 'PENDING', 'ASSIGNED', 'RESOLVED']
+              : ['ALL', 'SOS', 'PENDING', 'ASSIGNED', 'RESOLVED']
+            ).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setFilterCategory(tab)}
-                className={`px-3 py-1.5 rounded-xl font-bold transition-colors whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-xl font-bold transition-colors whitespace-nowrap cursor-pointer ${
                   filterCategory === tab
                     ? 'bg-blue-600 text-white shadow-xs'
+                    : tab === 'MY_DEPT'
+                    ? 'bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300'
                     : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
                 }`}
               >
-                {tab}
+                {tab === 'MY_DEPT' ? `🏥 My Dept: Medical (${myDeptRequests.length})` : tab}
               </button>
             ))}
           </div>
@@ -908,6 +979,11 @@ export default function AuthorityDashboard() {
                       <span className="text-[10px] font-mono font-black px-2 py-0.5 rounded bg-slate-900 text-white">
                         {req.trackingCode || req.id}
                       </span>
+                      {isReqForMyDept(req) && isMedicalAuthority && (
+                        <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-red-600 text-white shadow-xs animate-pulse">
+                          🏥 DIRECT MEDICAL DISPATCH • CMO 108
+                        </span>
+                      )}
                       <span
                         className={`text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full ${
                           req.urgency === 'critical'

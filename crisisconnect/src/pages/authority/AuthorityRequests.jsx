@@ -53,7 +53,10 @@ export default function AuthorityRequests() {
       if (!matchSearch) return false;
 
       if (statusFilter === 'all') return true;
-      if (statusFilter === 'pending_verification') return req.verificationStatus === 'pending';
+      if (statusFilter === 'pending_verification') {
+        const v = (req.verificationStatus || '').toLowerCase();
+        return !v || v === 'pending' || v === 'unverified';
+      }
       if (statusFilter === 'verified')
         return req.verificationStatus === 'verified' && !req.assignedNGO && req.status !== 'resolved';
       if (statusFilter === 'assigned') return req.status === 'assigned' || (req.assignedNGO && req.status !== 'resolved');

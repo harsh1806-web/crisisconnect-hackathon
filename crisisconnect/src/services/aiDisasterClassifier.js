@@ -222,6 +222,8 @@ const CLASSIFIER_TAXONOMY = [
       'medicine', 'insulin', 'breathing', 'injured', 'injury', 'patient', 'dialysis',
       'asthma', 'seizure', 'broken bone', 'burns', 'vital signs', 'chest pain',
       'head injury', 'concussion', 'allergic shock', 'snake bite', 'poisoning',
+      'surgery', 'operation', 'icu', 'suture', 'transfusion', 'oxygen loss', 'stitches',
+      'critical surgery', 'surgeon', 'dressing', 'haemorrhage', 'hemorrhage',
       // Hindi / Hinglish
       'dawa', 'dawai', 'khoon', 'khoon beh raha', 'saans', 'saans lene me dikkat',
       'aspatal', 'bimar', 'behosh', 'dil ka daura', 'garbhvati', 'chot lagi',
@@ -245,6 +247,7 @@ const CLASSIFIER_TAXONOMY = [
       'severe bleeding', 'unconscious', 'cardiac', 'no pulse', 'oxygen low', 'pregnant',
       'stroke symptoms', 'continuous vomiting', 'active labor', 'insulin shock',
       'khoon ruk nahi raha', 'behosh hai', 'saans band ho rahi', 'snake bite', 'convulsions',
+      'surgery', 'emergency surgery', 'operation', 'icu', 'blood loss', 'critical surgery', 'urgent surgery',
     ],
   },
   {
@@ -298,24 +301,14 @@ const CLASSIFIER_TAXONOMY = [
     category: 'Cyclone, Storm & Civic Hazard',
     keywords: [
       // English
-      'cyclone', 'storm', 'wind', 'hurricane', 'gale', 'tree', 'fallen tree',
-      'electric pole', 'wire', 'road blocked', 'shelter', 'food', 'ration',
-      'drinking water', 'power cut', 'transformer', 'live wire', 'tin roof blown',
+      'storm', 'cyclone', 'tornado', 'tree fallen', 'road blocked', 'electric pole down',
+      'sheet blown away', 'tin roof', 'debris on road', 'drainage choke',
       // Hindi / Hinglish
-      'toofan', 'aandhi', 'ped gir gaya', 'bijli ka taar', 'bijli gul', 'sadak band',
-      'khana', 'peene ka paani', 'current', 'patre ud gaye',
-      // Marathi
-      'vaadal', 'jhad padla', 'vijela taar', 'rasta bandh', 'ann', 'pani',
-      // Bengali
-      'jhor', 'ghurnijhor', 'gach poreche', 'biddut taar', 'khabar',
-      // Tamil
-      'puyal', 'maram vizhundhadhu', 'min kambi', 'saalai adaippu', 'unavu',
-      // Gujarati
-      'vavazodu', 'zad padyu', 'vijli no taar', 'rasto bandh',
+      'toofan', 'aandhi', 'ped gir gaya', 'rasta band', 'bijli ka khamba',
+      'chhat udd gayi', 'tin ki chhat',
     ],
     urgencyBoost: [
-      'live wire', 'road cut off', 'no food water for days', 'transformer exploded',
-      'bijli ka taar toota hai', 'sparking wires on water',
+      'highway blocked', 'high-tension wire fell on road', 'multiple trees down',
     ],
   },
 ];
@@ -324,16 +317,17 @@ const CLASSIFIER_TAXONOMY = [
  * Intelligent Entity & Hazard Extractor:
  * Parses text to extract victim counts, flood depth, fire risks, and demographic markers.
  */
-export function extractDisasterEntities(text = '') {
+export function extractDisasterEntities(rawText = '') {
+  const text = String(rawText || '');
   const lower = text.toLowerCase();
 
   // 1. Victim Count Extraction (e.g. "6 people", "family of 5", "3 bachhe")
   let extractedCount = null;
   const countMatches = [
-    /(d+)s*(?:people|persons|citizens|members|victims|individuals|log|jana|vyaqti|bachhe|kids|adults|females|males)/i,
-    /family ofs*(d+)/i,
-    /we ares*(d+)/i,
-    /(d+)s*(?:trapped|stranded|stuck|injured|waiting)/i,
+    /(\d+)\s*(?:people|persons|citizens|members|victims|individuals|log|jana|vyaqti|bachhe|kids|adults|females|males)/i,
+    /family of\s*(\d+)/i,
+    /we are\s*(\d+)/i,
+    /(\d+)\s*(?:trapped|stranded|stuck|injured|waiting)/i,
   ];
 
   for (const regex of countMatches) {
@@ -434,9 +428,23 @@ export function calculateSeverityIndex(params = {}) {
 
 /**
  * Primary Synchronous NLP Disaster Classifier
+ * Joins EVERY string field from the request payload to maximize comprehension.
  */
 export function classifyDisaster(input = {}) {
-  const combinedRawText = (input.title || '') + ' ' + (input.description || '') + ' ' + (input.category || '');
+  const rawParts = [
+    input.title,
+    input.description,
+    input.category,
+    input.locationName,
+    input.location?.address,
+    input.location?.name,
+    input.notes,
+    input.specialNeeds,
+    input.itemsNeeded,
+    input.contactName,
+    Array.isArray(input.vulnerabilities) ? input.vulnerabilities.join(' ') : (input.vulnerabilities || ''),
+  ];
+  const combinedRawText = rawParts.filter(Boolean).join(' ');
   const text = combinedRawText.toLowerCase();
 
   // Smart Entity Extraction
@@ -470,19 +478,20 @@ export function classifyDisaster(input = {}) {
       }
     }
 
-    // Category bias
+    // Category and Domain Bias
     const inputCat = (input.category || '').toUpperCase();
-    if (item.authorityKey === 'NDRF_FLOOD' && (inputCat === 'RESCUE' || inputCat === 'WATER')) {
-      score += 4;
-    } else if (
+    if (
       item.authorityKey === 'MEDICAL_TRAUMA' &&
-      ['MEDICAL', 'BLOOD', 'OXYGEN', 'MEDICINES'].includes(inputCat)
+      (['MEDICAL', 'BLOOD', 'OXYGEN', 'MEDICINES', 'SURGERY', 'AMBULANCE', 'HEALTH'].some((c) => inputCat.includes(c)) ||
+       text.includes('surgery') || text.includes('operation') || text.includes('doctor') || text.includes('hospital') || text.includes('icu'))
     ) {
-      score += 4.5;
-    } else if (item.authorityKey === 'FIRE_HAZMAT' && inputCat.includes('FIRE')) {
-      score += 4.5;
+      score += 18; // Strong deterministic priority for Medical / 108
+    } else if (item.authorityKey === 'NDRF_FLOOD' && (inputCat === 'RESCUE' || inputCat === 'WATER' || inputCat.includes('FLOOD'))) {
+      score += 12;
+    } else if (item.authorityKey === 'FIRE_HAZMAT' && (inputCat.includes('FIRE') || inputCat.includes('GAS'))) {
+      score += 15;
     } else if (item.authorityKey === 'USAR_COLLAPSE' && inputCat.includes('SHELTER')) {
-      score += 2;
+      score += 10;
     }
 
     if (score > highestScore) {
@@ -495,9 +504,9 @@ export function classifyDisaster(input = {}) {
   // Fallback if no hits
   if (!bestMatch || highestScore === 0) {
     const inputCat = (input.category || '').toUpperCase();
-    const defaultKey = ['MEDICAL', 'BLOOD', 'OXYGEN', 'MEDICINES'].includes(inputCat)
+    const defaultKey = ['MEDICAL', 'BLOOD', 'OXYGEN', 'MEDICINES', 'SURGERY', 'AMBULANCE', 'HEALTH'].some((c) => inputCat.includes(c)) || text.includes('surgery')
       ? 'MEDICAL_TRAUMA'
-      : inputCat === 'RESCUE'
+      : inputCat === 'RESCUE' || inputCat.includes('WATER') || inputCat.includes('FLOOD')
       ? 'NDRF_FLOOD'
       : 'STORM_MUNICIPAL';
     bestMatch = CLASSIFIER_TAXONOMY.find((t) => t.authorityKey === defaultKey) || CLASSIFIER_TAXONOMY[0];

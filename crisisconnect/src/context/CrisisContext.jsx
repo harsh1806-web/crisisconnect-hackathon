@@ -103,8 +103,42 @@ export function CrisisProvider({ children }) {
     });
   };
 
-  // Real-time Emergency Requests - initialized strictly from live database, no demo data
-  const [requests, setRequests] = useState([]);
+  // Real-time Emergency Requests - initialized with cached live directory for zero-lag role switching
+  const [requests, setRequests] = useState(() => {
+    try {
+      const saved = localStorage.getItem('crisisconnect_requests_live_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+
+  // Sync to local emergency directory cache
+  useEffect(() => {
+    try {
+      if (requests && requests.length > 0) {
+        localStorage.setItem('crisisconnect_requests_live_v1', JSON.stringify(requests));
+      }
+    } catch {}
+  }, [requests]);
+
+  // Sync immediately when another tab or window updates the emergency directory
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'crisisconnect_requests_live_v1' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) {
+            setRequests(parsed);
+          }
+        } catch {}
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
     // 1-Hour Auto-Expiry Engine: Resolved alerts automatically disappear after 1 hour (3600000 ms)
   useEffect(() => {
@@ -234,10 +268,14 @@ export function CrisisProvider({ children }) {
                 category: r.category,
                 urgency: r.urgency,
                 peopleCount: r.people_count,
+                locationName: r.location_name,
+                contactName: r.contact_name || r.user_name,
+                vulnerabilities: r.vulnerabilities,
               });
 
-              const currentVerificationStatus = (r.verification_status || existing?.verificationStatus || 'PENDING').toLowerCase();
-              const currentStatus = (r.status || existing?.status || 'PENDING').toLowerCase();
+              const rawVerif = (r.verification_status || existing?.verificationStatus || 'pending').toLowerCase();
+              const currentVerificationStatus = (rawVerif === 'unverified' || rawVerif === 'pending') ? 'pending' : rawVerif;
+              const currentStatus = (r.status || existing?.status || 'pending').toLowerCase();
 
               return {
                 id: r.id,
@@ -301,7 +339,14 @@ export function CrisisProvider({ children }) {
               category: r.category,
               urgency: r.urgency,
               peopleCount: r.people_count,
+              locationName: r.location_name,
+              contactName: r.contact_name || r.user_name,
+              vulnerabilities: r.vulnerabilities,
             });
+
+            const rawVerif = (r.verification_status || 'pending').toLowerCase();
+            const currentVerificationStatus = (rawVerif === 'unverified' || rawVerif === 'pending') ? 'pending' : rawVerif;
+            const currentStatus = (r.status || 'pending').toLowerCase();
 
             const newReq = {
               id: r.id,
@@ -309,8 +354,8 @@ export function CrisisProvider({ children }) {
               title: r.title || `${r.category || 'Emergency'} Assistance`,
               category: r.category || 'General',
               urgency: (r.urgency || 'HIGH').toLowerCase(),
-              verificationStatus: (r.verification_status || 'PENDING').toLowerCase(),
-              status: (r.status || 'PENDING').toLowerCase(),
+              verificationStatus: currentVerificationStatus,
+              status: currentStatus,
               description: r.description || '',
               locationName: r.location_name || '',
               lat: Number(r.latitude) || 19.0760,
@@ -341,8 +386,9 @@ export function CrisisProvider({ children }) {
             setRequests((prev) =>
               prev.map((item) => {
                 if (item.id === r.id || item.trackingCode === r.tracking_token || item.id === r.tracking_token) {
-                  const updatedVerificationStatus = (r.verification_status || item.verificationStatus || 'PENDING').toLowerCase();
-                  const updatedStatus = (r.status || item.status || 'PENDING').toLowerCase();
+                  const rawVerif = (r.verification_status || item.verificationStatus || 'pending').toLowerCase();
+                  const updatedVerificationStatus = (rawVerif === 'unverified' || rawVerif === 'pending') ? 'pending' : rawVerif;
+                  const updatedStatus = (r.status || item.status || 'pending').toLowerCase();
                   const justVerified = updatedVerificationStatus === 'verified' && item.verificationStatus !== 'verified';
 
                   const newUpdates = [...(item.updates || [])];
@@ -426,13 +472,19 @@ export function CrisisProvider({ children }) {
     const codeNum = Math.floor(100 + Math.random() * 900);
     const trackingCode = `CRISIS-${codeNum}`;
 
-    // 1. Run AI Disaster Classification & Authority Routing
+    // 1. Run AI Disaster Classification & Authority Routing (evaluating all joined strings)
     const aiResult = classifyDisaster({
       title: requestData.title,
       description: requestData.description,
       category: requestData.category,
       urgency: requestData.urgency,
       peopleCount: requestData.peopleCount,
+      locationName: requestData.locationName,
+      contactName: requestData.contactName,
+      vulnerabilities: requestData.vulnerabilities,
+      notes: requestData.notes,
+      specialNeeds: requestData.specialNeeds,
+      itemsNeeded: requestData.itemsNeeded,
     });
 
     const aiVulnerabilities = [
