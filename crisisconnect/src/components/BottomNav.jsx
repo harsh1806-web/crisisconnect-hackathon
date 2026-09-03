@@ -26,7 +26,7 @@ export default function BottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-slate-200 shadow-lg px-2 pt-1 pb-[calc(env(safe-area-inset-bottom,0px)+0.25rem)] max-w-md mx-auto sm:border-x">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-slate-200 shadow-2xl px-2 pt-1.5 pb-3 max-w-md mx-auto sm:border-x">
       {isAuthority ? (
         /* Authority Bottom Navigation (No Emergency creation button) */
         <div className="flex items-center justify-around">
