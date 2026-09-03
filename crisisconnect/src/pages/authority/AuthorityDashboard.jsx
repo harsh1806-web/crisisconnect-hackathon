@@ -243,38 +243,54 @@ export default function AuthorityDashboard() {
       : currentUser?.badgeId?.toLowerCase().startsWith('relief')
       ? 'relief'
       : null);
-
-  const isMedicalAuthority =
-    myAgency === 'hospital' ||
-    (currentUser?.name || '').toLowerCase().includes('medical') ||
-    (currentUser?.name || '').toLowerCase().includes('hospital') ||
-    (currentUser?.name || '').toLowerCase().includes('cmo') ||
-    (currentUser?.department || '').toLowerCase().includes('health') ||
-    (currentUser?.department || '').toLowerCase().includes('trauma');
+  const deptInfo = useMemo(() => {
+    switch (myAgency) {
+      case 'hospital':
+        return { label: 'Medical & Trauma', icon: '🏥', badge: '🏥 DIRECT MEDICAL DISPATCH • CMO 108' };
+      case 'fire':
+        return { label: 'Fire & HazMat', icon: '🚒', badge: '🚒 FIRE & HAZMAT DISPATCH • 101' };
+      case 'ndrf':
+        return { label: 'NDRF Water Rescue', icon: '🚤', badge: '🚤 NDRF RESCUE DISPATCH • 1077' };
+      case 'usar':
+        return { label: 'USAR Structural', icon: '🏚️', badge: '🏚️ USAR COLLAPSE DISPATCH • 112' };
+      case 'relief':
+        return { label: 'Relief & Rations', icon: '📦', badge: '📦 RELIEF & SHELTER DISPATCH • 1070' };
+      case 'police':
+        return { label: 'Police QRT', icon: '🚓', badge: '🚓 POLICE QRT DISPATCH • 100' };
+      default:
+        return { label: 'My Dept', icon: '🛡️', badge: '🛡️ DIRECT SECTOR DISPATCH' };
+    }
+  }, [myAgency]);
 
   const isReqForMyDept = (req) => {
-    if (isMedicalAuthority) {
-      const cat = (req.category || '').toUpperCase();
-      const title = (req.title || '').toLowerCase();
-      const desc = (req.description || '').toLowerCase();
-      return (
-        req.targetAuthority?.agencyType === 'hospital' ||
-        req.targetAuthority?.shortName?.toLowerCase().includes('medical') ||
-        ['MEDICAL', 'BLOOD', 'OXYGEN', 'MEDICINES', 'SURGERY'].includes(cat) ||
-        title.includes('surgery') ||
-        title.includes('medical') ||
-        title.includes('doctor') ||
-        title.includes('blood') ||
-        desc.includes('surgery') ||
-        desc.includes('doctor') ||
-        desc.includes('hospital') ||
-        desc.includes('operation')
-      );
+    if (!myAgency || myAgency === 'all') return true;
+    const cat = (req.category || '').toUpperCase();
+    const targetAgency = req.targetAuthority?.agencyType;
+    if (targetAgency === myAgency) return true;
+
+    const text = `${req.title || ''} ${req.description || ''}`.toLowerCase();
+
+    if (myAgency === 'hospital') {
+      return ['MEDICAL', 'BLOOD', 'OXYGEN', 'MEDICINES', 'SURGERY'].some((c) => cat.includes(c)) ||
+        text.includes('surgery') || text.includes('medical') || text.includes('doctor') ||
+        text.includes('blood') || text.includes('hospital') || text.includes('icu') || text.includes('operation');
     }
-    if (myAgency && myAgency !== 'all') {
-      return req.targetAuthority?.agencyType === myAgency;
+    if (myAgency === 'fire') {
+      return cat.includes('FIRE') || cat.includes('GAS') || text.includes('fire') || text.includes('blast') || text.includes('smoke');
     }
-    return true;
+    if (myAgency === 'ndrf') {
+      return cat.includes('RESCUE') || cat.includes('WATER') || cat.includes('FLOOD') || text.includes('flood') || text.includes('drown') || text.includes('boat');
+    }
+    if (myAgency === 'usar') {
+      return cat.includes('COLLAPSE') || cat.includes('SHELTER') || text.includes('collapse') || text.includes('rubble') || text.includes('trapped');
+    }
+    if (myAgency === 'relief') {
+      return cat.includes('FOOD') || cat.includes('WATER') || cat.includes('SHELTER') || text.includes('ration') || text.includes('food');
+    }
+    if (myAgency === 'police') {
+      return cat.includes('POLICE') || cat.includes('EVAC') || text.includes('police') || text.includes('stampede') || text.includes('crowd');
+    }
+    return false;
   };
 
   const pendingRequests = requests.filter((r) => isPending(r.verificationStatus));
@@ -308,16 +324,16 @@ export default function AuthorityDashboard() {
 
       return matchSearch && matchCategory;
     }).sort((a, b) => {
-      // Prioritize department requests to the top
-      if (isMedicalAuthority) {
-        const aMed = isReqForMyDept(a);
-        const bMed = isReqForMyDept(b);
-        if (aMed && !bMed) return -1;
-        if (!aMed && bMed) return 1;
+      // Prioritize logged-in department requests to the top
+      if (myAgency && myAgency !== 'all') {
+        const aMine = isReqForMyDept(a);
+        const bMine = isReqForMyDept(b);
+        if (aMine && !bMine) return -1;
+        if (!aMine && bMine) return 1;
       }
       return 0;
     });
-  }, [requests, searchTerm, filterCategory, isMedicalAuthority, myAgency]);
+  }, [requests, searchTerm, filterCategory, myAgency]);
 
   const handleFlyToIncident = (incident) => {
     setSelectedIncident(incident);
@@ -921,7 +937,7 @@ export default function AuthorityDashboard() {
 
           {/* Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto text-xs pb-1">
-            {(isMedicalAuthority
+            {(myAgency && myAgency !== 'all'
               ? ['ALL', 'MY_DEPT', 'SOS', 'PENDING', 'ASSIGNED', 'RESOLVED']
               : ['ALL', 'SOS', 'PENDING', 'ASSIGNED', 'RESOLVED']
             ).map((tab) => (
@@ -936,7 +952,7 @@ export default function AuthorityDashboard() {
                     : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
                 }`}
               >
-                {tab === 'MY_DEPT' ? `🏥 My Dept: Medical (${myDeptRequests.length})` : tab}
+                {tab === 'MY_DEPT' ? `${deptInfo.icon} My Dept: ${deptInfo.label} (${myDeptRequests.length})` : tab}
               </button>
             ))}
           </div>
@@ -979,9 +995,9 @@ export default function AuthorityDashboard() {
                       <span className="text-[10px] font-mono font-black px-2 py-0.5 rounded bg-slate-900 text-white">
                         {req.trackingCode || req.id}
                       </span>
-                      {isReqForMyDept(req) && isMedicalAuthority && (
+                      {isReqForMyDept(req) && myAgency && myAgency !== 'all' && (
                         <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-red-600 text-white shadow-xs animate-pulse">
-                          🏥 DIRECT MEDICAL DISPATCH • CMO 108
+                          {deptInfo.badge}
                         </span>
                       )}
                       <span

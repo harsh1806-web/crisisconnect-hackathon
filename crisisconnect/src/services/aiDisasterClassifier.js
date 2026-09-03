@@ -119,7 +119,7 @@ export const DISASTER_AUTHORITIES = {
   },
   STORM_MUNICIPAL: {
     id: 'auth_storm_1070',
-    agencyType: 'police',
+    agencyType: 'relief',
     name: 'State Disaster Emergency Cell & Municipal Rapid Action Team',
     shortName: 'Civil Defense & Storm Cell',
     department: 'Municipal Corporation & Revenue Dept',
