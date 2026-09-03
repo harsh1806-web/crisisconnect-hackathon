@@ -212,6 +212,13 @@ export default function MapView() {
   }, []);
 
   const handleLocateMe = () => {
+    if (window.ReactNativeWebView) {
+      window.ReactNativeWebView.postMessage(
+        JSON.stringify({ type: 'REQUEST_NATIVE_LOCATION' })
+      );
+      toast('Requesting phone GPS...', { icon: '📡' });
+      return;
+    }
     if (userLocation) {
       setMapCenter([...userLocation]);
       setMapZoom(16);
@@ -226,7 +233,7 @@ export default function MapView() {
           toast.success('Live GPS location locked!');
         },
         () => {
-          toast.error('Could not determine your live GPS location.');
+          toast.error('Location permission is disabled.');
         },
         { enableHighAccuracy: true, timeout: 8000 }
       );

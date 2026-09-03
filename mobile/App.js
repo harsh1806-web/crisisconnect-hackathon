@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Text,
   TouchableOpacity,
+  Linking,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as Location from 'expo-location';
@@ -44,129 +45,123 @@ export default function App() {
   const [coords, setCoords] = useState(null);
   const [hasError, setHasError] = useState(false);
 
-  useEffect(() => {
-    // 1. Request Native System Permissions on Launch
-    const requestNativePermissions = async () => {
-      try {
-        // Native Notification Permission & High-Priority Android Channel
-        try {
-          await Notifications.requestPermissionsAsync();
-          if (Platform.OS === 'android') {
-            await Notifications.setNotificationChannelAsync('emergency-disaster-alerts', {
-              name: 'Emergency Disaster Alerts',
-              importance: Notifications.AndroidImportance.MAX,
-              vibrationPattern: [0, 500, 250, 500],
-              lightColor: '#FF0000',
-              lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-              sound: 'default',
-            });
-          }
-        } catch (notifErr) {
-          console.warn('Native notification setup note:', notifErr);
+  const injectGpsToWeb = (lat, lng, accuracy = 15) => {
+    if (webViewRef.current) {
+      const script = `
+        window.__NATIVE_GPS__ = { lat: ${lat}, lng: ${lng}, accuracy: ${accuracy} };
+        if (typeof window.onNativeGpsUpdate === 'function') {
+          window.onNativeGpsUpdate(${lat}, ${lng}, ${accuracy});
         }
+        if (navigator && navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition = function(success) {
+            success({
+              coords: {
+                latitude: ${lat},
+                longitude: ${lng},
+                accuracy: ${accuracy},
+              },
+              timestamp: Date.now()
+            });
+          };
+        }
+        true;
+      `;
+      webViewRef.current.injectJavaScript(script);
+    }
+  };
 
-        // Native Location Dialog
-        const { status: locStatus } = await Location.requestForegroundPermissionsAsync();
-        if (locStatus !== 'granted') {
+  const acquireNativeGps = async (promptIfDenied = false) => {
+    try {
+      // 1. Request real device OS location permission
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        if (promptIfDenied) {
           Alert.alert(
-            'GPS Permission Required',
-            'CrisisConnect requires Location permission to display your live coordinates on the disaster map and coordinate rescues.',
-            [{ text: 'OK' }]
+            'GPS Location Required',
+            'CrisisConnect requires real device Location permission to pinpoint your live coordinates on the disaster map.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Open Device Settings',
+                onPress: () => Linking.openSettings().catch(() => {}),
+              },
+            ]
           );
-          return;
         }
-
-        // Check if Android device location toggle is enabled
-        const hasServices = await Location.hasServicesEnabledAsync();
-        if (!hasServices && Platform.OS === 'android') {
-          try {
-            await Location.enableNetworkProviderAsync();
-          } catch (e) {
-            Alert.alert(
-              'Location Services Disabled',
-              'Please turn ON Location / GPS in your phone settings so CrisisConnect can pinpoint your position.',
-              [{ text: 'OK' }]
-            );
-          }
-        }
-
-        const injectGpsToWeb = (lat, lng) => {
-          if (webViewRef.current) {
-            const script = `
-              window.__NATIVE_GPS__ = { lat: ${lat}, lng: ${lng} };
-              if (typeof window.onNativeGpsUpdate === 'function') {
-                window.onNativeGpsUpdate(${lat}, ${lng});
-              }
-              if (navigator && navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition = function(success) {
-                  success({
-                    coords: {
-                      latitude: ${lat},
-                      longitude: ${lng},
-                      accuracy: 15,
-                    },
-                    timestamp: Date.now()
-                  });
-                };
-              }
-              true;
-            `;
-            webViewRef.current.injectJavaScript(script);
-          }
-        };
-
-        // Instant cached position fallback
-        try {
-          const lastLoc = await Location.getLastKnownPositionAsync();
-          if (lastLoc) {
-            setCoords({ lat: lastLoc.coords.latitude, lng: lastLoc.coords.longitude });
-            injectGpsToWeb(lastLoc.coords.latitude, lastLoc.coords.longitude);
-          }
-        } catch (e) {}
-
-        // High/Balanced accuracy position lock
-        let currentLoc = null;
-        try {
-          currentLoc = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          });
-        } catch (e) {
-          try {
-            currentLoc = await Location.getCurrentPositionAsync({
-              accuracy: Location.Accuracy.Lowest,
-            });
-          } catch (e2) {}
-        }
-
-        if (currentLoc) {
-          setCoords({
-            lat: currentLoc.coords.latitude,
-            lng: currentLoc.coords.longitude,
-          });
-          injectGpsToWeb(currentLoc.coords.latitude, currentLoc.coords.longitude);
-        }
-
-        // Continuously track location updates as device moves
-        Location.watchPositionAsync(
-          {
-            accuracy: Location.Accuracy.Balanced,
-            timeInterval: 3000,
-            distanceInterval: 10,
-          },
-          (newLoc) => {
-            setCoords({
-              lat: newLoc.coords.latitude,
-              lng: newLoc.coords.longitude,
-            });
-            injectGpsToWeb(newLoc.coords.latitude, newLoc.coords.longitude);
-          }
-        );
-      } catch (err) {
-        console.warn('Native permissions error:', err);
+        return null;
       }
+
+      // Check device GPS toggle
+      const hasServices = await Location.hasServicesEnabledAsync();
+      if (!hasServices && Platform.OS === 'android') {
+        try {
+          await Location.enableNetworkProviderAsync();
+        } catch (e) {}
+      }
+
+      // 2. Fetch true satellite / network location from device hardware
+      let loc = null;
+      try {
+        loc = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+      } catch (e) {
+        loc = await Location.getLastKnownPositionAsync();
+      }
+
+      if (loc?.coords) {
+        const { latitude, longitude, accuracy } = loc.coords;
+        setCoords({ lat: latitude, lng: longitude });
+        injectGpsToWeb(latitude, longitude, accuracy || 15);
+        return { lat: latitude, lng: longitude };
+      }
+    } catch (err) {
+      console.warn('Native GPS acquisition error:', err);
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    // 1. Real Device Notification Permission Request
+    const setupNotifications = async () => {
+      try {
+        await Notifications.requestPermissionsAsync();
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('emergency-disaster-alerts', {
+            name: 'Emergency Disaster Alerts',
+            importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 500, 250, 500],
+            lightColor: '#FF0000',
+            lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+            sound: 'default',
+          });
+        }
+      } catch (e) {}
     };
 
-    requestNativePermissions();
+    setupNotifications();
+    acquireNativeGps(false);
+
+    // 2. Continuous real-time GPS tracking stream
+    let watcher = null;
+    Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.Balanced,
+        timeInterval: 4000,
+        distanceInterval: 10,
+      },
+      (newLoc) => {
+        if (newLoc?.coords) {
+          setCoords({
+            lat: newLoc.coords.latitude,
+            lng: newLoc.coords.longitude,
+          });
+          injectGpsToWeb(newLoc.coords.latitude, newLoc.coords.longitude, newLoc.coords.accuracy || 15);
+        }
+      }
+    ).then((sub) => {
+      watcher = sub;
+    }).catch(() => {});
 
     // Android Hardware Back button handling
     if (Platform.OS === 'android') {
@@ -181,8 +176,15 @@ export default function App() {
         'hardwareBackPress',
         backAction
       );
-      return () => backHandler.remove();
+      return () => {
+        backHandler.remove();
+        if (watcher?.remove) watcher.remove();
+      };
     }
+
+    return () => {
+      if (watcher?.remove) watcher.remove();
+    };
   }, []);
 
   // Injection script to sync native GPS into WebView
@@ -247,6 +249,14 @@ export default function App() {
           onMessage={(event) => {
             try {
               const data = JSON.parse(event.nativeEvent.data);
+              if (data.type === 'REQUEST_NATIVE_LOCATION') {
+                acquireNativeGps(true);
+                return;
+              }
+              if (data.type === 'OPEN_NATIVE_SETTINGS') {
+                Linking.openSettings().catch(() => {});
+                return;
+              }
               if (
                 data.type === 'EMERGENCY_SOS' ||
                 data.type === 'DISASTER_BROADCAST' ||
