@@ -7,6 +7,7 @@ import {
   REGISTERED_NGOS,
   INITIAL_NGO_DONATIONS,
   INITIAL_CITIZEN_VOLUNTEER_TASKS,
+  INITIAL_VOLUNTEER_REWARDS,
 } from '../data/mockData';
 import toast from 'react-hot-toast';
 
@@ -66,6 +67,31 @@ export function CrisisProvider({ children }) {
     }
     return INITIAL_REQUESTS;
   });
+
+  const [volunteerRewards] = useState(INITIAL_VOLUNTEER_REWARDS);
+  const [volunteerPoints, setVolunteerPoints] = useState(() => {
+    const saved = localStorage.getItem('crisisconnect_vol_points_v1');
+    return saved ? Number(saved) : 65;
+  });
+  const [claimedRewardIds, setClaimedRewardIds] = useState(() => {
+    const saved = localStorage.getItem('crisisconnect_claimed_rewards_v1');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return ['rew-1'];
+      }
+    }
+    return ['rew-1'];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('crisisconnect_vol_points_v1', volunteerPoints.toString());
+  }, [volunteerPoints]);
+
+  useEffect(() => {
+    localStorage.setItem('crisisconnect_claimed_rewards_v1', JSON.stringify(claimedRewardIds));
+  }, [claimedRewardIds]);
 
   useEffect(() => {
     localStorage.setItem('crisisconnect_requests_v3', JSON.stringify(requests));
@@ -207,11 +233,13 @@ export function CrisisProvider({ children }) {
     return sosReq;
   };
 
-  // Citizen Action: Sign up for local community volunteer task
+  // Citizen Action: Sign up for local community volunteer task and earn points
   const signUpForVolunteerTask = (taskId, citizenName = 'Local Volunteer') => {
+    let earnedPts = 30;
     setVolunteerTasks((prev) =>
       prev.map((t) => {
         if (t.id === taskId) {
+          earnedPts = t.pointsReward || 30;
           return {
             ...t,
             volunteersSignedUp: t.volunteersSignedUp + 1,
@@ -221,7 +249,26 @@ export function CrisisProvider({ children }) {
         return t;
       })
     );
-    toast.success(`${citizenName} registered! Contact coordinator for briefing.`);
+
+    setVolunteerPoints((prev) => prev + earnedPts);
+    toast.success(`🎉 Registered! +${earnedPts} Volunteer Points awarded to ${citizenName}!`, {
+      icon: '⭐',
+      duration: 4000,
+    });
+  };
+
+  // Citizen Action: Claim Volunteer Milestone Reward
+  const claimReward = (rewardId) => {
+    const rew = volunteerRewards.find((r) => r.id === rewardId);
+    if (!rew) return;
+
+    if (volunteerPoints < rew.pointsRequired) {
+      toast.error(`Requires ${rew.pointsRequired} points (You have ${volunteerPoints} pts)`);
+      return;
+    }
+
+    setClaimedRewardIds((prev) => (prev.includes(rewardId) ? prev : [...prev, rewardId]));
+    toast.success(`🎖️ Reward Unlocked: ${rew.title}!`, { icon: '🎁', duration: 4000 });
   };
 
   // NGO Action: Record Incoming Donation / Supply Drop
@@ -423,6 +470,10 @@ export function CrisisProvider({ children }) {
         ngos,
         donations,
         volunteerTasks,
+        volunteerPoints,
+        volunteerRewards,
+        claimedRewardIds,
+        claimReward,
         addRequest,
         triggerSOS,
         signUpForVolunteerTask,

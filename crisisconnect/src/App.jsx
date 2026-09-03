@@ -11,7 +11,8 @@ import Register from './pages/Register';
 
 // 1. Citizen Portal Pages (Flow: Login -> Dashboard -> Create Request -> Submitted -> Track Status)
 import UserDashboard from './pages/user/UserDashboard';
-import UserCreateRequest from './pages/user/UserCreateRequest';
+import ReportEmergency from './pages/ReportEmergency';
+import EmergencyResult from './pages/EmergencyResult';
 import UserRequestSubmitted from './pages/user/UserRequestSubmitted';
 import UserTrackStatus from './pages/user/UserTrackStatus';
 
@@ -63,7 +64,9 @@ function AppRoutes() {
 
             {/* 1. CITIZEN PORTAL */}
             <Route path="/user/dashboard" element={<UserDashboard />} />
-            <Route path="/user/create" element={<UserCreateRequest />} />
+            <Route path="/user/create" element={<ReportEmergency />} />
+            <Route path="/report-emergency" element={<ReportEmergency />} />
+            <Route path="/emergency-result" element={<EmergencyResult />} />
             <Route path="/user/submitted/:id" element={<UserRequestSubmitted />} />
             <Route path="/user/track/:id" element={<UserTrackStatus />} />
 
