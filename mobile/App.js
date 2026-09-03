@@ -11,8 +11,17 @@ import {
   StatusBar as RNStatusBar,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
+import * as Notifications from 'expo-notifications';
+
+// Configure system notification presentation for Android & iOS
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 // Suppress non-fatal development warning banners in Expo Go
 LogBox.ignoreAllLogs(true);
@@ -28,6 +37,23 @@ export default function App() {
     // 1. Request Native System Permissions on Launch
     const requestNativePermissions = async () => {
       try {
+        // Native Notification Permission & High-Priority Android Channel
+        try {
+          await Notifications.requestPermissionsAsync();
+          if (Platform.OS === 'android') {
+            await Notifications.setNotificationChannelAsync('emergency-disaster-alerts', {
+              name: 'Emergency Disaster Alerts',
+              importance: Notifications.AndroidImportance.MAX,
+              vibrationPattern: [0, 500, 250, 500],
+              lightColor: '#FF0000',
+              lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+              sound: 'default',
+            });
+          }
+        } catch (notifErr) {
+          console.warn('Native notification setup note:', notifErr);
+        }
+
         // Native Location Dialog
         const { status: locStatus } = await Location.requestForegroundPermissionsAsync();
         if (locStatus !== 'granted') {
@@ -193,12 +219,28 @@ export default function App() {
           onMessage={(event) => {
             try {
               const data = JSON.parse(event.nativeEvent.data);
-              if (data.type === 'EMERGENCY_SOS' || data.type === 'DISASTER_BROADCAST') {
+              if (
+                data.type === 'EMERGENCY_SOS' ||
+                data.type === 'DISASTER_BROADCAST' ||
+                data.type === 'AUTHORITY_DISPATCH'
+              ) {
                 Vibration.vibrate([0, 500, 250, 500]);
+
+                // Native Heads-Up Banner / Lockscreen Notification Pop-up
+                Notifications.scheduleNotificationAsync({
+                  content: {
+                    title: data.title || '🚨 EMERGENCY DISASTER ALERT',
+                    body: data.message || 'Immediate response required in your sector.',
+                    sound: true,
+                    priority: Notifications.AndroidNotificationPriority.MAX,
+                  },
+                  trigger: null,
+                }).catch(() => {});
+
                 Alert.alert(
                   data.title || '🚨 EMERGENCY DISASTER ALERT',
                   data.message || 'Immediate response required in your sector.',
-                  [{ text: 'VIEW ALERT' }]
+                  [{ text: 'Acknowledge', style: 'default' }]
                 );
               }
             } catch (e) {}

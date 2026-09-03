@@ -194,17 +194,33 @@ export function triggerDeviceNotification(title, options = {}) {
     position: 'top-right',
   });
 
-  // 3. Trigger Browser Native Push Notification if permitted
+  // 3. Trigger Browser / OS Native Notification popup via Service Worker or Notification API
   if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-    try {
-      new Notification(title, {
-        body: options.body || 'CrisisConnect Emergency Alert',
-        icon: '/favicon.svg',
-        tag: 'crisisconnect-alert',
-        requireInteraction: true,
-      });
-    } catch (err) {
-      console.warn('Native notification failed:', err);
+    const notifOptions = {
+      body: options.body || 'CrisisConnect Emergency Alert',
+      icon: '/favicon.svg',
+      badge: '/favicon.svg',
+      tag: options.tag || `crisisconnect-alert-${Date.now()}`,
+      requireInteraction: true,
+      vibrate: [0, 500, 250, 500],
+    };
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready
+        .then((reg) => {
+          reg.showNotification(title, notifOptions);
+        })
+        .catch(() => {
+          try {
+            new Notification(title, notifOptions);
+          } catch (e) {}
+        });
+    } else {
+      try {
+        new Notification(title, notifOptions);
+      } catch (err) {
+        console.warn('Native notification failed:', err);
+      }
     }
   }
 
