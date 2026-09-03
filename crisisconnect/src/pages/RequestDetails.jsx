@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -18,6 +18,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { useCrisis } from '../context/CrisisContext';
 import { useAuth } from '../context/AuthContext';
+import { matchNearbyVolunteers } from '../services/requestService';
 import toast from 'react-hot-toast';
 
 // Custom Map Pin SVG Icon
@@ -36,8 +37,17 @@ export default function RequestDetails() {
   const { requests, claimRequest, updateRequestStatus, addUpdateToRequest } = useCrisis();
   const { currentUser, isVolunteer, isCoordinator } = useAuth();
   const [commentText, setCommentText] = useState('');
+  const [nearbyVolunteers, setNearbyVolunteers] = useState([]);
 
   const request = requests.find((r) => r.id === id);
+
+  useEffect(() => {
+    if (request?.lat && request?.lng) {
+      matchNearbyVolunteers(request.lat, request.lng, 15).then((vols) => {
+        setNearbyVolunteers(vols || []);
+      });
+    }
+  }, [request?.lat, request?.lng]);
 
   if (!request) {
     return (
@@ -292,6 +302,61 @@ export default function RequestDetails() {
                     <p className="text-[10px] text-blue-700 font-semibold">{request.assignedVolunteer.role}</p>
                   </div>
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Proximity Matching: Nearest Volunteers & NGOs (<5km & <15km) */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Navigation className="w-5 h-5 text-blue-600" /> Nearby Responders ({nearbyVolunteers.length})
+              </h2>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                Live GPS Matching
+              </span>
+            </div>
+
+            {nearbyVolunteers.length === 0 ? (
+              <p className="text-xs text-slate-400 italic">
+                Scanning registered responders within 15km radius...
+              </p>
+            ) : (
+              <div className="space-y-2.5">
+                {nearbyVolunteers.map((vol) => (
+                  <div
+                    key={vol.id}
+                    className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-200 flex items-center justify-between transition-colors"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs text-slate-900">{vol.name}</span>
+                        {vol.bloodGroup && (
+                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-red-100 text-red-700">
+                            {vol.bloodGroup}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        {vol.distance < 5 ? (
+                          <span className="font-bold text-emerald-600">⚡ Immediate ({vol.distance} km away)</span>
+                        ) : (
+                          <span className="text-blue-600">📍 Extended ({vol.distance} km away)</span>
+                        )}
+                      </p>
+                    </div>
+
+                    {vol.phone && (
+                      <a
+                        href={`tel:${vol.phone}`}
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold flex items-center gap-1 transition-colors"
+                      >
+                        <Phone className="w-3 h-3 text-emerald-400" />
+                        <span>Call</span>
+                      </a>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
           </div>

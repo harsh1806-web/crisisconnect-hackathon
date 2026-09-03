@@ -318,6 +318,8 @@ export async function assignVolunteerToRequest(requestId, volunteerData) {
 export async function checkForPotentialDuplicates(lat, lng, category, maxDistanceKm = 0.5, preloadedRequests = null) {
   if (!lat || !lng) return [];
 
+  const cleanCategory = String(category || '').trim().toUpperCase();
+
   let candidateList = [];
   if (Array.isArray(preloadedRequests)) {
     candidateList = preloadedRequests;
@@ -326,14 +328,16 @@ export async function checkForPotentialDuplicates(lat, lng, category, maxDistanc
       const { data } = await supabase
         .from('emergency_requests')
         .select('*')
-        .eq('category', category)
+        .ilike('category', cleanCategory)
         .in('status', [REQUEST_STATUS.PENDING, REQUEST_STATUS.VERIFIED, REQUEST_STATUS.IN_PROGRESS]);
 
       if (data) {
         candidateList = data.map((r) => ({
           id: r.id,
+          title: r.title,
+          trackingCode: r.tracking_token,
           category: r.category,
-          location: { lat: r.latitude, lng: r.longitude },
+          location: { lat: r.latitude, lng: r.longitude, address: r.location_name },
         }));
       }
     } catch {
@@ -347,8 +351,9 @@ export async function checkForPotentialDuplicates(lat, lng, category, maxDistanc
   candidateList.forEach((data) => {
     const rLat = data.location?.lat || data.latitude || data.lat;
     const rLng = data.location?.lng || data.longitude || data.lng;
+    const itemCat = String(data.category || '').trim().toUpperCase();
 
-    if (data.category === category && rLat && rLng) {
+    if (itemCat === cleanCategory && rLat && rLng) {
       const dist = calculateDistance(lat, lng, rLat, rLng);
       if (dist !== null && dist <= maxDistanceKm) {
         duplicates.push({

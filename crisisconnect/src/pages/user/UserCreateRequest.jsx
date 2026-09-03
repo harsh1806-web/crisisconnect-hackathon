@@ -15,15 +15,18 @@ import {
   Wind,
   Truck,
   Pill,
+  AlertTriangle,
+  X,
 } from 'lucide-react';
 import { useCrisis } from '../../context/CrisisContext';
 import { useAuth } from '../../context/AuthContext';
+import { checkForPotentialDuplicates } from '../../services/requestService';
 import toast from 'react-hot-toast';
 
 export default function UserCreateRequest() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { addRequest } = useCrisis();
+  const { addRequest, requests } = useCrisis();
   const { currentUser } = useAuth();
 
   const [category, setCategory] = useState(() => searchParams.get('category') || 'Rescue');
@@ -39,6 +42,8 @@ export default function UserCreateRequest() {
   const [contactName, setContactName] = useState(currentUser?.name || '');
   const [contactPhone, setContactPhone] = useState(currentUser?.phone || '');
   const [vulnerabilities, setVulnerabilities] = useState([]);
+  const [duplicateWarning, setDuplicateWarning] = useState(null);
+  const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
 
   const categoryOptions = [
     { name: 'Rescue', icon: LifeBuoy, desc: 'Trapped, rising water, evacuation' },
@@ -98,8 +103,8 @@ export default function UserCreateRequest() {
     );
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e, bypassDuplicate = false) => {
+    if (e) e.preventDefault();
 
     if (!title.trim()) {
       toast.error('Please enter a brief title for the emergency.');
@@ -111,6 +116,25 @@ export default function UserCreateRequest() {
       return;
     }
 
+    // Check for potential duplicates within 500m radius
+    if (!bypassDuplicate) {
+      setIsCheckingDuplicates(true);
+      try {
+        const duplicates = await checkForPotentialDuplicates(lat, lng, category, 0.5, requests);
+        if (duplicates && duplicates.length > 0) {
+          setDuplicateWarning(duplicates[0]);
+          setIsCheckingDuplicates(false);
+          return;
+        }
+      } catch (err) {
+        console.warn('Duplicate check skipped:', err);
+      } finally {
+        setIsCheckingDuplicates(false);
+      }
+    }
+
+    setDuplicateWarning(null);
+
     const newReq = addRequest({
       title,
       category,
@@ -121,8 +145,8 @@ export default function UserCreateRequest() {
       lng,
       peopleCount: Number(peopleCount) || 1,
       vulnerabilities,
-      contactName: contactName || 'Citizen User',
-      contactPhone: contactPhone || '+1-555-0100',
+      contactName: currentUser?.name || contactName || 'Citizen User',
+      contactPhone: contactPhone || currentUser?.phone || '',
     });
 
     // Directly advances to Step 3 in user flow: Request Submitted Screen
@@ -347,12 +371,68 @@ export default function UserCreateRequest() {
         {/* Submit button */}
         <button
           type="submit"
-          className="w-full py-3.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black text-sm shadow-lg shadow-red-500/30 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
+          disabled={isCheckingDuplicates}
+          className="w-full py-3.5 rounded-2xl bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-black text-sm shadow-lg shadow-red-500/30 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
         >
           <Send className="w-4 h-4" />
-          <span>SUBMIT EMERGENCY REQUEST</span>
+          <span>{isCheckingDuplicates ? 'CHECKING PROXIMITY DUPLICATES...' : 'SUBMIT EMERGENCY REQUEST'}</span>
         </button>
       </form>
+
+      {/* 500-Meter Duplicate Emergency Warning Modal */}
+      {duplicateWarning && (
+        <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white w-full max-w-sm rounded-3xl p-5 border border-amber-300 shadow-2xl space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <button
+                type="button"
+                onClick={() => setDuplicateWarning(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                500m Duplicate Prevention Alert
+              </span>
+              <h3 className="text-sm font-black text-slate-900">
+                Active Incident Already Reported Nearby
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                An active emergency request for <strong>{duplicateWarning.category}</strong>{' '}
+                <em>"{duplicateWarning.title || 'Emergency Assistance'}"</em> was already registered{' '}
+                <strong className="text-amber-700">~{Math.round((duplicateWarning.distance || 0) * 1000)} meters</strong> away{' '}
+                (Tracking Ref: <span className="font-mono font-bold text-slate-900">{duplicateWarning.trackingCode || duplicateWarning.id}</span>).
+              </p>
+              <p className="text-[11px] text-slate-500 pt-1">
+                Disaster authorities and volunteer units are already prioritizing this sector. Are you adding info to this incident, or filing a separate emergency?
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => navigate(`/requests/${duplicateWarning.id}`)}
+                className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all text-center cursor-pointer"
+              >
+                View Incident
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSubmit(null, true)}
+                className="py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-xs text-center cursor-pointer"
+              >
+                Submit Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
