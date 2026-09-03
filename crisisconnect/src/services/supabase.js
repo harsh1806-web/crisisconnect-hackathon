@@ -32,25 +32,35 @@ export async function registerCitizenInSupabase(citizenData) {
     return { success: true, citizen: citizenData };
   }
 
+  const cleanPhone = (citizenData.phone || '').replace(/\D/g, '').slice(-10);
+
+  // Check if phone number already exists
+  const { data: existing } = await supabase
+    .from('citizens')
+    .select('id, name')
+    .eq('phone', cleanPhone)
+    .maybeSingle();
+
+  if (existing) {
+    throw new Error(`Mobile number ${cleanPhone} is already registered under "${existing.name}". Phone numbers cannot be repeated.`);
+  }
+
   const { data, error } = await supabase
     .from('citizens')
-    .upsert(
-      {
-        name: citizenData.name,
-        phone: (citizenData.phone || '').replace(/\D/g, '').slice(-10),
-        password_hash: citizenData.password || '', // or supabase.auth
-        age: Number(citizenData.age) || 25,
-        blood_group: citizenData.bloodGroup || 'O+',
-        email: citizenData.email || '',
-        address: citizenData.address || '',
-        latitude: citizenData.lat || 19.0760,
-        longitude: citizenData.lng || 72.8777,
-        ice_name: citizenData.emergencyContactName || '',
-        ice_phone: (citizenData.emergencyContactPhone || '').replace(/\D/g, '').slice(-10),
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'phone' }
-    )
+    .insert({
+      name: citizenData.name,
+      phone: cleanPhone,
+      password_hash: citizenData.password || '', // or supabase.auth
+      age: Number(citizenData.age) || 25,
+      blood_group: citizenData.bloodGroup || 'O+',
+      email: citizenData.email || '',
+      address: citizenData.address || '',
+      latitude: citizenData.lat || 19.0760,
+      longitude: citizenData.lng || 72.8777,
+      ice_name: citizenData.emergencyContactName || '',
+      ice_phone: (citizenData.emergencyContactPhone || '').replace(/\D/g, '').slice(-10),
+      updated_at: new Date().toISOString(),
+    })
     .select()
     .single();
 

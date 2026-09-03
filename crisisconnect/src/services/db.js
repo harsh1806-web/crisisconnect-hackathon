@@ -56,18 +56,14 @@ export const citizenDB = {
   register: (citizenData) => {
     const all = citizenDB.getAll();
 
-    // Check if phone already registered
+    // Check if phone already registered (strictly no duplicates)
+    const cleanPhone = (citizenData.phone || '').replace(/\D/g, '').slice(-10);
     const existing = all.find(
-      (c) => c.phone.trim().replace(/[\s()-]/g, '') === citizenData.phone.trim().replace(/[\s()-]/g, '')
+      (c) => (c.phone || '').replace(/\D/g, '').slice(-10) === cleanPhone
     );
 
     if (existing) {
-      // Update existing record
-      const updated = all.map((c) =>
-        c.id === existing.id ? { ...c, ...citizenData, updatedAt: new Date().toISOString() } : c
-      );
-      localStorage.setItem(CITIZENS_STORAGE_KEY, JSON.stringify(updated));
-      return { success: true, citizen: { ...existing, ...citizenData }, isUpdate: true };
+      throw new Error(`Mobile number ${cleanPhone} is already registered under "${existing.name}". Phone numbers cannot be repeated.`);
     }
 
     const newCitizen = {

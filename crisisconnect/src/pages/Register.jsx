@@ -13,7 +13,7 @@ import {
 import { citizenDB } from '../services/db';
 import { useAuth } from '../context/AuthContext';
 import { getOrCreateDeviceToken, registerDeviceToken } from '../services/notificationService';
-import { registerCitizenInSupabase } from '../services/supabase';
+import { registerCitizenInSupabase, supabase } from '../services/supabase';
 import toast from 'react-hot-toast';
 
 export default function Register() {
@@ -58,6 +58,45 @@ export default function Register() {
     }
 
     setIsSubmitting(true);
+
+    // Guard: Prevent duplicate phone number registration
+    try {
+      if (supabase) {
+        const { data: existingSupabase } = await supabase
+          .from('citizens')
+          .select('id, name, phone')
+          .eq('phone', cleanPhone)
+          .maybeSingle();
+
+        if (existingSupabase) {
+          toast.error(
+            `Mobile number ${cleanPhone} is ALREADY registered under "${existingSupabase.name}". Phone numbers cannot be repeated!`,
+            { duration: 5000 }
+          );
+          setIsSubmitting(false);
+          setTimeout(() => {
+            navigate(`/login?phone=${encodeURIComponent(cleanPhone)}`);
+          }, 1500);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Supabase duplicate check warning:', e);
+    }
+
+    // Also check local database
+    const existingLocal = citizenDB.findByPhone(cleanPhone);
+    if (existingLocal) {
+      toast.error(
+        `Mobile number ${cleanPhone} is ALREADY registered under "${existingLocal.name}". Phone numbers cannot be repeated!`,
+        { duration: 5000 }
+      );
+      setIsSubmitting(false);
+      setTimeout(() => {
+        navigate(`/login?phone=${encodeURIComponent(cleanPhone)}`);
+      }, 1500);
+      return;
+    }
 
     // 1. Save citizen into local/offline Database
     citizenDB.register({
