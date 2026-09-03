@@ -19,6 +19,74 @@ import { supabase } from '../services/supabase';
 import { registerActiveDeviceSession } from '../services/notificationService';
 import toast from 'react-hot-toast';
 
+export const AUTHORITY_AGENCIES = [
+  {
+    id: 'police',
+    name: 'State Police & Rapid Action Force (RAF)',
+    shortName: 'Police Command',
+    badge: 'POLICE-100',
+    pin: 'police123',
+    officer: 'Inspector General K. S. Rathore',
+    rank: 'Chief of Police Operations',
+    hotline: '100 / 112',
+    icon: '🚓',
+    desc: 'Law & order, perimeter cordoning, evacuation corridors, traffic clearance',
+    theme: 'border-blue-500/40 bg-blue-50/70 text-blue-900',
+  },
+  {
+    id: 'hospital',
+    name: 'Emergency Medical Services & Trauma Center',
+    shortName: 'Hospital / CMO (108)',
+    badge: 'HOSPITAL-108',
+    pin: 'hosp108',
+    officer: 'Dr. Ananya Sen, Trauma Chief',
+    rank: 'Chief Medical Officer (CMO)',
+    hotline: '108',
+    icon: '🏥',
+    desc: 'Triage, ICU beds, blood bank allocation (O+, AB-), oxygen cylinders, trauma surgery',
+    theme: 'border-red-500/40 bg-red-50/70 text-red-900',
+  },
+  {
+    id: 'fire',
+    name: 'Directorate of Fire & Rescue Services',
+    shortName: 'Fire & HazMat Command (101)',
+    badge: 'FIRE-101',
+    pin: 'fire101',
+    officer: 'Chief Marshal S. Nair',
+    rank: 'Chief Fire Officer',
+    hotline: '101',
+    icon: '🚒',
+    desc: 'Active blazes, LPG & toxic gas leaks, chemical neutralization, foam tenders',
+    theme: 'border-orange-500/40 bg-orange-50/70 text-orange-900',
+  },
+  {
+    id: 'ndrf',
+    name: 'National Disaster Response Force (NDRF)',
+    shortName: 'NDRF Water Rescue (1077)',
+    badge: 'NDRF-1077',
+    pin: 'ndrf1077',
+    officer: 'Commander R. K. Verma',
+    rank: '5th Battalion Commander',
+    hotline: '1077',
+    icon: '🚤',
+    desc: 'Inflatable rescue boats, swift-water extraction, rooftop airlift, life jackets',
+    theme: 'border-sky-500/40 bg-sky-50/70 text-sky-900',
+  },
+  {
+    id: 'usar',
+    name: 'Urban Search & Rescue (USAR) & SDRF',
+    shortName: 'USAR Structural Rescue (112)',
+    badge: 'USAR-112',
+    pin: 'usar112',
+    officer: 'Col. Vikram Rathore',
+    rank: 'USAR Taskforce Commander',
+    hotline: '112',
+    icon: '🏚️',
+    desc: 'Collapsed buildings, heavy concrete cutters, acoustic life detectors, K9 units',
+    theme: 'border-purple-500/40 bg-purple-50/70 text-purple-900',
+  },
+];
+
 export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -35,10 +103,11 @@ export default function Login() {
   const [ngoName, setNgoName] = useState('Red Cross Disaster Relief Corps');
   const [ngoOfficer, setNgoOfficer] = useState('');
 
-  // Authority form
-  const [authDept, setAuthDept] = useState('Disaster Management & Civil Defense (NDMA)');
-  const [badgeId, setBadgeId] = useState('');
-  const [securityPin, setSecurityPin] = useState('');
+  // Authority form - specialized by emergency agency
+  const [selectedAgencyId, setSelectedAgencyId] = useState('police');
+  const [authDept, setAuthDept] = useState('State Police & Rapid Action Force (RAF)');
+  const [badgeId, setBadgeId] = useState('POLICE-100');
+  const [securityPin, setSecurityPin] = useState('police123');
 
   const handleCitizenSubmit = async (e) => {
     e.preventDefault();
@@ -138,17 +207,31 @@ export default function Login() {
     navigate('/ngo/dashboard');
   };
 
+  const handleSelectAgency = (agency) => {
+    setSelectedAgencyId(agency.id);
+    setAuthDept(agency.name);
+    setBadgeId(agency.badge);
+    setSecurityPin(agency.pin);
+  };
+
   const handleAuthoritySubmit = (e) => {
     e.preventDefault();
-    if (!badgeId.trim() || !securityPin.trim()) {
-      toast.error('Please enter Badge ID and PIN.');
+    if (!badgeId.trim()) {
+      toast.error('Please enter Badge ID.');
       return;
     }
+    const currentAgency = AUTHORITY_AGENCIES.find((a) => a.id === selectedAgencyId) || AUTHORITY_AGENCIES[0];
+
     loginAsAuthority({
-      department: authDept,
+      department: currentAgency.name,
       badgeId: badgeId.toUpperCase(),
-      rank: 'Duty Incident Commander',
+      name: currentAgency.officer,
+      rank: currentAgency.rank,
+      agencyType: currentAgency.id,
+      hotline: currentAgency.hotline,
+      icon: currentAgency.icon,
     });
+    toast.success(`Logged in as ${currentAgency.shortName} (${badgeId.toUpperCase()})`);
     navigate('/authority/dashboard');
   };
 
@@ -365,60 +448,84 @@ export default function Login() {
                 🔒 <strong>Official Role Notice:</strong> Authorities manage and verify relief responses. Emergency posting is restricted to citizens.
               </div>
 
-              <form onSubmit={handleAuthoritySubmit} className="space-y-3 pt-1">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Department / Agency
-                  </label>
-                  <select
-                    value={authDept}
-                    onChange={(e) => setAuthDept(e.target.value)}
-                    className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
-                  >
-                    <option>Disaster Management & Civil Defense (NDMA)</option>
-                    <option>State Police & Flood Rescue Unit</option>
-                    <option>Coast Guard Maritime Coordination</option>
-                  </select>
+              {/* Department / Agency Selector */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-700">
+                  Select Specialized Emergency Authority
+                </label>
+                <div className="space-y-2">
+                  {AUTHORITY_AGENCIES.map((agency) => (
+                    <button
+                      key={agency.id}
+                      type="button"
+                      onClick={() => handleSelectAgency(agency)}
+                      className={`w-full text-left p-2.5 rounded-2xl border transition-all flex items-center justify-between gap-2.5 cursor-pointer ${
+                        selectedAgencyId === agency.id
+                          ? `${agency.theme} ring-2 ring-blue-500/30 shadow-xs font-bold`
+                          : 'border-slate-200 bg-slate-50/70 hover:bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-xl shrink-0">{agency.icon}</span>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold">{agency.shortName}</span>
+                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-900 text-white">
+                              {agency.badge}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 line-clamp-1">{agency.desc}</p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-500 shrink-0">
+                        {agency.hotline}
+                      </span>
+                    </button>
+                  ))}
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Official Badge ID
-                  </label>
-                  <div className="relative">
-                    <IdCard className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={badgeId}
-                      onChange={(e) => setBadgeId(e.target.value)}
-                      placeholder="e.g. NDMA-8821"
-                      className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+              <form onSubmit={handleAuthoritySubmit} className="space-y-3 pt-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Official Badge ID
+                    </label>
+                    <div className="relative">
+                      <IdCard className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={badgeId}
+                        onChange={(e) => setBadgeId(e.target.value)}
+                        placeholder="e.g. POLICE-100"
+                        className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono font-bold"
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Passcode PIN
-                  </label>
-                  <div className="relative">
-                    <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="password"
-                      value={securityPin}
-                      onChange={(e) => setSecurityPin(e.target.value)}
-                      placeholder="••••"
-                      maxLength={6}
-                      className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Passcode PIN
+                    </label>
+                    <div className="relative">
+                      <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="password"
+                        value={securityPin}
+                        onChange={(e) => setSecurityPin(e.target.value)}
+                        placeholder="••••"
+                        className="w-full text-xs pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
                   </div>
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all cursor-pointer mt-1"
+                  className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all cursor-pointer mt-1 flex items-center justify-center gap-1.5"
                 >
-                  Access Authority Command Center
+                  <span>Access {AUTHORITY_AGENCIES.find((a) => a.id === selectedAgencyId)?.shortName || 'Authority'} Command</span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </form>
             </div>

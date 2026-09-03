@@ -187,6 +187,7 @@ const styles = StyleSheet.create({
   webWrapper: {
     flex: 1,
     backgroundColor: '#020617',
+    paddingBottom: Platform.OS === 'ios' ? 24 : 0,
   },
   webView: {
     flex: 1,

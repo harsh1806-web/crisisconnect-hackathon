@@ -26,7 +26,7 @@ export default function BottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-slate-200 shadow-2xl px-2 pt-1.5 pb-3 max-w-md mx-auto sm:border-x">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-200 shadow-2xl px-2 pt-1.5 pb-6 max-w-md mx-auto sm:border-x">
       {isAuthority ? (
         /* Authority Bottom Navigation (No Emergency creation button) */
         <div className="flex items-center justify-around">
@@ -133,11 +133,11 @@ export default function BottomNav() {
           </Link>
 
           {/* Floating Center Request Action */}
-          <Link to="/user/create" className="flex flex-col items-center -mt-5">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-red-600 to-rose-500 text-white flex items-center justify-center shadow-lg shadow-red-500/40 border-2 border-white hover:scale-105 active:scale-95 transition-transform">
-              <PlusCircle className="w-6 h-6" />
+          <Link to="/user/create" className="flex flex-col items-center -mt-2.5">
+            <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-red-600 to-rose-500 text-white flex items-center justify-center shadow-lg shadow-red-500/40 border-2 border-white hover:scale-105 active:scale-95 transition-transform">
+              <PlusCircle className="w-5 h-5" />
             </div>
-            <span className="text-[10px] font-bold text-red-600 mt-1">Request Aid</span>
+            <span className="text-[9px] font-bold text-red-600 mt-0.5">Request Aid</span>
           </Link>
 
           <Link
