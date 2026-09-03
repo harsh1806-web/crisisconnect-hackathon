@@ -156,11 +156,6 @@ export default function App() {
           ? `window.__NATIVE_GPS__ = { lat: ${coords.lat}, lng: ${coords.lng} };`
           : ''
       }
-      ${
-        expoPushToken
-          ? `window.__NATIVE_PUSH_TOKEN__ = '${expoPushToken}';`
-          : ''
-      }
       true;
     })();
   `;
