@@ -227,7 +227,7 @@ export default function AuthorityDashboard() {
           </div>
 
           {/* Quick Authority Controls */}
-          <div className="flex items-center gap-2 self-end sm:self-center">
+          <div className="flex flex-wrap items-center gap-2 self-start sm:self-center mt-2 sm:mt-0">
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
               className={`p-2.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-colors ${

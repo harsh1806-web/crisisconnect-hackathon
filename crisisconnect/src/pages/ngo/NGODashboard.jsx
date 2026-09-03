@@ -16,7 +16,7 @@ import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 
 export default function NGODashboard() {
-  const { requests, donations, recordDonation, updateNGOMission, updateRequestStatus } =
+  const { requests, donations, recordDonation, updateNGOMission, updateRequestStatus, volunteerTasks } =
     useCrisis();
   const { currentUser, logout } = useAuth();
 
@@ -167,6 +167,54 @@ export default function NGODashboard() {
       {/* TAB 1: VOLUNTEER SERVICE & RESCUE MISSIONS */}
       {activeTab === 'missions' && (
         <div className="space-y-4">
+          {/* Community Volunteer Responders Coordination */}
+          {volunteerTasks && volunteerTasks.length > 0 && (
+            <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                    <Users className="w-4 h-4 text-emerald-600" />
+                    Community Volunteer Mobilization
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Local residents registered to assist with food distribution, first aid, and evacuations
+                  </p>
+                </div>
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  {volunteerTasks.reduce((acc, t) => acc + (t.volunteersSignedUp || 0), 0)} Volunteers Active
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {volunteerTasks.map((t) => (
+                  <div key={t.id} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white text-slate-800 border border-slate-200 uppercase">
+                        {t.sector}
+                      </span>
+                      <span className="text-[11px] font-semibold text-emerald-700">
+                        {t.volunteersSignedUp} / {t.volunteersNeeded} slots
+                      </span>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-xs text-slate-900">{t.title}</h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">{t.location}</p>
+                    </div>
+                    <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
+                      <span className="text-slate-400 font-medium">Shift: {t.timeRequired}</span>
+                      <a
+                        href={`tel:${t.coordinatorPhone}`}
+                        className="text-emerald-600 font-bold hover:underline flex items-center gap-1"
+                      >
+                        <Phone className="w-3 h-3" /> Call Field Lead
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between px-1">
             <div>
               <h2 className="text-sm font-black text-slate-900">

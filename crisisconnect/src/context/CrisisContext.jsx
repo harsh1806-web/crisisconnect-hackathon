@@ -53,7 +53,8 @@ export function CrisisProvider({ children }) {
     const saved = localStorage.getItem('crisisconnect_voltasks_v1');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       } catch {
         return INITIAL_CITIZEN_VOLUNTEER_TASKS;
       }
@@ -61,11 +62,18 @@ export function CrisisProvider({ children }) {
     return INITIAL_CITIZEN_VOLUNTEER_TASKS;
   });
 
+  useEffect(() => {
+    if (volunteerTasks && volunteerTasks.length > 0) {
+      localStorage.setItem('crisisconnect_voltasks_v1', JSON.stringify(volunteerTasks));
+    }
+  }, [volunteerTasks]);
+
   const [broadcasts, setBroadcasts] = useState(() => {
     const saved = localStorage.getItem('crisisconnect_broadcasts_v3');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       } catch {
         return INITIAL_BROADCASTS;
       }
