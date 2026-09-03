@@ -1,102 +1,61 @@
-# CrisisConnect Deployment Guide
+# CrisisConnect Deployment
 
-## Project
+## Architecture
 
-CrisisConnect — Emergency Response & Volunteer Coordination Platform
+Frontend:
+React + Vite + Tailwind CSS
 
-## Deployment Platform
+Backend:
+Node.js + Express
+
+Database:
+Firebase Firestore
+
+Authentication:
+Firebase Authentication
+
+---
+
+# Frontend Deployment
+
+Platform:
 
 Vercel
 
-## Repository
-
-crisisconnect-hackathon
-
-## Production Branch
+Production branch:
 
 main
 
----
+### Steps
 
-# Pre-Deployment Checklist
-
-## Code
-
-- [ ] Application runs locally
-- [ ] `npm install` completes successfully
-- [ ] `npm run dev` works
-- [ ] `npm run build` succeeds
-- [ ] No major console errors
-- [ ] No broken routes
-
-## Firebase
-
-- [ ] Firebase project is configured
-- [ ] Firebase Authentication is configured
-- [ ] Firestore is configured
-- [ ] Required environment variables are configured
-- [ ] Firebase credentials/secrets are NOT committed to GitHub
-
-## UI
-
-- [ ] Login works
-- [ ] Dashboard works
-- [ ] Create Request works
-- [ ] Request list works
-- [ ] Map works
-- [ ] Profile works
-- [ ] Mobile layout tested
-- [ ] Desktop layout tested
+1. Connect GitHub repository to Vercel.
+2. Select the frontend project directory.
+3. Configure environment variables.
+4. Build the project.
+5. Deploy.
+6. Test the production URL.
 
 ---
 
-# Deployment Steps
+# Backend Deployment
 
-1. Push the final code to GitHub.
-2. Open Vercel.
-3. Sign in using GitHub.
-4. Import the CrisisConnect repository.
-5. Select the `main` branch.
-6. Configure environment variables if required.
-7. Deploy the application.
-8. Wait for the build to complete.
-9. Open the production URL.
-10. Test the complete application.
+Use a Node.js hosting platform such as Render or Railway.
 
----
+### Steps
 
-# Post-Deployment Testing
-
-- [ ] Website opens successfully
-- [ ] Login works
-- [ ] Dashboard loads
-- [ ] Emergency request can be created
-- [ ] Requests are displayed
-- [ ] Volunteer can accept a request
-- [ ] Request status updates
-- [ ] Map loads
-- [ ] Profile loads
-- [ ] Logout works
-- [ ] No major console errors
+1. Connect GitHub repository.
+2. Select the backend directory.
+3. Configure environment variables.
+4. Configure the start command.
+5. Deploy.
+6. Test production API endpoints.
 
 ---
 
-# Production URL
+# Frontend Environment Variables
 
-To be added after deployment.
-
-Production URL:
-
-`____________________________`
-
----
-
-# Deployment Status
-
-Status: Not Deployed
-
-Last Tested:
-
-Tester:
-
-Notes:
+```env
+VITE_API_URL=
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=

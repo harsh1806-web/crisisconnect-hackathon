@@ -2,97 +2,124 @@
 
 ## 1. Authentication
 
-- [ ] Login page loads correctly
-- [ ] User can select role
-- [ ] Valid login works
-- [ ] Invalid login shows error
-- [ ] Logout works
-- [ ] User cannot access protected pages without login
+| Test | Expected Result | Status |
+|---|---|---|
+| User login | User successfully logs in | ⬜ |
+| Authority login | Authority successfully logs in | ⬜ |
+| Invalid login | Error message displayed | ⬜ |
+| Logout | User is logged out and redirected | ⬜ |
 
-## 2. Dashboard
+---
 
-- [ ] Dashboard loads correctly
-- [ ] Emergency categories display
-- [ ] SOS button is visible
-- [ ] Emergency request count displays correctly
-- [ ] Navigation works
+## 2. Emergency Reporting
+
+| Test | Expected Result | Status |
+|---|---|---|
+| Empty description | Validation error displayed | ⬜ |
+| Valid emergency | Emergency successfully created | ⬜ |
+| Location access | User location is captured | ⬜ |
+| AI analysis | Emergency is analyzed successfully | ⬜ |
+| Priority assignment | Priority is assigned correctly | ⬜ |
+| Authority assignment | Appropriate authority is assigned | ⬜ |
+| Unique token | Unique tracking token is generated | ⬜ |
+
+---
+
+## 3. Emergency Tracking
+
+| Test | Expected Result | Status |
+|---|---|---|
+| Valid token | Correct emergency is displayed | ⬜ |
+| Invalid token | Error / not-found message displayed | ⬜ |
+| Status update | Latest status is displayed | ⬜ |
+| Timeline | Emergency timeline is displayed correctly | ⬜ |
+
+---
+
+## 4. Authority Dashboard
+
+| Test | Expected Result | Status |
+|---|---|---|
+| View emergencies | Assigned emergencies are displayed | ⬜ |
+| Verify request | Request can be verified | ⬜ |
+| Assign team | Team can be assigned | ⬜ |
+| Update status | Emergency status changes | ⬜ |
+| Resolve request | Emergency can be marked resolved | ⬜ |
+
+---
+
+## 5. Volunteer
+
+| Test | Expected Result | Status |
+|---|---|---|
+| Registration | Volunteer can register | ⬜ |
+| Skills | Volunteer skills can be added | ⬜ |
+| Availability | Availability can be updated | ⬜ |
+
+---
+
+## 6. Donation
+
+| Test | Expected Result | Status |
+|---|---|---|
+| Create pledge | Donation pledge is created | ⬜ |
+| Required fields | Missing fields show validation | ⬜ |
+
+---
+
+## 7. Nearby Help
+
+| Test | Expected Result | Status |
+|---|---|---|
+| Location permission | Location permission works | ⬜ |
+| Service categories | Categories are displayed | ⬜ |
+| Map loading | Map loads successfully | ⬜ |
+
+---
+
+## 8. Frontend
+
+### Responsive Design
+
 - [ ] Mobile layout works
+- [ ] Tablet layout works
 - [ ] Desktop layout works
-
-## 3. Create Emergency Request
-
-- [ ] Create Request page opens
-- [ ] User can select emergency type
-- [ ] User can select priority
-- [ ] User can enter description
-- [ ] Location can be selected
-- [ ] Form validation works
-- [ ] Request submits successfully
-- [ ] Success message appears
-- [ ] Request appears in the request list
-
-## 4. Emergency Requests
-
-- [ ] Request list loads
-- [ ] Request cards display correctly
-- [ ] Emergency type is displayed
-- [ ] Priority is displayed
-- [ ] Status is displayed
-- [ ] Location is displayed
-- [ ] Volunteer can accept a request
-- [ ] Accepted request changes status
-- [ ] Request updates in real time
-
-## 5. Map
-
-- [ ] Map loads correctly
-- [ ] Emergency markers appear
-- [ ] User location works
-- [ ] Different emergency locations are visible
-- [ ] Map works on mobile
-- [ ] Map works on desktop
-
-## 6. Request Tracking
-
-- [ ] Request status is visible
-- [ ] Volunteer assignment is displayed
-- [ ] Status changes correctly
-- [ ] Completed request shows completed status
-- [ ] Real-time status updates work
-
-## 7. Profile
-
-- [ ] Profile page loads
-- [ ] User name displays
-- [ ] User role displays
-- [ ] Verification status displays
-- [ ] Request history displays
-- [ ] Logout works
-
-## 8. Responsiveness
-
-- [ ] Tested on desktop
-- [ ] Tested on tablet
-- [ ] Tested on mobile
 - [ ] No horizontal scrolling
-- [ ] Buttons are easy to click
-- [ ] Text is readable
-- [ ] Images display correctly
+- [ ] Buttons are usable on mobile
+- [ ] Text remains readable
 
-## 9. Error Handling
+### Navigation
 
-- [ ] Invalid login shows an error
-- [ ] Empty form shows validation
-- [ ] Network/database error is handled
-- [ ] Loading state is displayed
-- [ ] Missing data doesn't crash the app
+- [ ] All navigation links work
+- [ ] Back navigation works
+- [ ] Protected routes are protected
+- [ ] Invalid routes show an appropriate page
 
-## 10. Final Testing
+### UI States
 
+- [ ] Loading states are displayed
+- [ ] Error states are displayed
+- [ ] Empty states are handled
+- [ ] Success messages are displayed
+
+---
+
+## 9. API Testing
+
+- [ ] Backend starts successfully
+- [ ] API endpoints respond correctly
+- [ ] Invalid requests return appropriate errors
+- [ ] CORS works with production frontend
+- [ ] Production API URL works
+- [ ] Firebase authentication works with production API
+
+---
+
+## 10. Final Test
+
+- [ ] No critical bugs
 - [ ] No major console errors
-- [ ] No broken links
-- [ ] No broken images
-- [ ] No blank screens
-- [ ] `npm run build` succeeds
-- [ ] Production application works
-- [ ] Deployed application works
+- [ ] Production build succeeds
+- [ ] Production frontend works
+- [ ] Production backend works
+- [ ] Firebase works in production

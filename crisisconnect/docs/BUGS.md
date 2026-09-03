@@ -1,21 +1,29 @@
 # CrisisConnect Bug Tracker
 
-| ID | Feature | Bug Description | Priority | Assigned To | Status |
-|---|---|---|---|---|---|
-| BUG-001 | | | | | Open |
-| BUG-002 | | | | | Open |
-| BUG-003 | | | | | Open |
+| ID | Feature | Issue | Priority | Status |
+|----|---------|-------|----------|--------|
+| BUG-001 | | | | Open |
+| BUG-002 | | | | Open |
+| BUG-003 | | | | Open |
 
-## Priority Levels
+## Priority
 
-### 🔴 Critical
-The application doesn't start or a major feature is completely broken.
+### Critical
+Application cannot start or a core feature is completely broken.
 
-### 🟠 High
-An important feature doesn't work.
+### High
+Important functionality is broken and affects the demo.
 
-### 🟡 Medium
-The feature works but has a noticeable problem.
+### Medium
+Feature works incorrectly but has a workaround.
 
-### 🟢 Low
+### Low
 Minor UI, styling, or cosmetic issue.
+
+## Status
+
+- Open
+- In Progress
+- Fixed
+- Retesting
+- Closed
