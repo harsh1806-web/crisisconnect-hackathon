@@ -116,10 +116,10 @@ export default function UserDashboard() {
       {activeTab === 'emergency' && (
         <div className="space-y-4">
           {/* Emergency Incident Ticker */}
-          <div className="p-3 bg-red-50/80 rounded-2xl border border-red-200 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2 text-red-950 font-bold">
+          <div className="p-2.5 bg-red-50/80 rounded-2xl border border-red-200 flex items-center justify-between text-xs overflow-hidden">
+            <div className="flex items-center gap-2 text-red-950 font-bold min-w-0 flex-1 pr-2">
               <span className="w-2 h-2 rounded-full bg-red-600 animate-ping shrink-0" />
-              <span className="truncate">{crisisInfo.status}: {crisisInfo.title}</span>
+              <span className="truncate text-[11px]">{crisisInfo.status}: {crisisInfo.title}</span>
             </div>
             <Link to="/map" className="text-red-700 text-[11px] font-bold shrink-0 hover:underline">
               Map →

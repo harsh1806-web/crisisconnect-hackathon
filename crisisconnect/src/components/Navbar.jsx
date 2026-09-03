@@ -20,30 +20,30 @@ export default function Navbar() {
   const isLoginPage = location.pathname === '/login' || location.pathname === '/register';
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-2xs">
-      {/* Top Status Bar with iPhone Notch Safe Area */}
-      <div className="bg-slate-950 text-white text-[11px] px-3 pt-[calc(env(safe-area-inset-top,0px)+0.25rem)] pb-1 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="flex h-2 w-2 relative">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-2xs w-full max-w-full overflow-hidden">
+      {/* Top Status Bar */}
+      <div className="bg-slate-950 text-white text-[11px] px-3 py-1.5 flex items-center justify-between w-full max-w-full">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <span className="flex h-2 w-2 relative shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
           </span>
-          <span className="font-bold text-red-400 uppercase tracking-wider">
+          <span className="font-bold text-red-400 uppercase tracking-wider text-[10px] shrink-0">
             CrisisConnect
           </span>
-          <span className="text-slate-400 hidden sm:inline">• {crisisInfo.title}</span>
+          <span className="text-slate-400 text-[10px] truncate hidden xs:inline">• {crisisInfo.title}</span>
         </div>
 
         <a
           href="tel:112"
-          className="flex items-center gap-1 text-emerald-400 font-bold hover:underline"
+          className="flex items-center gap-1 text-emerald-400 font-bold hover:underline shrink-0 text-[10px] ml-2"
         >
           <PhoneCall className="w-3 h-3" /> 112 Hotline
         </a>
       </div>
 
       {/* Main Navbar */}
-      <div className="max-w-md mx-auto px-4 py-2 sm:max-w-4xl flex items-center justify-between">
+      <div className="w-full max-w-md mx-auto px-3 py-2 flex items-center justify-between">
         {/* Brand */}
         <Link
           to={
