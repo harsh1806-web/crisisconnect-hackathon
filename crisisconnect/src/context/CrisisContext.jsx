@@ -617,29 +617,44 @@ export function CrisisProvider({ children }) {
   };
 
   // Authority Actions
-  const verifyRequest = (requestId, authorityName = 'Authority EOC') => {
+  const verifyRequest = (requestId, authorityName = 'Authority EOC', auditData = {}) => {
     setRequests((prev) =>
       prev.map((r) => {
         if (r.id === requestId) {
+          const newUpdates = [...(r.updates || [])];
+          if (auditData.notes) {
+            newUpdates.push({
+              id: `up-note-${Date.now()}`,
+              author: `📢 ${authorityName} Official Instruction`,
+              text: auditData.notes,
+              timestamp: 'Just now',
+              isOfficial: true,
+            });
+          }
+          newUpdates.push({
+            id: `up-verif-${Date.now()}`,
+            author: authorityName,
+            text: `Incident authenticated (Trust Score: ${auditData.trustScore || 95}% Genuine). Cleared for ${auditData.assignedUnit || 'Rescue Operations'}. ETA ~${auditData.etaMinutes || 12} mins.`,
+            timestamp: 'Just now',
+            isOfficial: true,
+          });
+
           return {
             ...r,
             verificationStatus: 'verified',
             status: 'verified',
-            updates: [
-              ...r.updates,
-              {
-                id: `up-${Date.now()}`,
-                author: authorityName,
-                text: 'Incident details verified by Disaster Management Authority. Cleared for NGO deployment.',
-                timestamp: 'Just now',
-              },
-            ],
+            authenticityTrustScore: auditData.trustScore || 95,
+            verificationOfficer: authorityName,
+            verificationAudit: auditData,
+            officialInstructions: auditData.notes || r.officialInstructions,
+            etaMinutes: auditData.etaMinutes || r.etaMinutes,
+            updates: newUpdates,
           };
         }
         return r;
       })
     );
-    toast.success('Incident verified & cleared for NGO deployment!');
+    toast.success('Incident authenticated & cleared for rescue deployment!');
 
     // Persist verification to Firestore
     try {

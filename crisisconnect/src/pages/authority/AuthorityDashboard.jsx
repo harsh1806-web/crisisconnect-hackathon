@@ -25,6 +25,7 @@ import { useCrisis } from '../../context/CrisisContext';
 import { useAuth } from '../../context/AuthContext';
 import { playEmergencyAlertSound } from '../../services/notificationService';
 import AuthorityMobilizeVolunteersModal from '../../components/AuthorityMobilizeVolunteersModal';
+import IncidentVerificationModal from '../../components/IncidentVerificationModal';
 import toast from 'react-hot-toast';
 
 // Custom Map Pins for Leaflet
@@ -109,6 +110,7 @@ export default function AuthorityDashboard() {
   const [mapZoom, setMapZoom] = useState(12);
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [isMobilizeOpen, setIsMobilizeOpen] = useState(false);
+  const [verifyModalIncident, setVerifyModalIncident] = useState(null);
 
   const handleSendTestAlert = async () => {
     setIsSendingTest(true);
@@ -830,15 +832,16 @@ export default function AuthorityDashboard() {
                     <div className="pt-1 flex items-center gap-1.5">
                       {req.verificationStatus === 'pending' ? (
                         <button
-                          onClick={() => verifyRequest(req.id, currentUser?.name || 'Authority EOC')}
-                          className="w-full py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition-colors"
+                          onClick={() => setVerifyModalIncident(req)}
+                          className="w-full py-2 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-98 text-white text-[11px] font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                         >
-                          ✓ Verify Incident
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span>Inspect & Authenticate</span>
                         </button>
                       ) : req.status !== 'resolved' ? (
                         <button
                           onClick={() => updateRequestStatus(req.id, 'resolved', currentUser?.name || 'Authority EOC')}
-                          className="w-full py-1.5 rounded-xl bg-slate-200 hover:bg-emerald-100 hover:text-emerald-800 text-slate-700 text-[11px] font-bold transition-colors"
+                          className="w-full py-1.5 rounded-xl bg-slate-200 hover:bg-emerald-100 hover:text-emerald-800 text-slate-700 text-[11px] font-bold transition-colors cursor-pointer"
                         >
                           Mark Rescued / Safe
                         </button>
@@ -855,6 +858,23 @@ export default function AuthorityDashboard() {
           )}
         </div>
       </div>
+
+      {/* Incident Verification & Authenticity Modal */}
+      {verifyModalIncident && (
+        <IncidentVerificationModal
+          incident={verifyModalIncident}
+          authority={currentUser}
+          onVerify={(id, authorityName, auditData) => {
+            verifyRequest(id, authorityName, auditData);
+            setVerifyModalIncident(null);
+          }}
+          onReject={(id, reason, authorityName) => {
+            rejectRequest(id, reason, authorityName);
+            setVerifyModalIncident(null);
+          }}
+          onClose={() => setVerifyModalIncident(null)}
+        />
+      )}
 
       {/* Authority Mobilize Volunteers Modal */}
       {isMobilizeOpen && (

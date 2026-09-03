@@ -204,6 +204,53 @@ export default function RequestDetails() {
             ))}
           </div>
         </div>
+
+        {/* Official Authority Authentication & Instruction Card */}
+        {request.verificationStatus === 'verified' && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-slate-900 text-white border border-slate-800 space-y-3 shadow-lg">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <span className="text-[10px] font-mono font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                AUTHENTICATED BY DISASTER AUTHORITY
+              </span>
+              <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                {request.authenticityTrustScore || 98}% VERIFIED GENUINE
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+              <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700">
+                <span className="text-[10px] text-slate-400 block font-semibold">Verifying Agency / Officer</span>
+                <span className="font-bold text-white text-xs">
+                  {request.verificationOfficer || 'Disaster EOC Operations'}
+                </span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700">
+                <span className="text-[10px] text-slate-400 block font-semibold">Assigned Response Force</span>
+                <span className="font-bold text-amber-400 text-xs">
+                  {request.targetAuthority?.name || 'NDRF / Emergency Response Unit'}
+                </span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700">
+                <span className="text-[10px] text-slate-400 block font-semibold">Response SLA</span>
+                <span className="font-bold text-emerald-400 text-xs">
+                  ~{request.etaMinutes || request.targetAuthority?.responseSlaMinutes || 12} Minutes
+                </span>
+              </div>
+            </div>
+
+            {request.officialInstructions && (
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 block">
+                  📢 Official Tactical Instructions to Citizen:
+                </span>
+                <p className="text-xs text-slate-200 font-medium leading-relaxed">
+                  "{request.officialInstructions}"
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Two Column Layout: Details & Action vs Map & Updates */}
@@ -429,13 +476,44 @@ export default function RequestDetails() {
               )}
             </div>
 
+            {/* Rapid Two-Way Situation Status Pings to Authority */}
+            <div className="space-y-1.5 pt-2 border-t border-slate-100">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                ⚡ 1-Tap Situation Status Ping to Authority EOC:
+              </span>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[
+                  { label: '🌊 Water Rising Fast', text: 'Water level continues to rise rapidly inside premises.' },
+                  { label: '🏠 Safe on Roof / High Ground', text: 'We have moved to the top floor / terrace. High and dry for now.' },
+                  { label: '🏥 Patient Condition Critical', text: 'Patient vital signs deteriorating. Urgent medical / ALS care needed.' },
+                  { label: '🛟 Rescue Squad Sighted', text: 'Emergency rescue vehicle / boat is visible nearby in our sector.' },
+                ].map((ping, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => {
+                      addUpdateToRequest(
+                        request.id,
+                        `🚨 [CITIZEN STATUS PING] ${ping.text}`,
+                        currentUser?.name || request.contactName || 'Victim'
+                      );
+                      toast.success('Status ping sent to disaster authorities!');
+                    }}
+                    className="p-2 text-left rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-98 text-slate-800 text-[11px] font-bold transition-all cursor-pointer border border-slate-200"
+                  >
+                    {ping.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Add update form */}
             <form onSubmit={handleAddComment} className="flex gap-2 pt-2 border-t border-slate-100">
               <input
                 type="text"
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Post update (e.g. Arrived at location, road clear)..."
+                placeholder="Type message to authority or responders..."
                 className="flex-1 text-xs px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
               />
               <button

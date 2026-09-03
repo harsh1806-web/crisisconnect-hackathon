@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useCrisis } from '../../context/CrisisContext';
 import { useAuth } from '../../context/AuthContext';
+import IncidentVerificationModal from '../../components/IncidentVerificationModal';
 import toast from 'react-hot-toast';
 
 export default function AuthorityRequests() {
@@ -21,6 +22,8 @@ export default function AuthorityRequests() {
     useCrisis();
   const { currentUser } = useAuth();
   const [searchParams] = useSearchParams();
+
+  const [verifyModalReq, setVerifyModalReq] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState(() => {
@@ -321,11 +324,11 @@ export default function AuthorityRequests() {
                     {isPending && (
                       <>
                         <button
-                          onClick={() => verifyRequest(req.id, currentUser?.name)}
-                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                          onClick={() => setVerifyModalReq(req)}
+                          className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
                         >
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          <span>Verify</span>
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span>Inspect & Authenticate</span>
                         </button>
                         <button
                           onClick={() => setRejectModalReq(req)}
@@ -509,6 +512,23 @@ export default function AuthorityRequests() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Incident Verification & Authentication Modal */}
+      {verifyModalReq && (
+        <IncidentVerificationModal
+          incident={verifyModalReq}
+          authority={currentUser}
+          onVerify={(id, authorityName, auditData) => {
+            verifyRequest(id, authorityName, auditData);
+            setVerifyModalReq(null);
+          }}
+          onReject={(id, reason, authorityName) => {
+            rejectRequest(id, reason, authorityName);
+            setVerifyModalReq(null);
+          }}
+          onClose={() => setVerifyModalReq(null)}
+        />
       )}
     </div>
   );
