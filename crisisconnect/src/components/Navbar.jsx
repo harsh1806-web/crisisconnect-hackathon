@@ -97,7 +97,7 @@ export default function Navbar() {
             <button
               onClick={() => {
                 logout();
-                navigate('/login');
+                navigate('/login', { replace: true });
               }}
               className="p-1.5 rounded-xl border border-slate-200 text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
               title="Sign Out"

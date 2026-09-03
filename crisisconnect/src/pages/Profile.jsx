@@ -8,10 +8,11 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCrisis } from '../context/CrisisContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import RequestCard from '../components/RequestCard';
 
 export default function Profile() {
+  const navigate = useNavigate();
   const { currentUser, logout, isVolunteer } = useAuth();
   const { requests } = useCrisis();
   const [activeTab, setActiveTab] = useState('requests'); // 'requests' | 'missions'
@@ -73,8 +74,11 @@ export default function Profile() {
               Switch Role
             </Link>
             <button
-              onClick={logout}
-              className="p-2 rounded-xl text-red-600 hover:bg-red-50 border border-red-200 transition-colors"
+              onClick={async () => {
+                await logout();
+                navigate('/login', { replace: true });
+              }}
+              className="p-2 rounded-xl text-red-600 hover:bg-red-50 border border-red-200 transition-colors cursor-pointer"
               title="Log out"
             >
               <LogOut className="w-4 h-4" />

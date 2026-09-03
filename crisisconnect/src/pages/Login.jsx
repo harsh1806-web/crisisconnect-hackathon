@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   ShieldAlert,
@@ -90,8 +90,15 @@ export const AUTHORITY_AGENCIES = [
 export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { loginAsCitizen, loginAsNGO, loginAsAuthority } = useAuth();
+  const { loginAsCitizen, loginAsNGO, loginAsAuthority, session, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('citizen'); // 'citizen' | 'ngo' | 'authority'
+
+  // If user navigates back to /login via browser/phone back button, immediately ensure clean logout
+  useEffect(() => {
+    if (session) {
+      logout();
+    }
+  }, [session, logout]);
 
   // Citizen form - initialized directly from searchParams if redirected from registration
   const userName = searchParams.get('name') || '';
@@ -190,7 +197,7 @@ export default function Login() {
       });
 
       toast.success(`Verified from Supabase Database! Welcome, ${citizen.name}.`);
-      navigate('/user/dashboard');
+      navigate('/user/dashboard', { replace: true });
     } catch (err) {
       toast.error('Login error: ' + err.message);
     } finally {
@@ -204,7 +211,7 @@ export default function Login() {
       ngoName,
       name: ngoOfficer || 'Field Lead',
     });
-    navigate('/ngo/dashboard');
+    navigate('/ngo/dashboard', { replace: true });
   };
 
   const handleSelectAgency = (agency) => {
@@ -232,7 +239,7 @@ export default function Login() {
       icon: currentAgency.icon,
     });
     toast.success(`Logged in as ${currentAgency.shortName} (${badgeId.toUpperCase()})`);
-    navigate('/authority/dashboard');
+    navigate('/authority/dashboard', { replace: true });
   };
 
   return (

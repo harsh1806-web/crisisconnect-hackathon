@@ -5,6 +5,7 @@ import { CrisisProvider } from './context/CrisisContext';
 
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
+import ProtectedRoute from './components/ProtectedRoute';
 
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -77,23 +78,23 @@ function AppRoutes() {
             <Route path="/register" element={<Register />} />
 
             {/* 1. CITIZEN PORTAL */}
-            <Route path="/user/dashboard" element={<UserDashboard />} />
-            <Route path="/user/create" element={<UserCreateRequest />} />
-            <Route path="/user/submitted/:id" element={<UserRequestSubmitted />} />
-            <Route path="/user/track/:id" element={<UserTrackStatus />} />
+            <Route path="/user/dashboard" element={<ProtectedRoute allowedRoles={['citizen']}><UserDashboard /></ProtectedRoute>} />
+            <Route path="/user/create" element={<ProtectedRoute allowedRoles={['citizen']}><UserCreateRequest /></ProtectedRoute>} />
+            <Route path="/user/submitted/:id" element={<ProtectedRoute allowedRoles={['citizen']}><UserRequestSubmitted /></ProtectedRoute>} />
+            <Route path="/user/track/:id" element={<ProtectedRoute allowedRoles={['citizen']}><UserTrackStatus /></ProtectedRoute>} />
 
             {/* 2. NGO OPERATIONS PORTAL */}
-            <Route path="/ngo/dashboard" element={<NGODashboard />} />
+            <Route path="/ngo/dashboard" element={<ProtectedRoute allowedRoles={['ngo']}><NGODashboard /></ProtectedRoute>} />
 
             {/* 3. DISASTER AUTHORITY PORTAL */}
-            <Route path="/authority/dashboard" element={<AuthorityDashboard />} />
-            <Route path="/authority/requests" element={<AuthorityRequests />} />
+            <Route path="/authority/dashboard" element={<ProtectedRoute allowedRoles={['authority']}><AuthorityDashboard /></ProtectedRoute>} />
+            <Route path="/authority/requests" element={<ProtectedRoute allowedRoles={['authority']}><AuthorityRequests /></ProtectedRoute>} />
 
             {/* SHARED DISASTER MODULES */}
-            <Route path="/requests" element={<Requests />} />
-            <Route path="/requests/:id" element={<RequestDetails />} />
-            <Route path="/map" element={<MapView />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route path="/requests" element={<ProtectedRoute><Requests /></ProtectedRoute>} />
+            <Route path="/requests/:id" element={<ProtectedRoute><RequestDetails /></ProtectedRoute>} />
+            <Route path="/map" element={<ProtectedRoute><MapView /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
