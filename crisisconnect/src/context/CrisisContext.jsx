@@ -32,69 +32,70 @@ export function CrisisProvider({ children }) {
   }, [session]);
 
   const [baseCrisisInfo] = useState(INITIAL_CRISIS_INFO);
-  const [shelters] = useState(INITIAL_SHELTERS);
+  const [shelters] = useState([]);
   const [ngos] = useState(REGISTERED_NGOS);
 
-  // NGO Donations & Supplies State
+  // NGO Donations & Supplies State - Starts 100% clean
   const [donations, setDonations] = useState(() => {
-    const saved = localStorage.getItem('crisisconnect_donations_v1');
+    const saved = localStorage.getItem('crisisconnect_donations_v2');
     if (saved) {
       try {
         return JSON.parse(saved);
-      } catch {
-        return INITIAL_NGO_DONATIONS;
-      }
+      } catch {}
     }
-    return INITIAL_NGO_DONATIONS;
-  });
-
-  // Citizen Volunteering Tasks State
-  const [volunteerTasks, setVolunteerTasks] = useState(() => {
-    const saved = localStorage.getItem('crisisconnect_voltasks_v1');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch {
-        return INITIAL_CITIZEN_VOLUNTEER_TASKS;
-      }
-    }
-    return INITIAL_CITIZEN_VOLUNTEER_TASKS;
+    return { totalFundsRaised: 0, totalFundsDeployed: 0, supplies: [], recentDonations: [] };
   });
 
   useEffect(() => {
-    if (volunteerTasks && volunteerTasks.length > 0) {
-      localStorage.setItem('crisisconnect_voltasks_v1', JSON.stringify(volunteerTasks));
-    }
-  }, [volunteerTasks]);
+    localStorage.setItem('crisisconnect_donations_v2', JSON.stringify(donations));
+  }, [donations]);
 
-  const [broadcasts, setBroadcasts] = useState(() => {
-    const saved = localStorage.getItem('crisisconnect_broadcasts_v3');
+  // Citizen Volunteering Tasks State - Starts 100% clean
+  const [volunteerTasks, setVolunteerTasks] = useState(() => {
+    const saved = localStorage.getItem('crisisconnect_voltasks_v2');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch {
-        return INITIAL_BROADCASTS;
-      }
+        if (Array.isArray(parsed)) return parsed;
+      } catch {}
     }
-    return INITIAL_BROADCASTS;
+    return [];
   });
 
-  // Volunteer Karma Points System (for redeeming brand vouchers)
+  useEffect(() => {
+    localStorage.setItem('crisisconnect_voltasks_v2', JSON.stringify(volunteerTasks));
+  }, [volunteerTasks]);
+
+  // Live Broadcasts State - Starts 100% clean
+  const [broadcasts, setBroadcasts] = useState(() => {
+    const saved = localStorage.getItem('crisisconnect_broadcasts_v4');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {}
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('crisisconnect_broadcasts_v4', JSON.stringify(broadcasts));
+  }, [broadcasts]);
+
+  // Volunteer Karma Points System - Starts at 0
   const [karmaPoints, setKarmaPoints] = useState(() => {
     try {
-      const saved = localStorage.getItem('crisisconnect_karma_pts');
-      return saved !== null ? Number(saved) : 250;
+      const saved = localStorage.getItem('crisisconnect_karma_pts_v2');
+      return saved !== null ? Number(saved) : 0;
     } catch {
-      return 250;
+      return 0;
     }
   });
 
   const updateKarmaPoints = (newPts) => {
     setKarmaPoints(newPts);
     try {
-      localStorage.setItem('crisisconnect_karma_pts', String(newPts));
+      localStorage.setItem('crisisconnect_karma_pts_v2', String(newPts));
     } catch {}
   };
 
@@ -105,6 +106,10 @@ export function CrisisProvider({ children }) {
   // Fetch live emergencies directly from Supabase on mount and sync in real time
   useEffect(() => {
     localStorage.removeItem('crisisconnect_requests_v3');
+    localStorage.removeItem('crisisconnect_broadcasts_v3');
+    localStorage.removeItem('crisisconnect_donations_v1');
+    localStorage.removeItem('crisisconnect_voltasks_v1');
+    localStorage.removeItem('crisisconnect_karma_pts');
 
     const fetchSupabaseRequests = async () => {
       try {
@@ -888,13 +893,20 @@ export function CrisisProvider({ children }) {
   const resetDemoData = () => {
     localStorage.removeItem('crisisconnect_requests_v3');
     localStorage.removeItem('crisisconnect_broadcasts_v3');
+    localStorage.removeItem('crisisconnect_broadcasts_v4');
     localStorage.removeItem('crisisconnect_donations_v1');
+    localStorage.removeItem('crisisconnect_donations_v2');
     localStorage.removeItem('crisisconnect_voltasks_v1');
+    localStorage.removeItem('crisisconnect_voltasks_v2');
+    localStorage.removeItem('crisisconnect_karma_pts');
+    localStorage.removeItem('crisisconnect_karma_pts_v2');
+    localStorage.removeItem('crisisconnect_redeemed_vouchers');
     setRequests([]);
     setBroadcasts([]);
     setDonations({ totalFundsRaised: 0, totalFundsDeployed: 0, supplies: [], recentDonations: [] });
     setVolunteerTasks([]);
-    toast.success('Cleared all local emergency cache.');
+    setKarmaPoints(0);
+    toast.success('All demo data cleared. Clean slate ready for testing!');
   };
 
   return (
