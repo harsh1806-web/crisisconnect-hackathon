@@ -34,6 +34,8 @@ export default function EmergencyFacilitiesSorterModal({
   onSelectFacility,
   onNavigate,
   onClose,
+  policeStations = REAL_POLICE_STATIONS,
+  hospitals = REAL_HOSPITALS,
 }) {
   const [filterType, setFilterType] = useState('ALL'); // 'ALL' | 'POLICE' | 'HOSPITAL'
   const [sortBy, setSortBy] = useState('DISTANCE'); // 'DISTANCE' | 'NAME' | 'TYPE'
@@ -46,8 +48,8 @@ export default function EmergencyFacilitiesSorterModal({
   // Process combined facilities with real-time distance
   const sortedFacilities = useMemo(() => {
     const list = [
-      ...REAL_POLICE_STATIONS.map((f) => ({ ...f, category: 'POLICE' })),
-      ...REAL_HOSPITALS.map((f) => ({ ...f, category: 'HOSPITAL' })),
+      ...(policeStations || REAL_POLICE_STATIONS).map((f) => ({ ...f, category: 'POLICE' })),
+      ...(hospitals || REAL_HOSPITALS).map((f) => ({ ...f, category: 'HOSPITAL' })),
     ].map((f) => {
       const dist = calculateDistance(userLat, userLng, f.lat, f.lng);
       return {

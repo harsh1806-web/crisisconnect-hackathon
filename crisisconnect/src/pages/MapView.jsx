@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { Users, ShieldCheck, Crosshair, Navigation, Phone, ExternalLink, ShieldAlert, HeartPulse, X, Compass, ArrowUpDown } from 'lucide-react';
 import { REAL_POLICE_STATIONS, REAL_HOSPITALS } from '../data/emergencyFacilities';
 import EmergencyFacilitiesSorterModal from '../components/EmergencyFacilitiesSorterModal';
+import { fetchNearbyFacilities } from '../services/emergencyFacilityService';
 import { useCrisis } from '../context/CrisisContext';
 import toast from 'react-hot-toast';
 
@@ -131,6 +132,10 @@ export default function MapView() {
   const [criticalOnly, setCriticalOnly] = useState(false);
   const [showPolice, setShowPolice] = useState(true);
   const [showHospitals, setShowHospitals] = useState(true);
+  const [policeStations, setPoliceStations] = useState(REAL_POLICE_STATIONS);
+  const [hospitals, setHospitals] = useState(REAL_HOSPITALS);
+  const [isFetchingFacilities, setIsFetchingFacilities] = useState(false);
+  const lastFetchedCoordsRef = useRef(null);
   const [navConfirmModal, setNavConfirmModal] = useState(null);
   const [isSorterOpen, setIsSorterOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -176,6 +181,32 @@ export default function MapView() {
 
   // Persistent initial-center guard so map NEVER jerks or re-centers after initial load
   const hasInitiallyCenteredRef = useRef(false);
+
+  // Dynamically fetch nearby real police stations & 24/7 hospitals wherever user moves or explores
+  const activeGeoTarget = userLocation || mapCenter;
+  useEffect(() => {
+    if (!activeGeoTarget || !activeGeoTarget[0] || !activeGeoTarget[1]) return;
+    const [lat, lng] = activeGeoTarget;
+    const last = lastFetchedCoordsRef.current;
+
+    // Fetch if initial or if user moved to a new sector (> ~2.5km)
+    const hasMovedToNewSector =
+      !last ||
+      Math.abs(last[0] - lat) > 0.025 ||
+      Math.abs(last[1] - lng) > 0.025;
+
+    if (hasMovedToNewSector) {
+      lastFetchedCoordsRef.current = [lat, lng];
+      setIsFetchingFacilities(true);
+      fetchNearbyFacilities(lat, lng)
+        .then((res) => {
+          if (res?.police?.length) setPoliceStations(res.police);
+          if (res?.hospitals?.length) setHospitals(res.hospitals);
+        })
+        .catch((e) => console.warn('Nearby facility auto-fetch note:', e))
+        .finally(() => setIsFetchingFacilities(false));
+    }
+  }, [activeGeoTarget]);
 
   // Continuous Real-Time Live GPS tracking: Updates user marker smoothly without disrupting map camera
   useEffect(() => {
@@ -557,7 +588,7 @@ export default function MapView() {
 
           {/* REAL VERIFIED POLICE STATIONS */}
           {showPolice &&
-            REAL_POLICE_STATIONS.map((ps) => (
+            policeStations.map((ps) => (
               <Marker
                 key={ps.id}
                 position={[ps.lat, ps.lng]}
@@ -631,7 +662,7 @@ export default function MapView() {
 
           {/* REAL VERIFIED 24/7 HOSPITALS & TRAUMA CENTRES */}
           {showHospitals &&
-            REAL_HOSPITALS.map((hosp) => (
+            hospitals.map((hosp) => (
               <Marker
                 key={hosp.id}
                 position={[hosp.lat, hosp.lng]}
