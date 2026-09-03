@@ -281,11 +281,15 @@ export default function MapView() {
             />
             <div className="text-[11px] leading-tight">
               <span className="font-black text-slate-800 flex items-center gap-1">
-                {userLocation ? 'Real-Time GPS' : 'Connecting GPS...'}
+                {userLocation ? 'Live GPS Active' : 'City EOC Center'}
               </span>
-              {userLocation && (
+              {userLocation ? (
                 <p className="font-mono text-[10px] text-slate-500">
                   {userLocation[0].toFixed(4)}, {userLocation[1].toFixed(4)}
+                </p>
+              ) : (
+                <p className="text-[10px] text-amber-700 font-medium">
+                  Tap 🎯 to enable GPS
                 </p>
               )}
             </div>
