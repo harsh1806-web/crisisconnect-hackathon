@@ -323,21 +323,62 @@ export default function UserCreateRequest() {
                     <span className="text-slate-400 font-semibold">Classification:</span>{' '}
                     <strong className="text-white">{aiPreview.disasterType}</strong>
                   </p>
-                  <span
-                    className={`text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider ${
-                      aiPreview.urgencyLevel === 'CRITICAL'
-                        ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                    }`}
-                  >
-                    {aiPreview.urgencyLevel}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    {aiPreview.triageCode && (
+                      <span className="text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider bg-rose-500/30 text-rose-300 border border-rose-400/40">
+                        {aiPreview.triageCode.split(' ')[0]} {aiPreview.triageCode.split(' ')[2] || ''}
+                      </span>
+                    )}
+                    <span
+                      className={`text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider ${
+                        aiPreview.urgencyLevel === 'CRITICAL'
+                          ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                          : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                      }`}
+                    >
+                      {aiPreview.urgencyLevel}
+                    </span>
+                  </div>
                 </div>
+
+                {/* DSI Disaster Severity Meter */}
+                {aiPreview.severityIndex !== undefined && (
+                  <div className="p-2 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1">
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="text-slate-400 font-bold">Disaster Severity Index (DSI)</span>
+                      <span className={`font-mono font-black ${aiPreview.severityIndex >= 75 ? 'text-red-400' : 'text-amber-400'}`}>
+                        {aiPreview.severityIndex} / 100
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          aiPreview.severityIndex >= 75 ? 'bg-gradient-to-r from-orange-500 to-red-500' : 'bg-gradient-to-r from-yellow-400 to-amber-500'
+                        }`}
+                        style={{ width: `${aiPreview.severityIndex}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {aiPreview.urgencyReasoning && (
                   <p className="text-[10px] text-amber-200/90 font-medium bg-amber-950/40 border border-amber-500/20 p-2 rounded-xl">
                     ⚡ {aiPreview.urgencyReasoning}
                   </p>
+                )}
+
+                {/* Environmental Hazards */}
+                {aiPreview.extractedEntities?.environmentalHazards && aiPreview.extractedEntities.environmentalHazards.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                    {aiPreview.extractedEntities.environmentalHazards.map((hz) => (
+                      <span
+                        key={hz}
+                        className="text-[9px] font-black bg-red-950/80 text-red-300 border border-red-500/50 px-2 py-0.5 rounded-md"
+                      >
+                        {hz}
+                      </span>
+                    ))}
+                  </div>
                 )}
 
                 {/* Extracted Vulnerabilities */}
