@@ -493,7 +493,13 @@ export default function MapView() {
                 position={[ps.lat, ps.lng]}
                 icon={createCustomPin('#1e40af', '🚓', currentZoom, activeMarkerId === ps.id)}
                 eventHandlers={{
-                  click: () => setActiveMarkerId(ps.id),
+                  click: () => {
+                    setActiveMarkerId(ps.id);
+                    setNavConfirmModal({
+                      ...ps,
+                      phone: ps.emergencyHotline || ps.phone,
+                    });
+                  },
                 }}
               >
                 <Popup
@@ -561,7 +567,13 @@ export default function MapView() {
                 position={[hosp.lat, hosp.lng]}
                 icon={createCustomPin('#dc2626', '🏥', currentZoom, activeMarkerId === hosp.id)}
                 eventHandlers={{
-                  click: () => setActiveMarkerId(hosp.id),
+                  click: () => {
+                    setActiveMarkerId(hosp.id);
+                    setNavConfirmModal({
+                      ...hosp,
+                      phone: hosp.emergencyHotline || hosp.phone,
+                    });
+                  },
                 }}
               >
                 <Popup
