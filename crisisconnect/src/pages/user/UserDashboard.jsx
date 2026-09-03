@@ -15,6 +15,9 @@ import {
   HeartHandshake,
   Users,
   CheckCircle,
+  Wind,
+  Truck,
+  Pill,
 } from 'lucide-react';
 import { useCrisis } from '../../context/CrisisContext';
 import { useAuth } from '../../context/AuthContext';
@@ -38,8 +41,12 @@ export default function UserDashboard() {
   const categories = [
     { name: 'Rescue', icon: LifeBuoy, color: 'bg-red-50 text-red-600 border-red-200' },
     { name: 'Medical', icon: Activity, color: 'bg-rose-50 text-rose-600 border-rose-200' },
+    { name: 'Blood', icon: Droplets, color: 'bg-red-50 text-red-700 border-red-200' },
+    { name: 'Oxygen', icon: Wind, color: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
+    { name: 'Medicines', icon: Pill, color: 'bg-purple-50 text-purple-700 border-purple-200' },
     { name: 'Water & Food', icon: Droplets, color: 'bg-blue-50 text-blue-600 border-blue-200' },
     { name: 'Shelter', icon: Home, color: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
+    { name: 'Transportation', icon: Truck, color: 'bg-amber-50 text-amber-700 border-amber-200' },
   ];
 
   return (

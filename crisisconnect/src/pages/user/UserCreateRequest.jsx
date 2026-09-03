@@ -12,6 +12,9 @@ import {
   Navigation,
   CheckCircle,
   Send,
+  Wind,
+  Truck,
+  Pill,
 } from 'lucide-react';
 import { useCrisis } from '../../context/CrisisContext';
 import { useAuth } from '../../context/AuthContext';
@@ -39,11 +42,15 @@ export default function UserCreateRequest() {
 
   const categoryOptions = [
     { name: 'Rescue', icon: LifeBuoy, desc: 'Trapped, rising water, evacuation' },
-    { name: 'Medical', icon: Activity, desc: 'Injury, oxygen, medications' },
-    { name: 'Food & Water', icon: Droplets, desc: 'Drinking water, dry rations' },
-    { name: 'Shelter', icon: Home, desc: 'Roof collapse, dry blankets' },
-    { name: 'Power & Comms', icon: Zap, desc: 'Phone charge, backup power' },
-    { name: 'General', icon: HelpCircle, desc: 'Other emergency support' },
+    { name: 'Medical', icon: Activity, desc: 'Critical injury, triage, doctors' },
+    { name: 'Blood', icon: Droplets, desc: 'Urgent blood units / donor matching' },
+    { name: 'Oxygen', icon: Wind, desc: 'Oxygen cylinders & concentrators' },
+    { name: 'Medicines', icon: Pill, desc: 'Prescription drugs, insulin, first aid' },
+    { name: 'Food & Water', icon: Droplets, desc: 'Drinking water & emergency rations' },
+    { name: 'Shelter', icon: Home, desc: 'Evacuation shelter, blankets' },
+    { name: 'Transportation', icon: Truck, desc: 'Rescue boat, ambulance, transport' },
+    { name: 'Power & Comms', icon: Zap, desc: 'Satellite comms, backup generator' },
+    { name: 'General', icon: HelpCircle, desc: 'Other emergency assistance' },
   ];
 
   const vulnerabilityOptions = [
