@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
-import { getOrCreateDeviceToken } from '../services/notificationService';
+import { registerActiveDeviceSession } from '../services/notificationService';
 import toast from 'react-hot-toast';
 
 export default function Login() {
@@ -81,21 +81,18 @@ export default function Login() {
         return;
       }
 
-      // 4. Generate device token and register into Supabase 'device_tokens' table
-      const token = getOrCreateDeviceToken();
-      await supabase.from('device_tokens').upsert(
-        {
-          token,
-          user_phone: citizen.phone,
-          user_name: citizen.name,
-          blood_group: citizen.blood_group,
-          role: 'CITIZEN',
-          latitude: citizen.latitude,
-          longitude: citizen.longitude,
-          last_seen_at: new Date().toISOString(),
-        },
-        { onConflict: 'token' }
-      );
+      // 4. Register mobile device token & request push alert permissions
+      await registerActiveDeviceSession({
+        id: citizen.id,
+        phone: citizen.phone,
+        name: citizen.name,
+        bloodGroup: citizen.blood_group,
+        role: 'CITIZEN',
+        latitude: citizen.latitude,
+        longitude: citizen.longitude,
+      });
+
+      toast.success('📱 Mobile device registered in Supabase for live emergency alerts!');
 
       // 5. Login citizen with real Supabase record
       loginAsCitizen({

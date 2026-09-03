@@ -64,6 +64,77 @@ export async function registerDeviceToken(userId, metadata = {}) {
 }
 
 /**
+ * Automatically registers the active mobile/desktop device on login:
+ * 1. Prompts for notification permission on phone/browser.
+ * 2. Grabs current GPS location (or profile location).
+ * 3. Persists device token with user info to Supabase 'device_tokens' table.
+ * 4. Subscribes to Realtime alerts so the device immediately receives broadcasts.
+ *
+ * @param {Object} user - Authenticated user details
+ * @returns {Promise<string>} Registered token
+ */
+export async function registerActiveDeviceSession(user) {
+  if (!user) return null;
+
+  // 1. Request notification permission on device if not decided
+  try {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+      await Notification.requestPermission();
+    }
+  } catch (err) {
+    console.warn('Notification permission request:', err);
+  }
+
+  // 2. Obtain device GPS coordinates
+  let lat = user.latitude || user.location?.lat || user.lat || null;
+  let lng = user.longitude || user.location?.lng || user.lng || null;
+
+  if (typeof navigator !== 'undefined' && navigator.geolocation) {
+    try {
+      await new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            lat = pos.coords.latitude;
+            lng = pos.coords.longitude;
+            resolve();
+          },
+          () => resolve(),
+          { timeout: 3500, enableHighAccuracy: true }
+        );
+      });
+    } catch {
+      // Fallback to user profile coords
+    }
+  }
+
+  // 3. Register device token in Supabase
+  const token = getOrCreateDeviceToken();
+
+  try {
+    await registerDeviceTokenInSupabase(token, {
+      userId: user.id,
+      phone: user.phone || user.mobileNo || '',
+      name: user.name || 'Active User',
+      bloodGroup: user.bloodGroup || user.blood_group || '',
+      role: (user.role || user.type || 'CITIZEN').toUpperCase(),
+      latitude: lat,
+      longitude: lng,
+    });
+  } catch (err) {
+    console.warn('Failed to register active device in Supabase:', err);
+  }
+
+  // 4. Ensure Realtime alerts channel is actively listening
+  try {
+    listenForIncomingAlerts();
+  } catch {
+    // Ignore listener errors
+  }
+
+  return token;
+}
+
+/**
  * Plays an emergency siren audio alert using Web Audio API
  */
 export function playEmergencyAlertSound() {

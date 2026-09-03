@@ -103,8 +103,8 @@ export async function registerDeviceTokenInSupabase(token, metadata = {}) {
         user_name: metadata.name || '',
         blood_group: metadata.bloodGroup || '',
         role: metadata.role || 'CITIZEN',
-        latitude: metadata.location?.lat || null,
-        longitude: metadata.location?.lng || null,
+        latitude: metadata.location?.lat || metadata.latitude || metadata.lat || null,
+        longitude: metadata.location?.lng || metadata.longitude || metadata.lng || null,
         last_seen_at: new Date().toISOString(),
       },
       { onConflict: 'token' }
