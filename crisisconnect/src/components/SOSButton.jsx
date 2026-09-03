@@ -1,18 +1,22 @@
 import { useState } from 'react';
-import { AlertOctagon, Radio, Navigation, X, CheckCircle } from 'lucide-react';
+import { AlertOctagon, Radio, Navigation, X, CheckCircle, User, Phone, MapPin } from 'lucide-react';
 import { useCrisis } from '../context/CrisisContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function SOSButton({ variant = 'large' }) {
+  const { triggerSOS } = useCrisis();
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
+
   const [isOpen, setIsOpen] = useState(false);
   const [coords, setCoords] = useState(null);
   const [locating, setLocating] = useState(false);
   const [customMsg, setCustomMsg] = useState('');
   const [peopleCount, setPeopleCount] = useState(1);
-  const { triggerSOS } = useCrisis();
-  const { currentUser } = useAuth();
-  const navigate = useNavigate();
+  const [contactName, setContactName] = useState(() => currentUser?.name || '');
+  const [contactPhone, setContactPhone] = useState(() => currentUser?.phone || '');
+  const [locationName, setLocationName] = useState('');
 
   const handleOpen = () => {
     setIsOpen(true);
@@ -41,12 +45,12 @@ export default function SOSButton({ variant = 'large' }) {
     const sos = triggerSOS(coords, {
       description: customMsg || 'Immediate SOS emergency broadcast. Victim requires immediate assistance.',
       peopleCount: Number(peopleCount) || 1,
-      contactName: currentUser?.name || 'Emergency Caller',
-      contactPhone: currentUser?.phone || '+1-555-EMERGENCY',
-      locationName: coords ? `GPS: ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}` : 'Current Emergency Location',
+      contactName: contactName || currentUser?.name || 'Emergency Caller',
+      contactPhone: contactPhone || currentUser?.phone || '+1-555-EMERGENCY',
+      locationName: locationName || (coords ? `GPS: ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}` : 'Current Emergency Location'),
     });
     setIsOpen(false);
-    navigate(`/requests/${sos.id}`);
+    navigate(`/user/track/${sos.id}`);
   };
 
   return (
@@ -121,41 +125,78 @@ export default function SOSButton({ variant = 'large' }) {
               </span>
             </div>
 
-            {/* Quick Details form */}
-            <div className="space-y-3 mb-6">
+            {/* Quick Details form - All fields fully editable */}
+            <div className="space-y-3 mb-5">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Immediate Emergency Nature / Details (Optional)
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  What is happening? (Emergency Nature)
                 </label>
                 <input
                   type="text"
                   value={customMsg}
                   onChange={(e) => setCustomMsg(e.target.value)}
-                  placeholder="e.g. Water entering home, chest pain, collapsed wall"
-                  className="w-full text-sm px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  placeholder="e.g. Flood water rising fast, person unconscious, roof collapsed"
+                  className="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                  autoFocus
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Number of People in Danger</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={peopleCount}
-                    onChange={(e) => setPeopleCount(e.target.value)}
-                    className="w-full text-sm px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Caller Name</label>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Exact Location / Landmark / Floor
+                </label>
+                <div className="relative">
+                  <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    defaultValue={currentUser?.name || 'Anonymous Citizen'}
-                    readOnly
-                    className="w-full text-sm px-3 py-2 rounded-lg border border-slate-200 bg-slate-100 text-slate-600"
+                    value={locationName}
+                    onChange={(e) => setLocationName(e.target.value)}
+                    placeholder="e.g. Flat 402, 2nd Cross Road, near Water Tank"
+                    className="w-full text-xs pl-9 pr-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Your Name</label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={contactName}
+                      onChange={(e) => setContactName(e.target.value)}
+                      placeholder="e.g. Sharvari"
+                      className="w-full text-xs pl-9 pr-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>
+                  <div className="relative">
+                    <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="tel"
+                      value={contactPhone}
+                      onChange={(e) => setContactPhone(e.target.value)}
+                      placeholder="+1-555-0199"
+                      className="w-full text-xs pl-9 pr-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white font-semibold"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Number of People in Danger</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={peopleCount}
+                  onChange={(e) => setPeopleCount(e.target.value)}
+                  className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                />
               </div>
             </div>
 
