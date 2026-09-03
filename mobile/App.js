@@ -1,3 +1,4 @@
+import { BUNDLED_APP_HTML } from './bundledAppHtml';
 import React, { useRef, useEffect, useState } from 'react';
 import {
   StyleSheet,
@@ -209,7 +210,7 @@ export default function App() {
       <View style={styles.webWrapper}>
         <WebView
           ref={webViewRef}
-          source={{ uri: serverUrl }}
+          source={{ html: BUNDLED_APP_HTML, baseUrl: 'https://crisisconnect.app/' }}
           originWhitelist={['*']}
           mixedContentMode="always"
           style={styles.webView}
