@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Link } from 'react-router-dom';
-import { Users, Navigation } from 'lucide-react';
+import { Users, Navigation, ShieldCheck } from 'lucide-react';
 import { useCrisis } from '../context/CrisisContext';
 import toast from 'react-hot-toast';
 
@@ -69,9 +69,16 @@ export default function MapView() {
 
   const [showRequests, setShowRequests] = useState(true);
   const [showShelters, setShowShelters] = useState(true);
+  const [showRadiuses, setShowRadiuses] = useState(true);
   const [criticalOnly, setCriticalOnly] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
-  const [mapCenter, setMapCenter] = useState([13.0827, 80.2707]);
+
+  const defaultCenter = requests.length > 0 && requests[0].lat && requests[0].lng
+    ? [requests[0].lat, requests[0].lng]
+    : [19.0760, 72.8777];
+
+  const [mapCenter, setMapCenter] = useState(defaultCenter);
   const [mapZoom, setMapZoom] = useState(13);
 
   // Filter requests
@@ -120,6 +127,17 @@ export default function MapView() {
             }`}
           >
             🚨 Requests ({requests.length})
+          </button>
+
+          <button
+            onClick={() => setShowRadiuses(!showRadiuses)}
+            className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+              showRadiuses
+                ? 'bg-amber-50 border-amber-300 text-amber-800 font-bold'
+                : 'bg-white border-slate-200 text-slate-500'
+            }`}
+          >
+            ⭕ 500m & 5km Radiuses
           </button>
 
           <button
@@ -184,6 +202,38 @@ export default function MapView() {
             </Marker>
           )}
 
+          {/* 500-Meter Duplicate / Hazard Zones */}
+          {showRadiuses &&
+            visibleRequests.map((req) => (
+              <Circle
+                key={`circ-500-${req.id}`}
+                center={[req.lat, req.lng]}
+                radius={500}
+                pathOptions={{
+                  color: req.urgency === 'critical' ? '#dc2626' : '#ea580c',
+                  fillColor: req.urgency === 'critical' ? '#dc2626' : '#ea580c',
+                  fillOpacity: 0.12,
+                  weight: 1.5,
+                  dashArray: '4, 6',
+                }}
+              />
+            ))}
+
+          {/* 5km Immediate Volunteer Response Perimeter around selected emergency */}
+          {showRadiuses && selectedRequest && (
+            <Circle
+              center={[selectedRequest.lat, selectedRequest.lng]}
+              radius={5000}
+              pathOptions={{
+                color: '#10b981',
+                fillColor: '#10b981',
+                fillOpacity: 0.08,
+                weight: 2,
+                dashArray: '3, 6',
+              }}
+            />
+          )}
+
           {/* Crisis Requests Pins */}
           {visibleRequests.map((req) => {
             const isCritical = req.urgency === 'critical';
@@ -202,15 +252,33 @@ export default function MapView() {
                 key={req.id}
                 position={[req.lat, req.lng]}
                 icon={createCustomPin(color, iconSymbol)}
+                eventHandlers={{
+                  click: () => setSelectedRequest(req),
+                }}
               >
                 <Popup className="custom-popup">
-                  <div className="w-60 p-1 space-y-2 text-xs font-sans">
+                  <div className="w-64 p-1 space-y-2 text-xs font-sans">
                     <div className="flex items-center justify-between">
+                      <span className="font-mono text-[10px] font-bold bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded">
+                        {req.trackingCode || req.id}
+                      </span>
+                      {req.verificationStatus === 'verified' ? (
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                          <ShieldCheck className="w-3 h-3" /> Verified
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                          Unverified
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
                       <span className="font-bold uppercase text-[10px] text-red-600 tracking-wider">
                         {req.urgency} • {req.category}
                       </span>
                       <span className="text-[10px] text-slate-400 capitalize">
-                        {req.status.replace('_', ' ')}
+                        {req.status?.replace('_', ' ')}
                       </span>
                     </div>
 
@@ -222,15 +290,19 @@ export default function MapView() {
                       {req.description}
                     </p>
 
-                    <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px]">
-                      <span className="text-slate-500 flex items-center gap-1">
-                        <Users className="w-3 h-3" /> {req.peopleCount} affected
+                    <p className="text-[10px] text-slate-400 truncate">
+                      📍 {req.locationName}
+                    </p>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px]">
+                      <span className="text-slate-500 flex items-center gap-1 font-semibold">
+                        <Users className="w-3.5 h-3.5 text-slate-400" /> {req.peopleCount} in distress
                       </span>
                       <Link
                         to={`/requests/${req.id}`}
-                        className="font-bold text-red-600 hover:underline flex items-center"
+                        className="font-bold text-red-600 hover:text-red-700 hover:underline flex items-center gap-1"
                       >
-                        Respond →
+                        Mission Hub →
                       </Link>
                     </div>
                   </div>
@@ -271,21 +343,25 @@ export default function MapView() {
       </div>
 
       {/* Bottom Floating Legend */}
-      <div className="absolute bottom-6 left-4 z-20 hidden md:block bg-white/95 backdrop-blur-md rounded-2xl p-3 shadow-lg border border-slate-200 text-xs space-y-1.5 pointer-events-auto">
+      <div className="absolute bottom-6 left-4 z-20 hidden md:block bg-white/95 backdrop-blur-md rounded-2xl p-3.5 shadow-lg border border-slate-200 text-xs space-y-2 pointer-events-auto">
         <p className="font-bold text-slate-900 text-[11px] uppercase tracking-wider mb-1">
-          Map Legend
+          Disaster Map Legend
         </p>
         <div className="flex items-center gap-2 text-slate-600">
           <span className="w-3 h-3 rounded-full bg-red-600 inline-block" />
-          <span>Critical SOS / Danger</span>
+          <span>Critical SOS Beacon</span>
         </div>
         <div className="flex items-center gap-2 text-slate-600">
           <span className="w-3 h-3 rounded-full bg-orange-600 inline-block" />
-          <span>High Urgency Request</span>
+          <span>High Urgency Incident</span>
         </div>
         <div className="flex items-center gap-2 text-slate-600">
-          <span className="w-3 h-3 rounded-full bg-blue-600 inline-block" />
-          <span>Responder En Route</span>
+          <span className="w-3 h-3 rounded-full border border-dashed border-red-500 bg-red-500/20 inline-block" />
+          <span>500m Duplicate Zone</span>
+        </div>
+        <div className="flex items-center gap-2 text-slate-600">
+          <span className="w-3 h-3 rounded-full border border-dashed border-emerald-500 bg-emerald-500/20 inline-block" />
+          <span>5km Responder Perimeter</span>
         </div>
         <div className="flex items-center gap-2 text-slate-600">
           <span className="w-3 h-3 rounded-full bg-emerald-600 inline-block" />
