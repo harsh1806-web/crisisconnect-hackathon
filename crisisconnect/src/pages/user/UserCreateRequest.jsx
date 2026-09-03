@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -17,10 +17,12 @@ import {
   Pill,
   AlertTriangle,
   X,
+  Sparkles,
 } from 'lucide-react';
 import { useCrisis } from '../../context/CrisisContext';
 import { useAuth } from '../../context/AuthContext';
 import { checkForPotentialDuplicates } from '../../services/requestService';
+import { classifyDisaster } from '../../services/aiDisasterClassifier';
 import toast from 'react-hot-toast';
 
 export default function UserCreateRequest() {
@@ -59,6 +61,18 @@ export default function UserCreateRequest() {
       );
     }
   }, []);
+
+  // Real-time AI Disaster Classification preview
+  const aiPreview = useMemo(() => {
+    if (!title.trim() && !description.trim()) return null;
+    return classifyDisaster({
+      title,
+      description,
+      category,
+      urgency,
+      peopleCount,
+    });
+  }, [title, description, category, urgency, peopleCount]);
 
   const categoryOptions = [
     { name: 'Rescue', icon: LifeBuoy, desc: 'Trapped, rising water, evacuation' },
@@ -276,6 +290,44 @@ export default function UserCreateRequest() {
               className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
             />
           </div>
+
+          {/* AI Disaster Routing Preview Card */}
+          {aiPreview && (
+            <div className="p-3 bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl border border-indigo-500/30 shadow-md space-y-2 animate-fade-in">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{aiPreview.targetAuthority.icon}</span>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="w-3 h-3 text-amber-400" />
+                      <p className="text-[10px] font-black text-indigo-300 uppercase tracking-wider">
+                        AI Disaster Routing ({aiPreview.confidence})
+                      </p>
+                    </div>
+                    <p className="text-xs font-bold text-white leading-tight">
+                      Intimated to: {aiPreview.targetAuthority.shortName}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 shrink-0">
+                  Hotline {aiPreview.targetAuthority.hotline}
+                </span>
+              </div>
+
+              <div className="text-[11px] text-slate-300 pt-1.5 border-t border-slate-800 space-y-1">
+                <p>
+                  <span className="text-slate-400 font-semibold">Classification:</span> {aiPreview.disasterType}
+                </p>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {aiPreview.targetAuthority.requiredEquipment.slice(0, 3).map((eq) => (
+                    <span key={eq} className="text-[9px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded-md border border-slate-700">
+                      ⚡ {eq}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-2 pt-1">
             <div>

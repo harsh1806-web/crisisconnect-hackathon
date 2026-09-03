@@ -160,12 +160,13 @@ export default function App() {
           onMessage={(event) => {
             try {
               const data = JSON.parse(event.nativeEvent.data);
-              if (data.type === 'EMERGENCY_SOS') {
+              if (data.type === 'EMERGENCY_SOS' || data.type === 'DISASTER_BROADCAST') {
                 Notifications.scheduleNotificationAsync({
                   content: {
-                    title: '🚨 EMERGENCY SOS TRANSMITTED',
-                    body: data.message || 'NDRF and civil defense squads alerted with your GPS location.',
+                    title: data.title || '🚨 EMERGENCY DISASTER ALERT',
+                    body: data.message || 'Immediate response required in your sector.',
                     sound: true,
+                    vibrate: [0, 500, 250, 500],
                   },
                   trigger: null,
                 });

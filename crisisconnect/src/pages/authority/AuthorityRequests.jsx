@@ -214,6 +214,39 @@ export default function AuthorityRequests() {
                   <p className="text-xs text-slate-600 mt-1 leading-relaxed">{req.description}</p>
                 </div>
 
+                {/* AI Disaster Classification & Intimated Authority */}
+                {req.targetAuthority && (
+                  <div className="p-3 bg-slate-900 text-white rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xl">{req.targetAuthority.icon}</span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider">
+                            🤖 AI Routed & Intimated
+                          </span>
+                          {req.aiClassification?.confidence && (
+                            <span className="text-[9px] bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded border border-slate-700">
+                              {req.aiClassification.confidence} confidence
+                            </span>
+                          )}
+                        </div>
+                        <p className="font-bold text-white text-xs">
+                          {req.targetAuthority.name}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-end sm:self-center">
+                      <a
+                        href={`tel:${req.targetAuthority.hotline}`}
+                        className="px-2.5 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-bold transition-colors flex items-center gap-1"
+                      >
+                        <Phone className="w-3 h-3" /> Hotline: {req.targetAuthority.hotline}
+                      </a>
+                    </div>
+                  </div>
+                )}
+
                 {/* Meta row */}
                 <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 pt-2 border-t border-slate-100">
                   <div className="flex items-center gap-3">

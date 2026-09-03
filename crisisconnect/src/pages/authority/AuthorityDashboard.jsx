@@ -8,6 +8,7 @@ import {
   LogOut,
   MapPin,
   Eye,
+  Sparkles,
 } from 'lucide-react';
 import { useCrisis } from '../../context/CrisisContext';
 import { useAuth } from '../../context/AuthContext';
@@ -133,6 +134,82 @@ export default function AuthorityDashboard() {
             {crisisInfo.stats.rescuesCompleted}
           </p>
           <span className="text-[10px] text-emerald-700 font-semibold">Missions resolved</span>
+        </div>
+      </div>
+
+      {/* AI Disaster Routing & Automated Authority Intimation Matrix */}
+      <div className="bg-slate-900 text-white rounded-3xl p-5 border border-slate-800 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+              <Sparkles className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <h2 className="text-sm font-black text-white flex items-center gap-2">
+                AI Automated Dispatch & Authority Intimation Matrix
+              </h2>
+              <p className="text-xs text-slate-400">
+                Incoming distress signals auto-analyzed by AI and routed directly to specialized agencies
+              </p>
+            </div>
+          </div>
+          <span className="text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded-full border border-indigo-500/30 self-start sm:self-center">
+            AUTO-INTIMATION: ACTIVE
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+          {[
+            {
+              name: 'NDRF Water Rescue',
+              icon: '🚤',
+              hotline: '1077',
+              color: 'border-sky-500/40 bg-sky-950/30',
+              count: requests.filter((r) => r.targetAuthority?.shortName?.includes('NDRF') || r.category?.toUpperCase() === 'RESCUE').length,
+            },
+            {
+              name: 'Medical Trauma (108)',
+              icon: '🏥',
+              hotline: '108',
+              color: 'border-red-500/40 bg-red-950/30',
+              count: requests.filter((r) => r.targetAuthority?.shortName?.includes('Medical') || ['MEDICAL', 'BLOOD', 'OXYGEN', 'MEDICINES'].includes(r.category?.toUpperCase())).length,
+            },
+            {
+              name: 'Fire & HazMat (101)',
+              icon: '🔥',
+              hotline: '101',
+              color: 'border-orange-500/40 bg-orange-950/30',
+              count: requests.filter((r) => r.targetAuthority?.shortName?.includes('Fire')).length,
+            },
+            {
+              name: 'USAR Structural (112)',
+              icon: '🏚️',
+              hotline: '112',
+              color: 'border-purple-500/40 bg-purple-950/30',
+              count: requests.filter((r) => r.targetAuthority?.shortName?.includes('USAR')).length,
+            },
+            {
+              name: 'Civil Defense & Storm',
+              icon: '🌪️',
+              hotline: '1070',
+              color: 'border-emerald-500/40 bg-emerald-950/30',
+              count: requests.filter((r) => r.targetAuthority?.shortName?.includes('Storm') || ['SHELTER', 'FOOD & WATER', 'GENERAL'].includes(r.category?.toUpperCase())).length,
+            },
+          ].map((dept) => (
+            <div
+              key={dept.name}
+              className={`p-3 rounded-2xl border ${dept.color} flex flex-col justify-between space-y-2`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xl">{dept.icon}</span>
+                <span className="text-lg font-black text-white">{dept.count}</span>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-200">{dept.name}</p>
+                <span className="text-[10px] text-slate-400 font-mono">Hotline: {dept.hotline}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

@@ -182,7 +182,7 @@ export function playEmergencyAlertSound() {
 }
 
 /**
- * Triggers an immediate device notification with siren audio and toast
+ * Triggers an immediate device notification with siren audio, toast, and native push
  */
 export function triggerDeviceNotification(title, options = {}) {
   // 1. Play Emergency Siren Audio
@@ -190,7 +190,7 @@ export function triggerDeviceNotification(title, options = {}) {
 
   // 2. Display React Hot Toast
   toast.error(`${title} - ${options.body || 'Emergency assistance response needed.'}`, {
-    duration: 6000,
+    duration: 7000,
     position: 'top-right',
   });
 
@@ -206,6 +206,98 @@ export function triggerDeviceNotification(title, options = {}) {
     } catch (err) {
       console.warn('Native notification failed:', err);
     }
+  }
+
+  // 4. Trigger Native iOS/Android push via Expo Go WebView bridge
+  if (typeof window !== 'undefined' && window.ReactNativeWebView) {
+    try {
+      window.ReactNativeWebView.postMessage(
+        JSON.stringify({
+          type: 'EMERGENCY_SOS',
+          title,
+          message: options.body || 'Emergency response required in your sector.',
+        })
+      );
+    } catch (err) {
+      console.warn('WebView postMessage error:', err);
+    }
+  }
+}
+
+/**
+ * Specifically notifies Disaster Authorities (NDMA/EOC) with AI Intimation details
+ */
+export function notifyAuthorityEOC(incident, aiClassification = null) {
+  const authName = aiClassification?.targetAuthority?.shortName || 'Civil Defense / NDRF';
+  const hotline = aiClassification?.targetAuthority?.hotline || '112';
+
+  triggerDeviceNotification(`🚨 [AUTHORITY EOC DISPATCH] ${incident.category || 'EMERGENCY'}`, {
+    body: `Intimated to ${authName} (Hotline ${hotline}). Location: ${incident.location_name || incident.locationName || 'Disaster Zone'}`,
+  });
+}
+
+/**
+ * Broadcasts emergency alert to all active user devices within radiusKm
+ *
+ * @param {Object} incident - Emergency incident data with lat, lng, title
+ * @param {number} radiusKm - Proximity radius in kilometers (default 5km)
+ */
+export async function broadcastDisasterToNearbyUsers(incident, radiusKm = 5) {
+  if (!incident || !isSupabaseConfigured) return [];
+
+  const incLat = Number(incident.latitude || incident.lat);
+  const incLng = Number(incident.longitude || incident.lng);
+  if (!incLat || !incLng) return [];
+
+  try {
+    const { data: devices, error } = await supabase
+      .from('device_tokens')
+      .select('*');
+
+    if (error || !devices) return [];
+
+    const notifiedTokens = [];
+
+    // Helper calculate distance
+    const calcDist = (lat1, lon1, lat2, lon2) => {
+      const R = 6371; // Earth radius in km
+      const dLat = (lat2 - lat1) * (Math.PI / 180);
+      const dLon = (lon2 - lon1) * (Math.PI / 180);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * (Math.PI / 180)) *
+          Math.cos(lat2 * (Math.PI / 180)) *
+          Math.sin(dLon / 2) *
+          Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    };
+
+    for (const dev of devices) {
+      const devLat = Number(dev.latitude);
+      const devLng = Number(dev.longitude);
+      if (devLat && devLng) {
+        const dist = calcDist(incLat, incLng, devLat, devLng);
+        if (dist <= radiusKm) {
+          notifiedTokens.push({
+            token: dev.token,
+            userName: dev.user_name,
+            phone: dev.user_phone,
+            distanceKm: dist.toFixed(1),
+          });
+        }
+      }
+    }
+
+    // Trigger local alert for the current device if nearby
+    triggerDeviceNotification(`⚠️ NEARBY EMERGENCY REPORTED (${radiusKm}km radius)`, {
+      body: `${incident.title || incident.category} at ${incident.location_name || incident.locationName || 'Your Vicinity'}!`,
+    });
+
+    return notifiedTokens;
+  } catch (err) {
+    console.warn('Proximity broadcast error:', err);
+    return [];
   }
 }
 

@@ -13,8 +13,13 @@ import {
   updateRequestStatus as serviceUpdateRequestStatus,
   verifyCrisisRequest as serviceVerifyCrisisRequest,
 } from '../services/requestService.js';
-import { triggerDeviceNotification } from '../services/notificationService.js';
+import {
+  triggerDeviceNotification,
+  broadcastDisasterToNearbyUsers,
+  notifyAuthorityEOC,
+} from '../services/notificationService.js';
 import { supabase } from '../services/supabase.js';
+import { classifyDisaster } from '../services/aiDisasterClassifier.js';
 
 const CrisisContext = createContext(null);
 
@@ -77,23 +82,36 @@ export function CrisisProvider({ children }) {
           .order('created_at', { ascending: false });
 
         if (!error && data) {
-          const mapped = data.map((r) => ({
-            id: r.id,
-            trackingCode: r.tracking_token || r.id,
-            title: r.title || `${r.category || 'Emergency'} Assistance`,
-            category: r.category || 'General',
-            urgency: (r.urgency || 'HIGH').toLowerCase(),
-            verificationStatus: (r.verification_status || 'PENDING').toLowerCase(),
-            status: (r.status || 'PENDING').toLowerCase(),
-            description: r.description || '',
-            locationName: r.location_name || '',
-            lat: Number(r.latitude) || 19.0760,
-            lng: Number(r.longitude) || 72.8777,
-            peopleCount: r.people_count || 1,
-            contactName: r.user_name || 'Citizen',
-            contactPhone: r.user_phone || '',
-            createdAt: r.created_at || new Date().toISOString(),
-          }));
+          const mapped = data.map((r) => {
+            const aiResult = classifyDisaster({
+              title: r.title,
+              description: r.description,
+              category: r.category,
+              urgency: r.urgency,
+              peopleCount: r.people_count,
+            });
+
+            return {
+              id: r.id,
+              trackingCode: r.tracking_token || r.id,
+              title: r.title || `${r.category || 'Emergency'} Assistance`,
+              category: r.category || 'General',
+              urgency: (r.urgency || 'HIGH').toLowerCase(),
+              verificationStatus: (r.verification_status || 'PENDING').toLowerCase(),
+              status: (r.status || 'PENDING').toLowerCase(),
+              description: r.description || '',
+              locationName: r.location_name || '',
+              lat: Number(r.latitude) || 19.0760,
+              lng: Number(r.longitude) || 72.8777,
+              peopleCount: r.people_count || 1,
+              vulnerabilities: r.vulnerabilities || [],
+              contactName: r.contact_name || r.user_name || 'Citizen',
+              contactPhone: r.contact_phone || r.user_phone || '',
+              createdAt: r.created_at || new Date().toISOString(),
+              aiClassification: aiResult,
+              targetAuthority: aiResult.targetAuthority,
+            };
+          });
           setRequests(mapped);
         }
       } catch (err) {
@@ -112,6 +130,14 @@ export function CrisisProvider({ children }) {
         (payload) => {
           if (payload.eventType === 'INSERT') {
             const r = payload.new;
+            const aiResult = classifyDisaster({
+              title: r.title,
+              description: r.description,
+              category: r.category,
+              urgency: r.urgency,
+              peopleCount: r.people_count,
+            });
+
             const newReq = {
               id: r.id,
               trackingCode: r.tracking_token || r.id,
@@ -125,11 +151,18 @@ export function CrisisProvider({ children }) {
               lat: Number(r.latitude) || 19.0760,
               lng: Number(r.longitude) || 72.8777,
               peopleCount: r.people_count || 1,
-              contactName: r.user_name || 'Citizen',
-              contactPhone: r.user_phone || '',
+              vulnerabilities: r.vulnerabilities || [],
+              contactName: r.contact_name || r.user_name || 'Citizen',
+              contactPhone: r.contact_phone || r.user_phone || '',
               createdAt: r.created_at || new Date().toISOString(),
+              aiClassification: aiResult,
+              targetAuthority: aiResult.targetAuthority,
             };
             setRequests((prev) => [newReq, ...prev.filter((item) => item.id !== newReq.id)]);
+            
+            // Real-Time Notification: Notify Authority & Proximity Broadcast
+            notifyAuthorityEOC(newReq, aiResult);
+            broadcastDisasterToNearbyUsers(newReq, 5);
           } else if (payload.eventType === 'UPDATE') {
             const r = payload.new;
             setRequests((prev) =>
@@ -165,63 +198,89 @@ export function CrisisProvider({ children }) {
     const assigned = requests.filter(
       (r) => r.status === 'assigned' || r.status === 'in_progress'
     ).length;
-    const resolved = requests.filter((r) => r.status === 'resolved').length;
+    const completed = requests.filter((r) => r.status === 'resolved').length;
 
     return {
       ...baseCrisisInfo,
       stats: {
-        totalRequests: total,
+        ...baseCrisisInfo.stats,
+        activeRequests: total,
         pendingVerification: pending,
         verifiedActive: verified,
-        assignedMissions: assigned,
-        rescuesCompleted: 60 + resolved,
+        ngosDeployed: assigned,
+        rescuesCompleted: completed,
       },
     };
   }, [baseCrisisInfo, requests]);
 
-  // Citizen Action: Create Emergency Request
+  // Citizen Action: Create Emergency Request with AI Classification
   const addRequest = (requestData) => {
     const codeNum = Math.floor(100 + Math.random() * 900);
     const trackingCode = `CRISIS-${codeNum}`;
+
+    // 1. Run AI Disaster Classification & Authority Routing
+    const aiResult = classifyDisaster({
+      title: requestData.title,
+      description: requestData.description,
+      category: requestData.category,
+      urgency: requestData.urgency,
+      peopleCount: requestData.peopleCount,
+    });
+
+    const aiVulnerabilities = [
+      ...(requestData.vulnerabilities || []),
+      `TARGET_AUTH:${aiResult.targetAuthority.shortName}`,
+      `HOTLINE:${aiResult.targetAuthority.hotline}`,
+      `DISASTER_TYPE:${aiResult.disasterType}`,
+      `AI_CONFIDENCE:${aiResult.confidence}`,
+    ];
 
     const newReq = {
       id: `req-${Date.now()}`,
       trackingCode,
       title: requestData.title || 'Immediate Emergency Assistance',
       category: requestData.category || 'Rescue',
-      urgency: requestData.urgency || 'high',
+      urgency: aiResult.urgencyLevel.toLowerCase(),
       verificationStatus: 'pending',
       status: 'pending_verification',
       description: requestData.description || '',
       locationName: requestData.locationName || 'GPS Location Tagged',
-      lat: requestData.lat || 13.0827 + (Math.random() - 0.5) * 0.02,
-      lng: requestData.lng || 80.2707 + (Math.random() - 0.5) * 0.02,
+      lat: requestData.lat || 19.0760,
+      lng: requestData.lng || 72.8777,
       peopleCount: Number(requestData.peopleCount) || 1,
-      vulnerabilities: requestData.vulnerabilities || [],
+      vulnerabilities: aiVulnerabilities,
+      aiClassification: aiResult,
+      targetAuthority: aiResult.targetAuthority,
       contactName: requestData.contactName || 'Citizen in Need',
-      contactPhone: requestData.contactPhone || '+1-555-0100',
+      contactPhone: requestData.contactPhone || '+91 99999 00000',
       createdAt: new Date().toISOString(),
       assignedNGO: null,
       updates: [
         {
-          id: `up-${Date.now()}`,
+          id: `up-init-${Date.now()}`,
           author: 'Emergency System',
           text: `Request logged under Reference ${trackingCode}. Dispatched to Authority Queue for verification.`,
+          timestamp: 'Just now',
+        },
+        {
+          id: `up-ai-${Date.now()}`,
+          author: '🤖 AI Dispatch Router',
+          text: aiResult.intimation.dispatchMessage,
           timestamp: 'Just now',
         },
       ],
     };
 
     setRequests((prev) => [newReq, ...prev]);
-    toast.success(`Request ${trackingCode} submitted! Authorities alerted.`);
+    toast.success(`Request ${trackingCode} submitted! Intimated to ${aiResult.targetAuthority.shortName}.`);
 
-    // Persist to Supabase and broadcast notification
+    // Persist to Supabase and broadcast notifications
     try {
       createCrisisRequest({
         title: newReq.title,
-        description: newReq.description,
+        description: `${newReq.description}\n\n🤖 [AI DISASTER ROUTING & INTIMATION]\n• Target Authority: ${aiResult.targetAuthority.name}\n• Classification: ${aiResult.disasterType}\n• Hotline: ${aiResult.targetAuthority.hotline}\n• Response SLA: ${aiResult.targetAuthority.slaMinutes} mins\n• Required Gear: ${aiResult.targetAuthority.requiredEquipment.join(', ')}`,
         category: (newReq.category || 'OTHER').toUpperCase(),
-        urgency: (newReq.urgency || 'HIGH').toUpperCase(),
+        urgency: aiResult.urgencyLevel,
         contactName: newReq.contactName,
         contactPhone: newReq.contactPhone,
         peopleCount: newReq.peopleCount,
@@ -238,6 +297,11 @@ export function CrisisProvider({ children }) {
           );
         }
       }).catch(() => {});
+      
+      // Notifications: Authority EOC & Nearby Citizens
+      notifyAuthorityEOC(newReq, aiResult);
+      broadcastDisasterToNearbyUsers(newReq, 5);
+      
       triggerDeviceNotification(`🚨 NEW EMERGENCY: ${newReq.category}`, {
         body: `${newReq.title} at ${newReq.locationName}`,
       });
@@ -254,6 +318,14 @@ export function CrisisProvider({ children }) {
     const lng = coords?.lng || 72.8777 + (Math.random() - 0.5) * 0.015;
     const trackingCode = `SOS-${Math.floor(100 + Math.random() * 900)}`;
 
+    const aiResult = classifyDisaster({
+      title: '🚨 CRITICAL LIFE-THREATENING SOS BEACON',
+      description: customDetails.description || 'Citizen triggered immediate red emergency panic beacon. Immediate evacuation / life hazard reported.',
+      category: 'RESCUE',
+      urgency: 'CRITICAL',
+      peopleCount: customDetails.peopleCount || 1,
+    });
+
     const sosReq = {
       id: `sos-${Date.now()}`,
       trackingCode,
@@ -269,7 +341,9 @@ export function CrisisProvider({ children }) {
       lat,
       lng,
       peopleCount: customDetails.peopleCount || 1,
-      vulnerabilities: ['Immediate Distress', 'Life Hazard'],
+      vulnerabilities: ['Immediate Distress', 'Life Hazard', `TARGET_AUTH:${aiResult.targetAuthority.shortName}`, `HOTLINE:${aiResult.targetAuthority.hotline}`],
+      aiClassification: aiResult,
+      targetAuthority: aiResult.targetAuthority,
       contactName: customDetails.contactName || 'Emergency Victim',
       contactPhone: customDetails.contactPhone || '+91 99999 00000',
       createdAt: new Date().toISOString(),
@@ -282,6 +356,12 @@ export function CrisisProvider({ children }) {
           text: 'Critical SOS beacon transmitted on priority channel to Response Authorities.',
           timestamp: 'Just now',
         },
+        {
+          id: `up-ai-${Date.now()}`,
+          author: '🤖 AI Dispatch Router',
+          text: aiResult.intimation.dispatchMessage,
+          timestamp: 'Just now',
+        },
       ],
     };
 
@@ -291,7 +371,7 @@ export function CrisisProvider({ children }) {
     try {
       createCrisisRequest({
         title: sosReq.title,
-        description: sosReq.description,
+        description: `${sosReq.description}\n\n🤖 [AI DISASTER ROUTING]\n• Target Authority: ${aiResult.targetAuthority.name}\n• Hotline: ${aiResult.targetAuthority.hotline}`,
         category: 'RESCUE',
         urgency: 'CRITICAL',
         contactName: sosReq.contactName,
@@ -310,6 +390,10 @@ export function CrisisProvider({ children }) {
           );
         }
       }).catch(() => {});
+      
+      notifyAuthorityEOC(sosReq, aiResult);
+      broadcastDisasterToNearbyUsers(sosReq, 5);
+      
       triggerDeviceNotification('🚨 CRITICAL SOS BEACON BROADCASTED', {
         body: `Immediate rescue required at ${sosReq.locationName}`,
       });
