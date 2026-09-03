@@ -298,25 +298,34 @@ export async function verifyCrisisRequest(requestId, verifierUser) {
  * @param {number} maxDistanceKm - Default 0.5km (500 meters)
  * @returns {Promise<Array>} List of potential duplicate requests
  */
-export async function checkForPotentialDuplicates(lat, lng, category, maxDistanceKm = 0.5) {
+export async function checkForPotentialDuplicates(lat, lng, category, maxDistanceKm = 0.5, preloadedRequests = null) {
   if (!lat || !lng) return [];
 
-  const q = query(
-    collection(db, COLLECTIONS.REQUESTS),
-    where('category', '==', category),
-    where('status', 'in', [REQUEST_STATUS.PENDING, REQUEST_STATUS.VERIFIED, REQUEST_STATUS.IN_PROGRESS])
-  );
+  let candidateList = [];
+  if (Array.isArray(preloadedRequests)) {
+    candidateList = preloadedRequests;
+  } else {
+    try {
+      const q = query(
+        collection(db, COLLECTIONS.REQUESTS),
+        where('category', '==', category),
+        where('status', 'in', [REQUEST_STATUS.PENDING, REQUEST_STATUS.VERIFIED, REQUEST_STATUS.IN_PROGRESS])
+      );
+      const snapshot = await getDocs(q);
+      snapshot.forEach((doc) => {
+        candidateList.push({ id: doc.id, ...doc.data() });
+      });
+    } catch {
+      return [];
+    }
+  }
 
-  const snapshot = await getDocs(q);
   const duplicates = [];
-
-  snapshot.forEach((doc) => {
-    const data = doc.data();
-    if (data.location?.lat && data.location?.lng) {
+  candidateList.forEach((data) => {
+    if (data.category === category && data.location?.lat && data.location?.lng) {
       const dist = calculateDistance(lat, lng, data.location.lat, data.location.lng);
       if (dist !== null && dist <= maxDistanceKm) {
         duplicates.push({
-          id: doc.id,
           ...data,
           distance: dist,
         });
@@ -372,30 +381,41 @@ export async function markRequestOutdated(requestId) {
  * @param {number} maxDistanceKm - Default 15km
  * @returns {Promise<Array>} Ranked nearby volunteers
  */
-export async function matchNearbyVolunteers(requestLat, requestLng, maxDistanceKm = 15) {
+export async function matchNearbyVolunteers(requestLat, requestLng, maxDistanceKm = 15, preloadedVolunteers = null) {
   if (!requestLat || !requestLng) return [];
 
-  const q = query(
-    collection(db, COLLECTIONS.USERS),
-    where('role', 'in', ['VOLUNTEER', 'ORGANIZATION']),
-    where('isAvailable', '==', true)
-  );
+  let candidateVolunteers = [];
+  if (Array.isArray(preloadedVolunteers)) {
+    candidateVolunteers = preloadedVolunteers;
+  } else {
+    try {
+      const q = query(
+        collection(db, COLLECTIONS.USERS),
+        where('role', 'in', ['VOLUNTEER', 'ORGANIZATION']),
+        where('isAvailable', '==', true)
+      );
+      const snapshot = await getDocs(q);
+      snapshot.forEach((doc) => {
+        candidateVolunteers.push({ id: doc.id, ...doc.data() });
+      });
+    } catch {
+      return [];
+    }
+  }
 
-  const snapshot = await getDocs(q);
   const matchedVolunteers = [];
-
-  snapshot.forEach((doc) => {
-    const user = doc.data();
+  candidateVolunteers.forEach((user) => {
     if (user.location?.lat && user.location?.lng) {
       const distance = calculateDistance(requestLat, requestLng, user.location.lat, user.location.lng);
       if (distance !== null && distance <= maxDistanceKm) {
         matchedVolunteers.push({
-          uid: doc.id,
+          id: user.id || user.uid,
+          uid: user.uid || user.id,
           name: user.name || user.displayName,
           phone: user.mobileNo || user.phone,
           bloodGroup: user.bloodGroup,
           role: user.role,
-          distance,
+          distance: Number(distance.toFixed(2)),
         });
       }
     }

@@ -1,8 +1,6 @@
 // Client-Side Firestore CRUD Helper for CrisisConnect (Firebase Web SDK v10/v11)
 
-import { initializeApp } from "firebase/app";
 import { 
-  getFirestore, 
   collection, 
   addDoc, 
   doc, 
@@ -13,19 +11,7 @@ import {
   where, 
   onSnapshot 
 } from "firebase/firestore";
-
-// 1. Initialize Firebase Config
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+import { db } from "../services/firebase.js";
 
 // Helper function to generate tracking token
 function generateEmergencyToken() {
