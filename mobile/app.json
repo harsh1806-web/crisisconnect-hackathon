@@ -32,6 +32,7 @@
     ],
     "android": {
       "package": "com.crisisconnect.emergency",
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",

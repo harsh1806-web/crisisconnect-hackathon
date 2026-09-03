@@ -13,6 +13,7 @@ import {
   Text,
   TouchableOpacity,
   Linking,
+  TextInput,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as Location from 'expo-location';
@@ -44,6 +45,9 @@ export default function App() {
   const webViewRef = useRef(null);
   const [coords, setCoords] = useState(null);
   const [hasError, setHasError] = useState(false);
+  const [serverUrl, setServerUrl] = useState(APP_URL);
+  const [inputUrl, setInputUrl] = useState(APP_URL);
+  const [showConfig, setShowConfig] = useState(false);
 
   const injectGpsToWeb = (lat, lng, accuracy = 15) => {
     if (webViewRef.current) {
@@ -205,7 +209,9 @@ export default function App() {
       <View style={styles.webWrapper}>
         <WebView
           ref={webViewRef}
-          source={{ uri: APP_URL }}
+          source={{ uri: serverUrl }}
+          originWhitelist={['*']}
+          mixedContentMode="always"
           style={styles.webView}
           javaScriptEnabled={true}
           domStorageEnabled={true}
@@ -237,7 +243,7 @@ export default function App() {
             <View style={styles.loadingOverlay}>
               <ActivityIndicator size="large" color="#ef4444" />
               <Text style={styles.loadingText}>Connecting to CrisisConnect Network...</Text>
-              <Text style={styles.loadingSubtext}>{APP_URL}</Text>
+              <Text style={styles.loadingSubtext}>{serverUrl}</Text>
             </View>
           )}
           onError={(syntheticEvent) => {
@@ -295,10 +301,15 @@ export default function App() {
         {hasError && (
           <View style={styles.errorOverlay}>
             <Text style={styles.errorIcon}>🚨</Text>
-            <Text style={styles.errorTitle}>Connection Interrupted</Text>
+            <Text style={styles.errorTitle}>CrisisConnect Link</Text>
             <Text style={styles.errorSubtitle}>
-              Unable to reach the CrisisConnect server at {APP_URL}. Please ensure your phone is connected to the same Wi-Fi network.
+              Unable to reach server at:
+              {'\n'}
+              <Text style={{ color: '#f87171', fontWeight: 'bold' }}>{serverUrl}</Text>
+              {'\n\n'}
+              Ensure phone and host computer are on the same Wi-Fi/Hotspot network.
             </Text>
+
             <TouchableOpacity
               style={styles.retryBtn}
               onPress={() => {
@@ -306,8 +317,44 @@ export default function App() {
                 webViewRef.current?.reload();
               }}
             >
-              <Text style={styles.retryBtnText}>🔄 Tap to Reload</Text>
+              <Text style={styles.retryBtnText}>🔄 Retry Connection</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.retryBtn, { backgroundColor: '#334155', marginTop: 10 }]}
+              onPress={() => setShowConfig(!showConfig)}
+            >
+              <Text style={styles.retryBtnText}>⚙️ {showConfig ? 'Hide Config' : 'Change Server Address'}</Text>
+            </TouchableOpacity>
+
+            {showConfig && (
+              <View style={styles.configBox}>
+                <Text style={styles.configLabel}>Enter Server IP / URL:</Text>
+                <TextInput
+                  style={styles.configInput}
+                  value={inputUrl}
+                  onChangeText={setInputUrl}
+                  placeholder="http://192.168.x.x:5173"
+                  placeholderTextColor="#64748b"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <TouchableOpacity
+                  style={[styles.retryBtn, { backgroundColor: '#10b981', marginTop: 8 }]}
+                  onPress={() => {
+                    let val = inputUrl.trim();
+                    if (!val.startsWith('http://') && !val.startsWith('https://')) {
+                      val = 'http://' + val;
+                    }
+                    setServerUrl(val);
+                    setHasError(false);
+                    setShowConfig(false);
+                  }}
+                >
+                  <Text style={styles.retryBtnText}>💾 Connect to Address</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         )}
       </View>
@@ -376,6 +423,33 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     textAlign: 'center',
     marginBottom: 24,
+  },
+  configBox: {
+    width: '100%',
+    backgroundColor: '#0f172a',
+    borderRadius: 16,
+    padding: 14,
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  configLabel: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: 'bold',
+    marginBottom: 6,
+  },
+  configInput: {
+    backgroundColor: '#1e293b',
+    color: '#ffffff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    fontSize: 13,
+    borderWidth: 1,
+    borderColor: '#475569',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    marginBottom: 4,
   },
   retryBtn: {
     backgroundColor: '#ef4444',
