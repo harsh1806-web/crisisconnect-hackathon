@@ -6,20 +6,11 @@ import {
   BackHandler,
   Platform,
   Alert,
+  Vibration,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
-import * as Notifications from 'expo-notifications';
-
-// Set notification handler so notifications pop up even if app is foregrounded
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
 
 // Vite Dev Server on local Wi-Fi host
 const APP_URL = 'http://10.110.80.99:5173';
@@ -77,32 +68,6 @@ export default function App() {
           );
         }
 
-        // Native iOS/Android Notification Permission Dialog
-        if (Platform.OS === 'ios') {
-          const { status: notifStatus } = await Notifications.requestPermissionsAsync({
-            ios: {
-              allowAlert: true,
-              allowBadge: true,
-              allowSound: true,
-            },
-          });
-
-          if (notifStatus === 'granted') {
-            try {
-              const token = await Notifications.getExpoPushTokenAsync();
-              setExpoPushToken(token.data);
-            } catch (e) {
-              console.log('Push token generation error:', e);
-            }
-          }
-        } else {
-          // Android: Request notification permissions safely without remote push token
-          try {
-            await Notifications.requestPermissionsAsync();
-          } catch (e) {
-            console.log('Android notification permission error:', e);
-          }
-        }
       } catch (err) {
         console.warn('Native permissions error:', err);
       }
@@ -170,15 +135,12 @@ export default function App() {
             try {
               const data = JSON.parse(event.nativeEvent.data);
               if (data.type === 'EMERGENCY_SOS' || data.type === 'DISASTER_BROADCAST') {
-                Notifications.scheduleNotificationAsync({
-                  content: {
-                    title: data.title || '🚨 EMERGENCY DISASTER ALERT',
-                    body: data.message || 'Immediate response required in your sector.',
-                    sound: true,
-                    vibrate: [0, 500, 250, 500],
-                  },
-                  trigger: null,
-                });
+                Vibration.vibrate([0, 500, 250, 500]);
+                Alert.alert(
+                  data.title || '🚨 EMERGENCY DISASTER ALERT',
+                  data.message || 'Immediate response required in your sector.',
+                  [{ text: 'VIEW ALERT' }]
+                );
               }
             } catch (e) {}
           }}
