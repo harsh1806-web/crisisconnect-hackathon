@@ -1,0 +1,18 @@
+{
+  "name": "CrisisConnect - Disaster Response & SOS",
+  "short_name": "CrisisConnect",
+  "description": "Real-time disaster relief, emergency SOS dispatch, and volunteer coordination.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#dc2626",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
