@@ -30,9 +30,11 @@ import SOSButton from '../../components/SOSButton';
 import VolunteerPassModal from '../../components/VolunteerPassModal';
 import VolunteerRewardsModal from '../../components/VolunteerRewardsModal';
 import OfflineSmsModal from '../../components/OfflineSmsModal';
+import { useLanguage } from '../../context/LanguageContext';
 import toast from 'react-hot-toast';
 
 export default function UserDashboard() {
+  const { t } = useLanguage();
   const {
     crisisInfo,
     broadcasts,
@@ -120,7 +122,7 @@ export default function UserDashboard() {
             title="Redeem Volunteer Karma Points for Brand Vouchers"
           >
             <Award className="w-3.5 h-3.5 text-amber-600" />
-            <span>{karmaPoints} pts</span>
+            <span>{karmaPoints} {t('pts')}</span>
           </button>
 
           {/* Offline SMS SOS Protocol */}
@@ -130,7 +132,7 @@ export default function UserDashboard() {
             title="Cell Towers Down / Offline SMS SOS"
           >
             <WifiOff className="w-3.5 h-3.5 text-amber-700" />
-            <span className="hidden xs:inline">SMS SOS</span>
+            <span className="hidden xs:inline">{t('offline_sms_sos')}</span>
           </button>
 
           <button

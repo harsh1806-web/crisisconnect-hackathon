@@ -11,11 +11,13 @@ import {
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthority, isNGO, logout } = useAuth();
+  const { t } = useLanguage();
 
   // Don't render bottom nav on login or registration gateway pages
   if (location.pathname === '/login' || location.pathname === '/register') return null;
@@ -126,7 +128,7 @@ export default function BottomNav() {
             }`}
           >
             <LayoutDashboard className="w-5 h-5 mb-0.5" />
-            <span>Home</span>
+            <span>{t('nav_home')}</span>
           </Link>
 
           <Link
@@ -136,7 +138,7 @@ export default function BottomNav() {
             }`}
           >
             <MapPin className="w-5 h-5 mb-0.5" />
-            <span>Map</span>
+            <span>{t('nav_map')}</span>
           </Link>
 
           {/* Floating Center Request Action */}
@@ -154,7 +156,7 @@ export default function BottomNav() {
             }`}
           >
             <Clock className="w-5 h-5 mb-0.5" />
-            <span>Feed</span>
+            <span>{t('nav_incidents')}</span>
           </Link>
 
           <Link
@@ -164,7 +166,7 @@ export default function BottomNav() {
             }`}
           >
             <User className="w-5 h-5 mb-0.5" />
-            <span>ICE Profile</span>
+            <span>{t('nav_profile')}</span>
           </Link>
         </div>
       )}

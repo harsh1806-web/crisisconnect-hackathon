@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CrisisProvider } from './context/CrisisContext';
+import { LanguageProvider } from './context/LanguageContext';
 
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
@@ -131,11 +132,13 @@ function AppRoutes() {
 export default function App() {
   return (
     <Router>
-      <AuthProvider>
-        <CrisisProvider>
-          <AppRoutes />
-        </CrisisProvider>
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <CrisisProvider>
+            <AppRoutes />
+          </CrisisProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </Router>
   );
 }

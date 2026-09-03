@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCrisis } from '../context/CrisisContext';
+import LanguageSwitcher from './LanguageSwitcher';
 
 export default function Navbar() {
   const location = useLocation();
@@ -34,12 +35,15 @@ export default function Navbar() {
           <span className="text-slate-400 text-[10px] truncate hidden xs:inline">• {crisisInfo.title}</span>
         </div>
 
-        <a
-          href="tel:112"
-          className="flex items-center gap-1 text-emerald-400 font-bold hover:underline shrink-0 text-[10px] ml-2"
-        >
-          <PhoneCall className="w-3 h-3" /> 112 Hotline
-        </a>
+        <div className="flex items-center gap-2 shrink-0">
+          <LanguageSwitcher variant="dark" />
+          <a
+            href="tel:112"
+            className="flex items-center gap-1 text-emerald-400 font-bold hover:underline shrink-0 text-[10px]"
+          >
+            <PhoneCall className="w-3 h-3" /> 112
+          </a>
+        </div>
       </div>
 
       {/* Main Navbar */}

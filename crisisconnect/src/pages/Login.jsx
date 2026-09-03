@@ -18,6 +18,8 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import { registerActiveDeviceSession } from '../services/notificationService';
 import ForgotPasswordModal from '../components/ForgotPasswordModal';
+import LanguageSwitcher from '../components/LanguageSwitcher';
+import { useLanguage } from '../context/LanguageContext';
 import toast from 'react-hot-toast';
 
 export const AUTHORITY_AGENCIES = [
@@ -92,6 +94,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { session, currentUser, loginAsCitizen, loginAsNGO, loginAsAuthority } = useAuth();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('citizen'); // 'citizen' | 'ngo' | 'authority'
 
   // If user is already logged in and stored in phone cache, do not show login again; route immediately!
@@ -292,6 +295,10 @@ export default function Login() {
       <div className="w-full max-w-md bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
         {/* Top App Header */}
         <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-red-950 text-white p-6 text-center relative overflow-hidden">
+          <div className="absolute top-4 right-4 z-10">
+            <LanguageSwitcher variant="dark" />
+          </div>
+
           <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center mx-auto mb-3 shadow-lg shadow-black/40 border border-white/20 p-2">
             <img src="/logo.png" alt="CrisisConnect Logo" className="w-full h-full object-contain" />
           </div>
@@ -299,7 +306,7 @@ export default function Login() {
             Crisis<span className="text-red-500">Connect</span>
           </h1>
           <p className="text-xs text-slate-300 mt-1">
-            Emergency Response & Relief Management Platform
+            {t('tagline')}
           </p>
 
           <div className="mt-4 flex items-center justify-center gap-2">

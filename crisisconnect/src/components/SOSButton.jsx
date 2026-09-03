@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AlertOctagon, Radio, Navigation, X, CheckCircle } from 'lucide-react';
 import { useCrisis } from '../context/CrisisContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function SOSButton({ variant = 'large' }) {
@@ -12,6 +13,7 @@ export default function SOSButton({ variant = 'large' }) {
   const [peopleCount, setPeopleCount] = useState(1);
   const { triggerSOS } = useCrisis();
   const { currentUser } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const handleOpen = () => {
@@ -63,13 +65,13 @@ export default function SOSButton({ variant = 'large' }) {
                 <AlertOctagon className="w-10 h-10 md:w-12 md:h-12 text-white animate-bounce mb-1" />
                 <span className="text-xl md:text-2xl font-black tracking-wider uppercase">SOS</span>
                 <span className="text-[10px] md:text-xs font-semibold uppercase tracking-widest text-red-100">
-                  Tap for Help
+                  {t('tap_for_help')}
                 </span>
               </div>
             </div>
           </button>
           <span className="text-xs font-semibold text-red-600 flex items-center gap-1 mt-1 animate-pulse">
-            <Radio className="w-3.5 h-3.5" /> 24/7 EOC Satellite Link Active
+            <Radio className="w-3.5 h-3.5" /> {t('satellite_link')}
           </span>
         </div>
       ) : (
@@ -79,7 +81,7 @@ export default function SOSButton({ variant = 'large' }) {
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md shadow-red-500/30 transition-all active:scale-95 cursor-pointer"
         >
           <AlertOctagon className="w-4 h-4" />
-          <span>SOS BEACON</span>
+          <span>{t('sos_beacon')}</span>
         </button>
       )}
 
@@ -101,7 +103,7 @@ export default function SOSButton({ variant = 'large' }) {
               </div>
               <div>
                 <h3 className="text-lg sm:text-xl font-black text-slate-950 leading-tight">
-                  Trigger Critical SOS Beacon
+                  {t('trigger_sos')}
                 </h3>
                 <p className="text-xs text-slate-600 mt-0.5">
                   Alerts disaster rescue squads & nearby emergency teams
@@ -122,7 +124,7 @@ export default function SOSButton({ variant = 'large' }) {
                 </span>
               </div>
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 shrink-0">
-                <CheckCircle className="w-3 h-3 mr-1" /> Ready
+                <CheckCircle className="w-3 h-3 mr-1" /> {t('gps_ready')}
               </span>
             </div>
 
@@ -130,7 +132,7 @@ export default function SOSButton({ variant = 'large' }) {
             <div className="space-y-3 mb-5">
               <div>
                 <label className="block text-xs font-black text-slate-900 mb-1">
-                  Immediate Emergency Nature / Details (Optional)
+                  {t('emergency_nature')}
                 </label>
                 <input
                   type="text"
@@ -144,7 +146,7 @@ export default function SOSButton({ variant = 'large' }) {
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
                   <label className="block text-xs font-black text-slate-900 mb-1">
-                    People in Danger
+                    {t('people_in_danger')}
                   </label>
                   <input
                     type="number"
@@ -157,7 +159,7 @@ export default function SOSButton({ variant = 'large' }) {
                 </div>
                 <div>
                   <label className="block text-xs font-black text-slate-900 mb-1">
-                    Caller Name
+                    {t('caller_name')}
                   </label>
                   <input
                     type="text"
@@ -177,14 +179,14 @@ export default function SOSButton({ variant = 'large' }) {
                 className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-black text-xs sm:text-sm tracking-wide shadow-lg shadow-red-600/40 transition-all cursor-pointer active:scale-98"
               >
                 <AlertOctagon className="w-5 h-5 animate-pulse" />
-                <span>CONFIRM & DISPATCH NOW</span>
+                <span>{t('confirm_dispatch')}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
                 className="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer transition-colors"
               >
-                Cancel
+                {t('cancel')}
               </button>
             </div>
           </div>
