@@ -194,7 +194,7 @@ export function subscribeToRequests(onUpdate) {
 export async function updateRequestStatus(requestId, newStatus, note = '') {
   // Update local memory
   localRequestsStore = localRequestsStore.map((r) =>
-    r.id === requestId
+    r.id === requestId || r.trackingCode === requestId || r.tracking_token === requestId
       ? {
           ...r,
           status: newStatus,
@@ -212,13 +212,17 @@ export async function updateRequestStatus(requestId, newStatus, note = '') {
 
   if (isSupabaseConfigured) {
     try {
-      await supabase
-        .from('emergency_requests')
-        .update({
-          status: newStatus,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', requestId);
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestId);
+      let query = supabase.from('emergency_requests').update({
+        status: newStatus.toUpperCase(),
+        updated_at: new Date().toISOString(),
+      });
+      if (isUUID) {
+        query = query.eq('id', requestId);
+      } else {
+        query = query.or(`tracking_token.eq.${requestId},id.eq.${requestId}`);
+      }
+      await query;
     } catch (err) {
       console.warn('Supabase updateRequestStatus fallback:', err.message);
     }
@@ -233,12 +237,12 @@ export async function updateRequestStatus(requestId, newStatus, note = '') {
  * @param {string} requestId
  * @param {Object} verifierUser - { uid, name, role }
  */
-export async function verifyCrisisRequest(requestId, verifierUser) {
+export async function verifyCrisisRequest(requestId, verifierUser, auditData = {}) {
   const verifierName = verifierUser?.displayName || verifierUser?.name || 'Authorized Responder';
 
   // Update local memory
   localRequestsStore = localRequestsStore.map((r) =>
-    r.id === requestId
+    r.id === requestId || r.trackingCode === requestId || r.tracking_token === requestId
       ? {
           ...r,
           isVerified: true,
@@ -246,22 +250,27 @@ export async function verifyCrisisRequest(requestId, verifierUser) {
           verificationStatus: 'verified',
           verifiedAt: new Date().toISOString(),
           verifiedBy: verifierName,
+          verificationAudit: auditData,
         }
       : r
   );
 
   if (isSupabaseConfigured) {
     try {
-      await supabase
-        .from('emergency_requests')
-        .update({
-          status: REQUEST_STATUS.VERIFIED,
-          verification_status: 'VERIFIED',
-          verified_by: verifierName,
-          verified_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', requestId);
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestId);
+      let query = supabase.from('emergency_requests').update({
+        status: REQUEST_STATUS.VERIFIED,
+        verification_status: 'VERIFIED',
+        verified_by: verifierName,
+        verified_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+      if (isUUID) {
+        query = query.eq('id', requestId);
+      } else {
+        query = query.or(`tracking_token.eq.${requestId},id.eq.${requestId}`);
+      }
+      await query;
     } catch (err) {
       console.warn('Supabase verifyCrisisRequest fallback:', err.message);
     }

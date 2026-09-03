@@ -102,8 +102,8 @@ export function CrisisProvider({ children }) {
   const [requests, setRequests] = useState([]);
 
   // Fetch live emergencies directly from Supabase on mount
+  // Fetch live emergencies directly from Supabase on mount and sync in real time
   useEffect(() => {
-    // Clear any previous demo cache from localStorage
     localStorage.removeItem('crisisconnect_requests_v3');
 
     const fetchSupabaseRequests = async () => {
@@ -114,37 +114,56 @@ export function CrisisProvider({ children }) {
           .order('created_at', { ascending: false });
 
         if (!error && data) {
-          const mapped = data.map((r) => {
-            const aiResult = classifyDisaster({
-              title: r.title,
-              description: r.description,
-              category: r.category,
-              urgency: r.urgency,
-              peopleCount: r.people_count,
-            });
+          setRequests((prev) => {
+            return data.map((r) => {
+              const existing = prev.find(
+                (p) => p.id === r.id || p.trackingCode === r.tracking_token || p.id === r.tracking_token
+              );
+              const aiResult = classifyDisaster({
+                title: r.title,
+                description: r.description,
+                category: r.category,
+                urgency: r.urgency,
+                peopleCount: r.people_count,
+              });
 
-            return {
-              id: r.id,
-              trackingCode: r.tracking_token || r.id,
-              title: r.title || `${r.category || 'Emergency'} Assistance`,
-              category: r.category || 'General',
-              urgency: (r.urgency || 'HIGH').toLowerCase(),
-              verificationStatus: (r.verification_status || 'PENDING').toLowerCase(),
-              status: (r.status || 'PENDING').toLowerCase(),
-              description: r.description || '',
-              locationName: r.location_name || '',
-              lat: Number(r.latitude) || 19.0760,
-              lng: Number(r.longitude) || 72.8777,
-              peopleCount: r.people_count || 1,
-              vulnerabilities: r.vulnerabilities || [],
-              contactName: r.contact_name || r.user_name || 'Citizen',
-              contactPhone: r.contact_phone || r.user_phone || '',
-              createdAt: r.created_at || new Date().toISOString(),
-              aiClassification: aiResult,
-              targetAuthority: aiResult.targetAuthority,
-            };
+              const currentVerificationStatus = (r.verification_status || existing?.verificationStatus || 'PENDING').toLowerCase();
+              const currentStatus = (r.status || existing?.status || 'PENDING').toLowerCase();
+
+              return {
+                id: r.id,
+                trackingCode: r.tracking_token || r.id,
+                title: r.title || `${r.category || 'Emergency'} Assistance`,
+                category: r.category || 'General',
+                urgency: (r.urgency || 'HIGH').toLowerCase(),
+                verificationStatus: currentVerificationStatus,
+                status: currentStatus,
+                description: r.description || '',
+                locationName: r.location_name || '',
+                lat: Number(r.latitude) || 19.0760,
+                lng: Number(r.longitude) || 72.8777,
+                peopleCount: r.people_count || 1,
+                vulnerabilities: r.vulnerabilities || [],
+                contactName: r.contact_name || r.user_name || 'Citizen',
+                contactPhone: r.contact_phone || r.user_phone || '',
+                createdAt: r.created_at || new Date().toISOString(),
+                aiClassification: aiResult,
+                targetAuthority: aiResult.targetAuthority,
+                verificationOfficer: r.verified_by || existing?.verificationOfficer,
+                verifiedAt: r.verified_at || existing?.verifiedAt,
+                officialInstructions: existing?.officialInstructions,
+                assignedNGO: existing?.assignedNGO,
+                updates: existing?.updates || [
+                  {
+                    id: `up-init-${r.id}`,
+                    author: 'Emergency System',
+                    text: `Request logged under Reference ${r.tracking_token || r.id}.`,
+                    timestamp: 'Just now',
+                  },
+                ],
+              };
+            });
           });
-          setRequests(mapped);
         }
       } catch (err) {
         console.warn('Error loading Supabase requests:', err);
@@ -152,6 +171,9 @@ export function CrisisProvider({ children }) {
     };
 
     fetchSupabaseRequests();
+
+    // 4-Second Polling Backup to guarantee cross-device sync even if WebSockets are slow/reconnecting
+    const pollingInterval = setInterval(fetchSupabaseRequests, 4000);
 
     // Listen for Realtime inserts/updates
     const channel = supabase
@@ -189,14 +211,21 @@ export function CrisisProvider({ children }) {
               createdAt: r.created_at || new Date().toISOString(),
               aiClassification: aiResult,
               targetAuthority: aiResult.targetAuthority,
+              updates: [
+                {
+                  id: `up-init-${Date.now()}`,
+                  author: 'Emergency System',
+                  text: `Request logged under Reference ${r.tracking_token || r.id}.`,
+                  timestamp: 'Just now',
+                },
+              ],
             };
-            setRequests((prev) => [newReq, ...prev.filter((item) => item.id !== newReq.id)]);
-            
+            setRequests((prev) => [newReq, ...prev.filter((item) => item.id !== newReq.id && item.trackingCode !== newReq.trackingCode)]);
+
             // Targeted Notification Routing based on Active Device Session
             const activeUser = sessionRef.current;
             if (activeUser) {
               if (activeUser.type === 'authority') {
-                // Determine if this authority matches the AI target authority
                 const targetAgency = aiResult.targetAuthority?.agencyType;
                 const myAgency =
                   activeUser.agencyType ||
@@ -215,7 +244,6 @@ export function CrisisProvider({ children }) {
                 const isGeneralCoordinator =
                   activeUser.badgeId === 'ADMIN-1' || activeUser.badgeId === 'USAR-112';
 
-                // ONLY the designated department gets notified!
                 if (myAgency === targetAgency || myAgency === 'all' || isGeneralCoordinator) {
                   triggerDeviceNotification(
                     `🚨 [${(aiResult.targetAuthority?.shortName || 'AUTHORITY').toUpperCase()} DISPATCH]`,
@@ -224,67 +252,66 @@ export function CrisisProvider({ children }) {
                     }
                   );
                 }
-              } else if (activeUser.type === 'citizen') {
-                // Check if this citizen is the author who posted this request
-                const isAuthor =
-                  (activeUser.phone && newReq.contactPhone && activeUser.phone === newReq.contactPhone) ||
-                  (activeUser.name && newReq.contactName && activeUser.name.toLowerCase() === newReq.contactName.toLowerCase());
-
-                if (!isAuthor) {
-                  // Check proximity (within 5km radius)
-                  const userLat = activeUser.location?.lat || window.__NATIVE_GPS__?.lat;
-                  const userLng = activeUser.location?.lng || window.__NATIVE_GPS__?.lng;
-
-                  if (userLat && userLng && newReq.lat && newReq.lng) {
-                    const R = 6371;
-                    const dLat = (newReq.lat - userLat) * (Math.PI / 180);
-                    const dLon = (newReq.lng - userLng) * (Math.PI / 180);
-                    const a =
-                      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                      Math.cos(userLat * (Math.PI / 180)) *
-                        Math.cos(newReq.lat * (Math.PI / 180)) *
-                        Math.sin(dLon / 2) *
-                        Math.sin(dLon / 2);
-                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                    const distKm = R * c;
-
-                    if (distKm <= 5) {
-                      triggerDeviceNotification(`⚠️ NEARBY EMERGENCY (${distKm.toFixed(1)}km away)`, {
-                        body: `${newReq.title} at ${newReq.locationName}. Stay safe!`,
-                      });
-                    }
-                  } else {
-                    triggerDeviceNotification(`⚠️ NEARBY EMERGENCY ALERT`, {
-                      body: `${newReq.title} reported at ${newReq.locationName}.`,
-                    });
-                  }
-                }
               }
             }
 
-            // Sync with backend device tokens without double-triggering locally
             broadcastDisasterToNearbyUsers(newReq, 5);
           } else if (payload.eventType === 'UPDATE') {
             const r = payload.new;
             setRequests((prev) =>
-              prev.map((item) =>
-                item.id === r.id
-                  ? {
-                      ...item,
-                      status: (r.status || item.status).toLowerCase(),
-                      verificationStatus: (r.verification_status || item.verificationStatus).toLowerCase(),
+              prev.map((item) => {
+                if (item.id === r.id || item.trackingCode === r.tracking_token || item.id === r.tracking_token) {
+                  const updatedVerificationStatus = (r.verification_status || item.verificationStatus || 'PENDING').toLowerCase();
+                  const updatedStatus = (r.status || item.status || 'PENDING').toLowerCase();
+                  const justVerified = updatedVerificationStatus === 'verified' && item.verificationStatus !== 'verified';
+
+                  const newUpdates = [...(item.updates || [])];
+                  if (justVerified) {
+                    newUpdates.push({
+                      id: `up-verif-${Date.now()}`,
+                      author: r.verified_by || 'Disaster Authority Command',
+                      text: 'Incident authenticated and verified by response command.',
+                      timestamp: 'Just now',
+                      isOfficial: true,
+                    });
+
+                    // Notify citizen if this was their alert
+                    const activeUser = sessionRef.current;
+                    const cleanUserPhone = String(activeUser?.phone || '').replace(/\D/g, '').slice(-10);
+                    const cleanReqPhone = String(item.contactPhone || '').replace(/\D/g, '').slice(-10);
+                    const isMyRequest =
+                      (cleanUserPhone && cleanUserPhone === cleanReqPhone) ||
+                      (activeUser?.name && item.contactName && activeUser.name.toLowerCase() === item.contactName.toLowerCase());
+
+                    if (isMyRequest) {
+                      triggerDeviceNotification('✅ EMERGENCY REQUEST VERIFIED', {
+                        body: 'Your distress alert has been officially verified by Disaster Management Authorities. Rescue deployment authorized.',
+                      });
+                      toast.success('🎉 Your emergency request has been VERIFIED by Authorities!');
                     }
-                  : item
-              )
+                  }
+
+                  return {
+                    ...item,
+                    status: updatedStatus,
+                    verificationStatus: updatedVerificationStatus,
+                    verificationOfficer: r.verified_by || item.verificationOfficer,
+                    verifiedAt: r.verified_at || item.verifiedAt,
+                    updates: newUpdates,
+                  };
+                }
+                return item;
+              })
             );
           } else if (payload.eventType === 'DELETE') {
-            setRequests((prev) => prev.filter((item) => item.id !== payload.old.id));
+            setRequests((prev) => prev.filter((item) => item.id !== payload.old.id && item.trackingCode !== payload.old.tracking_token));
           }
         }
       )
       .subscribe();
 
     return () => {
+      clearInterval(pollingInterval);
       supabase.removeChannel(channel);
     };
   }, []);
@@ -620,7 +647,7 @@ export function CrisisProvider({ children }) {
   const verifyRequest = (requestId, authorityName = 'Authority EOC', auditData = {}) => {
     setRequests((prev) =>
       prev.map((r) => {
-        if (r.id === requestId) {
+        if (r.id === requestId || r.trackingCode === requestId) {
           const newUpdates = [...(r.updates || [])];
           if (auditData.notes) {
             newUpdates.push({
@@ -656,9 +683,9 @@ export function CrisisProvider({ children }) {
     );
     toast.success('Incident authenticated & cleared for rescue deployment!');
 
-    // Persist verification to Firestore
+    // Persist verification to Supabase
     try {
-      serviceVerifyCrisisRequest(requestId, { name: authorityName, role: 'ORGANIZATION' }).catch(() => {});
+      serviceVerifyCrisisRequest(requestId, { name: authorityName, role: 'ORGANIZATION' }, auditData).catch(() => {});
     } catch {
       // Offline fallback
     }
@@ -667,14 +694,14 @@ export function CrisisProvider({ children }) {
   const rejectRequest = (requestId, reason, authorityName = 'Authority EOC') => {
     setRequests((prev) =>
       prev.map((r) => {
-        if (r.id === requestId) {
+        if (r.id === requestId || r.trackingCode === requestId) {
           return {
             ...r,
             verificationStatus: 'rejected',
             status: 'rejected',
             rejectionReason: reason || 'Information could not be validated / duplicate alert.',
             updates: [
-              ...r.updates,
+              ...(r.updates || []),
               {
                 id: `up-${Date.now()}`,
                 author: authorityName,
@@ -688,22 +715,26 @@ export function CrisisProvider({ children }) {
       })
     );
     toast.error('Request marked as Rejected.');
+
+    try {
+      serviceUpdateRequestStatus(requestId, 'REJECTED', reason).catch(() => {});
+    } catch {}
   };
 
   const assignNGO = (requestId, ngoData, authorityName = 'Authority EOC') => {
     setRequests((prev) =>
       prev.map((r) => {
-        if (r.id === requestId) {
+        if (r.id === requestId || r.trackingCode === requestId) {
           return {
             ...r,
             status: 'assigned',
             assignedNGO: ngoData,
             updates: [
-              ...r.updates,
+              ...(r.updates || []),
               {
                 id: `up-${Date.now()}`,
                 author: authorityName,
-                text: `Disaster Authority officially assigned mission to ${ngoData.name}. Unit contact: ${ngoData.phone}`,
+                text: `Assigned to ${ngoData.name} for immediate field dispatch.`,
                 timestamp: 'Just now',
               },
             ],
@@ -712,7 +743,11 @@ export function CrisisProvider({ children }) {
         return r;
       })
     );
-    toast.success(`Mission assigned to ${ngoData.name}!`);
+    toast.success(`Assigned to ${ngoData.name}`);
+
+    try {
+      serviceUpdateRequestStatus(requestId, 'ASSIGNED', `Assigned to ${ngoData.name}`).catch(() => {});
+    } catch {}
   };
 
   const updateRequestStatus = (requestId, newStatus, authorName = 'Authority EOC') => {
@@ -725,12 +760,12 @@ export function CrisisProvider({ children }) {
 
     setRequests((prev) =>
       prev.map((r) => {
-        if (r.id === requestId) {
+        if (r.id === requestId || r.trackingCode === requestId) {
           return {
             ...r,
-            status: newStatus,
+            status: newStatus.toLowerCase(),
             updates: [
-              ...r.updates,
+              ...(r.updates || []),
               {
                 id: `up-${Date.now()}`,
                 author: authorName,
@@ -745,7 +780,7 @@ export function CrisisProvider({ children }) {
     );
     toast.success(`Status updated: ${newStatus.replace('_', ' ').toUpperCase()}`);
 
-    // Persist status change to Firestore
+    // Persist status change to Supabase
     try {
       serviceUpdateRequestStatus(requestId, newStatus.toUpperCase()).catch(() => {});
     } catch {
@@ -757,11 +792,11 @@ export function CrisisProvider({ children }) {
     if (!text.trim()) return;
     setRequests((prev) =>
       prev.map((r) => {
-        if (r.id === requestId) {
+        if (r.id === requestId || r.trackingCode === requestId) {
           return {
             ...r,
             updates: [
-              ...r.updates,
+              ...(r.updates || []),
               {
                 id: `up-${Date.now()}`,
                 author: authorName || 'Responder',

@@ -117,13 +117,18 @@ export default function UserDashboard() {
   };
 
   // Find any active request submitted by user or recent open requests
-  const myActiveRequest = requests.find(
-    (r) =>
-      (r.contactName?.toLowerCase() === currentUser?.name?.toLowerCase() ||
-        r.contactPhone === currentUser?.phone ||
-        r.isSOS) &&
-      r.status !== 'resolved'
-  );
+  const cleanUserPhone = String(currentUser?.phone || '').replace(/\D/g, '').slice(-10);
+  const myActiveRequest = requests.find((r) => {
+    const cleanReqPhone = String(r.contactPhone || '').replace(/\D/g, '').slice(-10);
+    const phoneMatch = Boolean(cleanUserPhone && cleanReqPhone && cleanUserPhone === cleanReqPhone);
+    const nameMatch = Boolean(
+      currentUser?.name &&
+      r.contactName &&
+      r.contactName.trim().toLowerCase() === currentUser.name.trim().toLowerCase()
+    );
+    const isOwner = phoneMatch || nameMatch || r.isSOS;
+    return isOwner && (r.status || '').toLowerCase() !== 'resolved';
+  });
 
   const categories = [
     { id: 'rescue', name: t('cat_rescue'), icon: LifeBuoy, color: 'bg-red-50 text-red-600 border-red-200' },
@@ -283,9 +288,16 @@ export default function UserDashboard() {
                     {t('active_incident_in_progress')}
                   </span>
                 </div>
-                <span className="text-xs font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full capitalize">
-                  {myActiveRequest.status.replace('_', ' ')}
-                </span>
+                {((myActiveRequest.verificationStatus || '').toLowerCase() === 'verified' || (myActiveRequest.status || '').toLowerCase() === 'verified') ? (
+                  <span className="text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-xs animate-pulse">
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                    VERIFIED BY AUTHORITY
+                  </span>
+                ) : (
+                  <span className="text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 rounded-full capitalize">
+                    {myActiveRequest.status.replace('_', ' ')}
+                  </span>
+                )}
               </div>
 
               <div>

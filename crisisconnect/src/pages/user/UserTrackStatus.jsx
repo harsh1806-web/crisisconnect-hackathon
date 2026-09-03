@@ -37,11 +37,18 @@ export default function UserTrackStatus() {
     );
   }
 
-  const isVerified = request.verificationStatus === 'verified';
-  const isRejected = request.verificationStatus === 'rejected';
-  const isAssigned = request.status === 'assigned' || !!request.assignedNGO;
-  const isInProgress = request.status === 'in_progress';
-  const isResolved = request.status === 'resolved';
+  const isVerified =
+    (request.verificationStatus || '').toLowerCase() === 'verified' ||
+    (request.status || '').toLowerCase() === 'verified';
+  const isRejected =
+    (request.verificationStatus || '').toLowerCase() === 'rejected' ||
+    (request.status || '').toLowerCase() === 'rejected';
+  const isAssigned =
+    (request.status || '').toLowerCase() === 'assigned' || !!request.assignedNGO;
+  const isInProgress =
+    (request.status || '').toLowerCase() === 'in_progress';
+  const isResolved =
+    (request.status || '').toLowerCase() === 'resolved';
 
   const pipelineSteps = [
     {
