@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CrisisConnect — Master Pitch Deck</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <style>
+    :root {
+      --bg: #070a12;
+      --card-bg: rgba(15, 23, 42, 0.75);
+      --card-border: rgba(255, 255, 255, 0.09);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --red: #ef4444;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --blue: #3b82f6;
+      --indigo: #6366f1;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(239, 68, 68, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.08) 0px, transparent 50%);
+    }
+
+    /* Top Navigation Bar */
+    header {
+      padding: 16px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(7, 10, 18, 0.85);
+      backdrop-filter: blur(16px);
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 16px;
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+      color: white;
+    }
+
+    .brand-title {
+      font-size: 17px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      color: #ffffff;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #34d399;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #10b981;
+      animation: pulse-dot 1.5s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.4); opacity: 0.5; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Presentation Stage */
+    main.stage {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 36px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide {
+      display: none;
+      width: 100%;
+      max-width: 1180px;
+    }
+
+    .slide.active {
+      display: block;
+      animation: slideFadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes slideFadeIn {
+      from { opacity: 0; transform: translateY(16px) scale(0.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Staggered Element Entrance Animations */
+    .slide.active .animate-child-1 { animation: childIn 0.4s 0.05s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+    .slide.active .animate-child-2 { animation: childIn 0.4s 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+    .slide.active .animate-child-3 { animation: childIn 0.4s 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+
+    @keyframes childIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Typography */
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--red);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slide-heading {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: -0.8px;
+      line-height: 1.2;
+      margin-bottom: 16px;
+      color: #ffffff;
+    }
+
+    .slide-subtext {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      max-width: 780px;
+      margin-bottom: 24px;
+    }
+
+    /* Versatile Layout Grid Engines */
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 22px;
+    }
+
+    .grid-split-map {
+      display: grid;
+      grid-template-columns: 1fr 1.35fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .grid-hero-split {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 28px;
+      align-items: center;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 22px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(16px);
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .card h3 {
+      font-size: 15px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card p {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    /* Badges & Pills */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      letter-spacing: 0.5px;
+    }
+
+    .pill-red { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .pill-green { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .pill-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .pill-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+    /* Interactive Map Widget */
+    .map-container {
+      height: 380px;
+      width: 100%;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      position: relative;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    }
+
+    #live-disaster-map {
+      height: 100%;
+      width: 100%;
+      background: #0b1120;
+    }
+
+    /* Radar Sweep Animation Overlay */
+    .radar-sweep-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: conic-gradient(from 0deg at 50% 50%, rgba(239, 68, 68, 0) 0deg, rgba(239, 68, 68, 0.15) 60deg, transparent 61deg);
+      border-radius: 20px;
+      animation: sweep 4s linear infinite;
+      z-index: 400;
+    }
+
+    @keyframes sweep {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Live Progress Bars */
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 1s ease-in-out;
+    }
+
+    /* Token Showcase */
+    .token-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 22px;
+      font-weight: 800;
+      color: #f87171;
+      background: #020617;
+      padding: 12px 18px;
+      border-radius: 14px;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
+    }
+
+    .copy-btn {
+      padding: 4px 10px;
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      color: #cbd5e1;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: #334155;
+      color: white;
+    }
+
+    /* Interactive Category Chips */
+    .chip-btn {
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      color: #e2e8f0;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chip-btn:hover, .chip-btn.selected {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      color: #ffffff;
+      transform: scale(1.03);
+    }
+
+    /* Live Interactive Offline Simulator Box */
+    .offline-simulator {
+      background: #020617;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #38bdf8;
+      line-height: 1.6;
+    }
+
+    /* Presentation Footer */
+    footer {
+      padding: 14px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--card-border);
+      background: rgba(7, 10, 18, 0.85);
+      backdrop-filter: blur(16px);
+      z-index: 50;
+    }
+
+    .slide-tracker {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      color: #ffffff;
+      padding: 8px 18px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+    }
+
+    .btn-primary {
+      background: #ef4444;
+      border-color: #ef4444;
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.35);
+    }
+
+    .btn-primary:hover {
+      background: #dc2626;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">!</div>
+      <span class="brand-title">CrisisConnect</span>
+    </div>
+    <div class="status-badge">
+      <span class="status-dot"></span> 24/7 EOC Satellite Link Active
+    </div>
+  </header>
+
+  <!-- Slide Stage -->
+  <main class="stage">
+
+    <!-- SLIDE 1: HERO DYNAMIC INTRO -->
+    <div class="slide active" id="slide-1">
+      <div class="grid-hero-split">
+        <div class="animate-child-1">
+          <div class="eyebrow">⚡ Autonomous Disaster Network</div>
+          <h1 class="slide-heading" style="font-size: 40px; margin-bottom: 16px;">
+            CrisisConnect: Real-Time Emergency Assistance Platform
+          </h1>
+          <p class="slide-subtext">
+            Connecting stranded citizens, emergency authorities, and relief NGOs into a synchronized response network that functions even under total 4G network blackouts.
+          </p>
+          <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="btn btn-primary" onclick="changeSlide(1)">Explore Pitch Deck →</button>
+            <a href="http://localhost:5174" target="_blank" class="btn">Launch Live App ↗</a>
+          </div>
+        </div>
+
+        <div class="card animate-child-2" style="border-left: 4px solid var(--red);">
+          <span class="pill pill-red">Core Innovation</span>
+          <h3 style="font-size: 16px;">The 3-Second Triage Protocol</h3>
+          <p style="margin-top: 8px;">
+            1. User speaks or types chaotic natural text.<br>
+            2. Satellite GPS locks in 3 seconds.<br>
+            3. AI extracts type, severity, &amp; P1–P4 priority.<br>
+            4. 500m geofence stops duplicate rescue boat runs.<br>
+            5. Bridges to 2G SMS if internet collapses.
+          </p>
+          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--card-border); display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8;">
+            <span>Cold Start: <strong>&lt;1s (PWA)</strong></span>
+            <span>Zero-Data: <strong>100% Ready</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: THE 3 FATAL BREAKDOWNS -->
+    <div class="slide" id="slide-2">
+      <div class="eyebrow">The Critical Problem</div>
+      <h2 class="slide-heading">The 3 Fatal Communication Failures in Every Disaster</h2>
+      <p class="slide-subtext">
+        In catastrophes like the Chennai floods or Hurricane Helene, rescue resources exist, but coordination fails. Information breakdown costs lives.
+      </p>
+
+      <div class="grid-3">
+        <div class="card animate-child-1" style="border-top: 3px solid #ef4444;">
+          <span class="pill pill-red">Breakdown 01</span>
+          <h3>Helpline Congestion</h3>
+          <p>Traditional 112/911 phone lines face 95% call congestion within 15 minutes. Panicked callers get busy tones and struggle to explain exact coordinates over voice.</p>
+          <div style="margin-top: 14px; font-size: 11px; color: #f87171; font-weight: 700;">➔ Result: Hours of delay</div>
+        </div>
+
+        <div class="card animate-child-2" style="border-top: 3px solid #f59e0b;">
+          <span class="pill pill-amber">Breakdown 02</span>
+          <h3>Social Media Chaos</h3>
+          <p>WhatsApp and Twitter are inundated with stale rumors and duplicate pleas. 50 relatives post for the same flat, causing rescue teams to visit the same house 5 times.</p>
+          <div style="margin-top: 14px; font-size: 11px; color: #fbbf24; font-weight: 700;">➔ Result: 70% wasted dispatches</div>
+        </div>
+
+        <div class="card animate-child-3" style="border-top: 3px solid #3b82f6;">
+          <span class="pill pill-blue">Breakdown 03</span>
+          <h3>Total 4G/5G Blackout</h3>
+          <p>High-speed cellular packet towers and power grids submerge. Standard emergency portals freeze and crash, leaving victims trapped in digital dark zones.</p>
+          <div style="margin-top: 14px; font-size: 11px; color: #60a5fa; font-weight: 700;">➔ Result: Complete silence</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: 3-TIER ECOSYSTEM -->
+    <div class="slide" id="slide-3">
+      <div class="eyebrow">Ecosystem Architecture</div>
+      <h2 class="slide-heading">1 Platform, 3 Synchronized Role Portals</h2>
+      <p class="slide-subtext">
+        Separation of concerns: We don't force everybody into one chaotic feed. Each role gets a tailor-made operational console.
+      </p>
+
+      <div class="grid-3">
+        <div class="card animate-child-1" style="background: rgba(239, 68, 68, 0.04); border-color: rgba(239, 68, 68, 0.25);">
+          <span class="pill pill-red">1. Citizen Portal</span>
+          <h3>Frictionless Distress</h3>
+          <p>1-tap satellite SOS, plain-language reporting without dropdowns, and real-time private status tracking.</p>
+          <ul style="list-style: none; margin-top: 12px; font-size: 11px; color: #cbd5e1; line-height: 1.8;">
+            <li>✓ 1-Tap Red SOS Beacon</li>
+            <li>✓ Auto-Location Lock</li>
+            <li>✓ Safe Shelter Directory</li>
+          </ul>
+        </div>
+
+        <div class="card animate-child-2" style="background: rgba(16, 185, 129, 0.04); border-color: rgba(16, 185, 129, 0.25);">
+          <span class="pill pill-green">2. NGO Logistics Hub</span>
+          <h3>Relief Supply Pools</h3>
+          <p>Real-time inventory for water, food, and trauma kits, paired with Zodiac boat squad deployments.</p>
+          <ul style="list-style: none; margin-top: 12px; font-size: 11px; color: #cbd5e1; line-height: 1.8;">
+            <li>✓ Live Supply Levels</li>
+            <li>✓ Squad Fleet Deployment</li>
+            <li>✓ Donation Tracking</li>
+          </ul>
+        </div>
+
+        <div class="card animate-child-3" style="background: rgba(59, 130, 246, 0.04); border-color: rgba(59, 130, 246, 0.25);">
+          <span class="pill pill-blue">3. Authority Radar</span>
+          <h3>Triage &amp; Anti-Spam</h3>
+          <p>Surveillance radar with P1 priority sorting, 1-click verification queue, and mandatory rejection audits.</p>
+          <ul style="list-style: none; margin-top: 12px; font-size: 11px; color: #cbd5e1; line-height: 1.8;">
+            <li>✓ 500m Geofence Clusters</li>
+            <li>✓ 1-Click Verification</li>
+            <li>✓ False-Alarm Gatekeeper</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: AI INTAKE & SIMULATOR -->
+    <div class="slide" id="slide-4">
+      <div class="eyebrow">Natural Language Triage</div>
+      <h2 class="slide-heading">"Tell Us What Happened" — AI Absorbs the Complexity</h2>
+      <p class="slide-subtext">
+        In an emergency, citizens cannot fill out 20 dropdown menus. CrisisConnect inverts the responsibility: user speaks, AI triages.
+      </p>
+
+      <div class="grid-2">
+        <div class="card animate-child-1">
+          <span class="pill pill-red">Live Intake Simulation</span>
+          <h3>User Voice / Text Input</h3>
+          <div style="background: #020617; padding: 14px; border-radius: 12px; font-size: 12px; color: #e2e8f0; font-family: 'JetBrains Mono', monospace; border: 1px solid var(--card-border); line-height: 1.6;">
+            "Water is rising to the 2nd floor, two elderly people trapped in flat 4B. Power is out and need insulin."
+          </div>
+          <div style="margin-top: 14px; display: flex; gap: 8px;">
+            <span class="pill pill-green">GPS: 13.0827, 80.2707 Locked</span>
+            <span class="pill pill-blue">2 People</span>
+          </div>
+        </div>
+
+        <div class="card animate-child-2">
+          <span class="pill pill-blue">Automated Triage Extraction</span>
+          <h3>Real-Time AI Processing</h3>
+          <div style="font-size: 12px; line-height: 2; margin-top: 4px;">
+            <div>Category: <strong style="color: #f87171;">Flood &amp; Disaster Rescue</strong></div>
+            <div>Severity: <strong style="color: #ef4444;">Critical (Immediate Threat)</strong></div>
+            <div>Priority: <strong style="color: #f87171; background: rgba(239, 68, 68, 0.15); padding: 2px 6px; border-radius: 4px;">P1 Response</strong></div>
+            <div>Assigned Authority: <strong>National Disaster Response Force (NDRF)</strong></div>
+            <div>Confidence Score: <strong style="color: #34d399;">96% High Match</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: LIVE DISASTER MAP & 500M CLUSTERING -->
+    <div class="slide" id="slide-5">
+      <div class="eyebrow">🗺️ Live Spatial Intelligence Showcase</div>
+      <h2 class="slide-heading">500m Geofenced Clustering &amp; Surveillance Radar</h2>
+      <p class="slide-subtext">
+        Embedded directly from our platform: Interactive disaster radar showing 500-meter danger radiuses to merge duplicate distress calls.
+      </p>
+
+      <div class="grid-split-map">
+        <!-- Left Column: Key Features -->
+        <div class="card animate-child-1" style="display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <span class="pill pill-red">Spatial De-Duplication</span>
+            <h3>How 500m Geofence Works</h3>
+            <p style="margin-top: 8px;">
+              When a citizen reports an emergency, the system calculates the Haversine distance to existing active incidents.
+            </p>
+            <div style="margin-top: 14px; font-size: 12px; line-height: 1.8;">
+              📍 <strong>Incident Cluster #982:</strong> 8 calls merged<br>
+              🔴 <strong>Pulsing Danger Zone:</strong> 500m radius<br>
+              🚒 <strong>Assigned:</strong> Rescue Boat Squad 4<br>
+              🛑 <strong>Duplicate Dispatches Saved:</strong> 7 boat trips
+            </div>
+          </div>
+
+          <div style="padding-top: 12px; border-top: 1px solid var(--card-border); font-size: 11px; color: #94a3b8;">
+            Pan, zoom, or click markers on the live map to the right.
+          </div>
+        </div>
+
+        <!-- Right Column: Interactive Live Leaflet Map -->
+        <div class="map-container animate-child-2">
+          <div id="live-disaster-map"></div>
+          <div class="radar-sweep-overlay"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: TOKEN & HUMAN IN THE LOOP -->
+    <div class="slide" id="slide-6">
+      <div class="eyebrow">Human-in-the-Loop Safety</div>
+      <h2 class="slide-heading">Deterministic Tracking Token &amp; Category Override</h2>
+      <p class="slide-subtext">
+        The AI assists, but the citizen retains final override control. No single AI error can derail critical rescue.
+      </p>
+
+      <div class="grid-2">
+        <div class="card animate-child-1">
+          <span class="pill pill-blue">Receipt Verification</span>
+          <h3>Cryptographic Tracking Token</h3>
+          <div class="token-display">
+            <span id="active-token">CC-84729X</span>
+            <button class="copy-btn" onclick="copyToken()">Copy Token</button>
+          </div>
+          <p style="margin-top: 14px;">
+            Deterministic tracking token generated locally on-device. Victims can track updates even after switching phones.
+          </p>
+        </div>
+
+        <div class="card animate-child-2">
+          <span class="pill pill-amber">Live Interactive Override</span>
+          <h3>Is This AI Classification Correct?</h3>
+          <p style="margin-bottom: 12px;">Test it live: Click any category to trigger the override workflow:</p>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+            <button class="chip-btn selected" onclick="overrideCategory('Fire', 'P1', 'Fire & Rescue')">🔥 Fire</button>
+            <button class="chip-btn" onclick="overrideCategory('Medical', 'P1', 'EMS Ambulance')">🏥 Medical</button>
+            <button class="chip-btn" onclick="overrideCategory('Rescue', 'P1', 'NDRF Boats')">🚤 Rescue</button>
+            <button class="chip-btn" onclick="overrideCategory('Food', 'P3', 'Relief Pool')">🍲 Food</button>
+            <button class="chip-btn" onclick="overrideCategory('Shelter', 'P3', 'Civil Defense')">🏠 Shelter</button>
+            <button class="chip-btn" onclick="overrideCategory('Hazard', 'P2', 'Utility Squad')">⚡ Hazard</button>
+          </div>
+          <div id="override-feedback" style="margin-top: 12px; font-size: 11px; color: #34d399; font-weight: bold;">
+            ✓ Active Route: Fire &amp; Rescue (Priority: P1)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 7: HYPER-LOCAL VOLUNTEERING -->
+    <div class="slide" id="slide-7">
+      <div class="eyebrow">Community Mobilization</div>
+      <h2 class="slide-heading">Proximity Volunteering &amp; Comprehensive Safety Briefings</h2>
+      <p class="slide-subtext">
+        Volunteers are matched strictly by distance so they never cross inundated, hazardous roads.
+      </p>
+
+      <div class="grid-3">
+        <div class="card animate-child-1" style="border-left: 3px solid #10b981;">
+          <span class="pill pill-green">📍 0.6 km Away</span>
+          <h3>Rescue Boat Staging</h3>
+          <p>Assist evacuees disembarking from flood zodiacs at Marina Jetty.</p>
+          <div style="margin-top: 12px; font-size: 11px; color: #94a3b8; line-height: 1.6;">
+            ⏱️ <strong>Shift:</strong> 10:00 AM - 01:00 PM<br>
+            🦺 <strong>Gear Provided:</strong> Float vest, boots<br>
+            📞 <strong>Lead:</strong> Capt. Tariq (+1-555-BOAT)
+          </div>
+          <div style="margin-top: 10px; font-weight: 800; color: #fbbf24; font-size: 11px;">+50 Volunteer Points</div>
+        </div>
+
+        <div class="card animate-child-2" style="border-left: 3px solid #3b82f6;">
+          <span class="pill pill-blue">📍 1.2 km Away</span>
+          <h3>Meal Box Packaging</h3>
+          <p>Pack dry rations and seal clean drinking water bottles at Shelter #2.</p>
+          <div style="margin-top: 12px; font-size: 11px; color: #94a3b8; line-height: 1.6;">
+            ⏱️ <strong>Shift:</strong> 02:00 PM - 05:00 PM<br>
+            🦺 <strong>Gear Provided:</strong> Food gloves, apron<br>
+            📞 <strong>Lead:</strong> Sister Teresa (Relief Alliance)
+          </div>
+          <div style="margin-top: 10px; font-weight: 800; color: #fbbf24; font-size: 11px;">+30 Volunteer Points</div>
+        </div>
+
+        <div class="card animate-child-3" style="border-left: 3px solid #f59e0b;">
+          <span class="pill pill-amber">📱 Remote / Online</span>
+          <h3>Senior Welfare Calls</h3>
+          <p>Call registered elderly citizens in low-lying sectors to verify power and medicine.</p>
+          <div style="margin-top: 12px; font-size: 11px; color: #94a3b8; line-height: 1.6;">
+            ⏱️ <strong>Shift:</strong> Flexible 1-hour block<br>
+            🦺 <strong>Gear:</strong> Digital call script on phone<br>
+            📞 <strong>Lead:</strong> Red Cross Social Team
+          </div>
+          <div style="margin-top: 10px; font-weight: 800; color: #fbbf24; font-size: 11px;">+15 Volunteer Points</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 8: GAMIFICATION & REWARDS -->
+    <div class="slide" id="slide-8">
+      <div class="eyebrow">Civil Defense Gamification</div>
+      <h2 class="slide-heading">Impact-Based Points Criteria &amp; Official Credentials</h2>
+      <p class="slide-subtext">
+        Volunteer retention requires transparent recognition. We reward actual operational risk and community care.
+      </p>
+
+      <div class="grid-2">
+        <div class="card animate-child-1">
+          <span class="pill pill-amber">Points Criteria Matrix</span>
+          <h3>Graded by Operational Risk</h3>
+          <div style="font-size: 13px; line-height: 2; margin-top: 10px;">
+            ⭐ <strong style="color: #fbbf24;">+50 Points:</strong> High-Impact Rescue Boat &amp; Triage Support<br>
+            ⭐ <strong style="color: #60a5fa;">+30 Points:</strong> Essential Sustenance Packing &amp; Blankets<br>
+            ⭐ <strong style="color: #34d399;">+15 Points:</strong> Remote Telephone Welfare Calling
+          </div>
+        </div>
+
+        <div class="card animate-child-2">
+          <span class="pill pill-green">Official Credentials</span>
+          <h3>Civil Defense Recognition</h3>
+          <div style="font-size: 12px; line-height: 1.8; margin-top: 6px;">
+            🎖️ <strong>State Civil Defense Volunteer Certificate:</strong> 50 pts (Claimed)<br>
+            🛡️ <strong>Priority Responder Clearance Pass:</strong> 100 pts<br>
+            🎁 <strong>Hero Care Pack &amp; Partner Meal:</strong> 150 pts
+          </div>
+          <div class="progress-bar"><div class="progress-bar-fill" style="width: 65%; background: #10b981;"></div></div>
+          <span style="font-size: 11px; color: #94a3b8; margin-top: 6px; display: block;">Rank: Silver Disaster Guardian Tier</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 9: NGO FLEET & SUPPLY POOLS -->
+    <div class="slide" id="slide-9">
+      <div class="eyebrow">Relief Logistics Hub</div>
+      <h2 class="slide-heading">Live Supply Pools &amp; Tactical Fleet Management</h2>
+      <p class="slide-subtext">
+        Preventing supply waste: Real-time inventory tracking for essential disaster goods paired with fleet dispatch.
+      </p>
+
+      <div class="grid-2">
+        <div class="card animate-child-1">
+          <span class="pill pill-blue">Real-Time Inventory</span>
+          <h3>Relief Supply Pools</h3>
+          <div style="font-size: 12px; line-height: 2.2; margin-top: 8px;">
+            💧 Drinking Water Canisters: <strong>1,240 / 2,000 L</strong>
+            <div class="progress-bar"><div class="progress-bar-fill" style="width: 62%; background: #3b82f6;"></div></div>
+            🍲 Dry Meal Packs: <strong>3,450 / 5,000 Units</strong>
+            <div class="progress-bar"><div class="progress-bar-fill" style="width: 69%; background: #10b981;"></div></div>
+            🩹 Medical Trauma Kits: <strong>180 / 300 Packs</strong>
+            <div class="progress-bar"><div class="progress-bar-fill" style="width: 60%; background: #ef4444;"></div></div>
+          </div>
+        </div>
+
+        <div class="card animate-child-2">
+          <span class="pill pill-red">Mission Tracking</span>
+          <h3>Active Squad Fleet Status</h3>
+          <div style="font-size: 12.5px; line-height: 1.9; margin-top: 8px;">
+            🚤 <strong>Zodiac Squad Alpha:</strong> Sector 4 Flooding (48 Volunteers)<br>
+            🚑 <strong>Mobile Triage Unit 2:</strong> St. Jude Evacuation Camp<br>
+            🚛 <strong>4x4 Heavy Logistics:</strong> Riverbank Clean Water Transit
+          </div>
+          <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--card-border); font-size: 11px; color: #34d399;">
+            ✓ All squad notes live-streamed to Authority Radar
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 10: ZERO NETWORK 2G SMS SIMULATOR -->
+    <div class="slide" id="slide-10">
+      <div class="eyebrow">Zero-Network Offline Protocol</div>
+      <h2 class="slide-heading">When 4G Dies: The Dual-Layer Offline Lifeline</h2>
+      <p class="slide-subtext">
+        High-speed 4G data crashes first, but low-frequency 2G voice/SMS channels remain resilient. CrisisConnect bridges the data gap.
+      </p>
+
+      <div class="grid-2">
+        <div class="card animate-child-1">
+          <span class="pill pill-green">Hardware Satellite GNSS</span>
+          <h3>No Wi-Fi, No Cellular Data Required</h3>
+          <p>
+            The phone's internal GPS chipset talks directly to satellites in outer space, locking exact coordinates in 3 seconds.
+          </p>
+          <div style="margin-top: 16px;">
+            <span class="pill pill-red">Auto 2G SMS Failover</span>
+            <p style="font-size: 12px;">
+              If mobile data drops, the app automatically compresses the emergency into a compact 140-character SMS and opens 1-tap dispatch to 112.
+            </p>
+          </div>
+        </div>
+
+        <div class="card animate-child-2">
+          <span class="pill pill-blue">Live Encoded Payload</span>
+          <h3>Standardized 2G SMS Dispatch</h3>
+          <div class="offline-simulator">
+            // Compact 140-char 2G SMS string<br>
+            SOS#CC-84729X#P1#FIRE#13.0827,80.2707#PEOPLE:2#+15550199
+          </div>
+          <div style="margin-top: 14px; font-size: 11px; color: #94a3b8; line-height: 1.6;">
+            ✓ Transmits over basic 2G voice towers<br>
+            ✓ Stored locally; auto-syncs when passing a rescue boat
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 11: CLOSING PITCH -->
+    <div class="slide" id="slide-11">
+      <div class="eyebrow">The Core Mission</div>
+      <h2 class="slide-heading" style="font-size: 38px; max-width: 900px;">
+        "In a disaster, communication failure kills as many people as the disaster itself."
+      </h2>
+      <div class="card animate-child-1" style="margin-top: 24px; padding: 32px; border-left: 4px solid var(--red);">
+        <p style="font-size: 18px; color: #ffffff; line-height: 1.7; font-style: italic;">
+          "CrisisConnect is the digital lifeline that replaces panic with structured intelligence, eliminates duplicate rescue boat runs, and ensures that even when the power grid dies, every citizen has an unbroken link to rescue squads."
+        </p>
+        <div style="margin-top: 24px; display: flex; gap: 12px;">
+          <a href="http://localhost:5174" target="_blank" class="btn btn-primary">Open Live Prototype Demo ↗</a>
+          <button class="btn" onclick="goToSlide(1)">Replay Deck ↺</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer Navigation -->
+  <footer>
+    <div class="slide-tracker" id="tracker">SLIDE 01 / 11</div>
+    <div class="hint">Use <strong>←</strong> or <strong>→</strong> arrow keys to switch slides</div>
+    <div class="nav-controls">
+      <button class="btn" id="prev-btn" onclick="changeSlide(-1)">← Previous</button>
+      <button class="btn btn-primary" id="next-btn" onclick="changeSlide(1)">Next Slide →</button>
+    </div>
+  </footer>
+
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 11;
+    let mapInitialized = false;
+    let disasterMap = null;
+
+    function updateSlide() {
+      document.querySelectorAll('.slide').forEach((slide, idx) => {
+        slide.classList.toggle('active', idx + 1 === currentSlide);
+      });
+
+      document.getElementById('tracker').textContent = `SLIDE ${currentSlide.toString().padStart(2, '0')} / ${totalSlides.toString().padStart(2, '0')}`;
+      document.getElementById('prev-btn').disabled = (currentSlide === 1);
+      document.getElementById('next-btn').textContent = (currentSlide === totalSlides) ? 'Finish' : 'Next Slide →';
+
+      // Initialize Leaflet map specifically when navigating to Slide 5
+      if (currentSlide === 5 && !mapInitialized) {
+        initDisasterMap();
+      }
+    }
+
+    function changeSlide(direction) {
+      currentSlide += direction;
+      if (currentSlide < 1) currentSlide = 1;
+      if (currentSlide > totalSlides) currentSlide = totalSlides;
+      updateSlide();
+    }
+
+    function goToSlide(n) {
+      currentSlide = n;
+      updateSlide();
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') changeSlide(1);
+      if (e.key === 'ArrowLeft') changeSlide(-1);
+    });
+
+    // Initialize Interactive Leaflet Map for Slide 5
+    function initDisasterMap() {
+      try {
+        const mapElement = document.getElementById('live-disaster-map');
+        if (!mapElement) return;
+
+        disasterMap = L.map('live-disaster-map', {
+          zoomControl: false,
+          attributionControl: false
+        }).setView([13.0827, 80.2707], 14);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          maxZoom: 19
+        }).addTo(disasterMap);
+
+        // Add 500m Geofenced Danger Zone (Pulsing Circle)
+        const geofenceCircle = L.circle([13.0827, 80.2707], {
+          radius: 500,
+          color: '#ef4444',
+          fillColor: '#ef4444',
+          fillOpacity: 0.25,
+          weight: 2,
+          dashArray: '6, 6'
+        }).addTo(disasterMap);
+
+        geofenceCircle.bindPopup("<strong>🚨 Active Cluster #982 (Sector 4)</strong><br>500m Radius • 8 Distress Calls Merged").openPopup();
+
+        // Add Fire Marker
+        L.marker([13.0845, 80.2720]).addTo(disasterMap)
+          .bindPopup("🔥 <strong>Incident CC-84729X:</strong> Fire Emergency (P1)");
+
+        // Add Safe Evacuation Shelter Marker
+        L.circleMarker([13.0760, 80.2640], {
+          radius: 8,
+          color: '#10b981',
+          fillColor: '#10b981',
+          fillOpacity: 0.9
+        }).addTo(disasterMap).bindPopup("🟢 <strong>Safe Shelter #2:</strong> St. Jude High School (Cap: 450/600)");
+
+        mapInitialized = true;
+      } catch (err) {
+        console.warn("Leaflet map initialization warning:", err);
+      }
+    }
+
+    // Interactive Token Copy
+    function copyToken() {
+      const token = document.getElementById('active-token').textContent;
+      navigator.clipboard.writeText(token);
+      const btn = document.querySelector('.copy-btn');
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => btn.textContent = 'Copy Token', 2000);
+    }
+
+    // Interactive Category Override
+    function overrideCategory(name, priority, authority) {
+      document.querySelectorAll('.chip-btn').forEach(b => b.classList.remove('selected'));
+      event.currentTarget.classList.add('selected');
+      const feedback = document.getElementById('override-feedback');
+      feedback.textContent = `✓ Active Route: ${authority} (Priority: ${priority})`;
+      feedback.style.color = (priority === 'P1') ? '#f87171' : '#60a5fa';
+    }
+
+    updateSlide();
+  </script>
+</body>
+</html>
