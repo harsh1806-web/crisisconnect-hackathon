@@ -18,23 +18,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as Location from 'expo-location';
-import * as Notifications from 'expo-notifications';
 import { WebView } from 'react-native-webview';
-
-// Configure system notification presentation for Android & iOS (safely for Expo Go)
-try {
-  if (Notifications && typeof Notifications.setNotificationHandler === 'function') {
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-      }),
-    });
-  }
-} catch (e) {
-  console.warn('Notification setup note:', e);
-}
 
 // Suppress non-fatal development warning banners in Expo Go
 LogBox.ignoreAllLogs(true);
@@ -127,27 +111,9 @@ export default function App() {
   };
 
   useEffect(() => {
-    // 1. Real Device Notification Permission Request
-    const setupNotifications = async () => {
-      try {
-        await Notifications.requestPermissionsAsync();
-        if (Platform.OS === 'android') {
-          await Notifications.setNotificationChannelAsync('emergency-disaster-alerts', {
-            name: 'Emergency Disaster Alerts',
-            importance: Notifications.AndroidImportance.MAX,
-            vibrationPattern: [0, 500, 250, 500],
-            lightColor: '#FF0000',
-            lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-            sound: 'default',
-          });
-        }
-      } catch (e) {}
-    };
-
-    setupNotifications();
     acquireNativeGps(false);
 
-    // 2. Continuous real-time GPS tracking stream
+    // Continuous real-time GPS tracking stream
     let watcher = null;
     Location.watchPositionAsync(
       {
@@ -273,21 +239,6 @@ export default function App() {
                 data.type === 'AUTHORITY_DISPATCH'
               ) {
                 Vibration.vibrate([0, 500, 250, 500]);
-
-                // Native Heads-Up Banner / Lockscreen Notification Pop-up
-                try {
-                  if (Notifications && typeof Notifications.scheduleNotificationAsync === 'function') {
-                    Notifications.scheduleNotificationAsync({
-                      content: {
-                        title: data.title || '🚨 EMERGENCY DISASTER ALERT',
-                        body: data.message || 'Immediate response required in your sector.',
-                        sound: true,
-                        priority: Notifications.AndroidNotificationPriority?.MAX || 'max',
-                      },
-                      trigger: null,
-                    }).catch(() => {});
-                  }
-                } catch (notifErr) {}
 
                 Alert.alert(
                   data.title || '🚨 EMERGENCY DISASTER ALERT',
