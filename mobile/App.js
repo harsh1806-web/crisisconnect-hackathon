@@ -184,25 +184,11 @@ export default function App() {
           domStorageEnabled={true}
           databaseEnabled={true}
           cacheEnabled={true}
-          cacheMode="LOAD_DEFAULT"
-          sharedCookiesEnabled={true}
-          thirdPartyCookiesEnabled={true}
-          incognito={false}
-          saveFormDataDisabled={false}
           geolocationEnabled={true}
           injectedJavaScript={injectedCode}
-          scalesPageToFit={false}
-          contentMode="mobile"
-          scrollEnabled={true}
-          nestedScrollEnabled={true}
-          overScrollMode="never"
-          androidHardwareAccelerationDisabled={false}
-          decelerationRate="normal"
-          bounces={false}
           showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}
           allowsBackForwardNavigationGestures={true}
-          pullToRefreshEnabled={true}
           mediaPlaybackRequiresUserAction={false}
           allowsInlineMediaPlayback={true}
           startInLoadingState={true}
@@ -210,7 +196,6 @@ export default function App() {
             <View style={styles.loadingOverlay}>
               <ActivityIndicator size="large" color="#ef4444" />
               <Text style={styles.loadingText}>Connecting to CrisisConnect Network...</Text>
-              <Text style={styles.loadingSubtext}>{serverUrl}</Text>
             </View>
           )}
           onError={(syntheticEvent) => {
